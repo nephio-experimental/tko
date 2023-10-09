@@ -1,0 +1,8 @@
+.vscode
+
+go.work
+go.work.sum
+
+work/
+
+__pycache__

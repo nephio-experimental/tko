@@ -1,0 +1,8 @@
+apiVersion: workload.plugin.nephio.org/v1alpha1
+kind: Namespace
+
+metadata:
+  name: upf
+
+spec:
+  namespace: upf

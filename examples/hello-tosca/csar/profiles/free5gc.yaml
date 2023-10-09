@@ -1,0 +1,56 @@
+tosca_definitions_version: tosca_simple_yaml_1_3
+
+namespace: free5gc
+
+imports:
+
+- namespace_prefix: core
+  file: 5g-core.yaml
+
+node_types:
+
+  UPF:
+    derived_from: core:UPF
+    properties:
+      template-id:
+        default: nf/free5gc/upf:v1
+        metadata:
+          tko.apiVersion: topology.nephio.org/v1alpha1
+          tko.kind: Template
+          tko.suffix: -template
+          tko.target: explicit.id
+      namespace:
+        type: string
+        default: upf
+        metadata:
+          tko.apiVersion: workload.plugin.nephio.org/v1alpha1
+          tko.kind: Namespace
+          tko.name: upf
+          tko.target: namespace
+
+  SMF:
+    derived_from: core:SMF
+    properties:
+      template-id:
+        default: nf/free5gc/smf:v1
+        metadata:
+          tko.apiVersion: topology.nephio.org/v1alpha1
+          tko.kind: Template
+          tko.suffix: -template
+          tko.target: explicit.id
+      namespace:
+        type: string
+        default: smf
+        metadata:
+          tko.apiVersion: workload.plugin.nephio.org/v1alpha1
+          tko.kind: Namespace
+          tko.name: smf
+          tko.target: namespace
+      blah-blah:
+        type: integer
+        default: 1
+        metadata:
+          tko.apiVersion: free5gc.plugin.nephio.org/v1alpha1
+          tko.kind: SMF
+          tko.name: smf
+          tko.target: blahBlah

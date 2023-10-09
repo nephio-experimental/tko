@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+only_root
+
+sudo -u postgres psql -c "CREATE USER tko WITH PASSWORD 'tko';" || true
+sudo -u postgres psql -c "CREATE DATABASE tko WITH OWNER tko;" || true

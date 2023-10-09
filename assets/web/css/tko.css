@@ -1,0 +1,77 @@
+
+#header {
+    padding: 16px;
+    background-color: rgb(0, 110, 0);
+    color: white;
+}
+
+#header .title {
+    font-weight: bold;
+    font-size: 20px;
+    margin-right: 40px;
+}
+
+#header .title a {
+    text-decoration: none;
+    color: white;
+}
+
+.hstack div {
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+#tab {
+    background-color: rgb(0, 60, 0);
+}
+
+#tab i {
+    display: block;
+    color: white;
+    margin: 12px;
+}
+
+#tab .section {
+    color: rgb(0, 110, 0);
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px 10px;
+    border-top: 1px solid rgb(0, 110, 0);
+}
+
+#tab .nav-link {
+    color: white;
+    border-radius: 0px;
+}
+
+#tab .nav-link.active {
+    background-color: rgb(0, 110, 0);
+}
+
+#tab-content {
+    padding: 14px;
+}
+
+.hide-first-column th:nth-child(1), .hide-first-column td:nth-child(1) {
+    display: none;
+}
+
+.entity-link {
+    color: navy;
+}
+
+.entity-link:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.value-true {
+    background-color: rgb(0, 110, 0);
+    padding: 2px;
+}
+
+.value-false {
+    color: grey;
+    padding: 2px;
+}

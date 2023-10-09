@@ -1,0 +1,7 @@
+[Unit]
+Description=tko API Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/go/bin/tko-api-server start --journald --backend=$BACKEND -v

@@ -1,0 +1,13 @@
+apiVersion: metadata.nephio.org/v1alpha1
+kind: NetworkFunction
+
+metadata:
+  name: metadata
+
+spec:
+  family: 5G Core
+  type: UPF
+  vendor: free5GC
+  variant:
+    version: 3.2.1
+    size: Small

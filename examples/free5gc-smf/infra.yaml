@@ -1,0 +1,5 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: SRIOV
+
+metadata:
+  name: free5gc-smf

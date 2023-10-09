@@ -1,0 +1,9 @@
+apiVersion: metadata.nephio.org/v1alpha1
+kind: Site
+
+metadata:
+  name: metadata
+
+spec:
+  provider: Kind
+  region: local

@@ -1,0 +1,7 @@
+[Unit]
+Description=tko Preparation Controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/go/bin/tko-preparation-controller start --journald -v

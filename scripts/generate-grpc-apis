@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+# go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+# go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+# pip install grpcio-tools
+
+OUT=$ROOT/grpc
+
+if [ "$1" == -c ]; then
+	rm --recursive --force "$OUT"
+fi
+
+if [ ! -d "$PYTHON_ENV" ]; then
+	m "missing Python venv in $PYTHON_ENV" "$RED"
+    exit 1
+fi
+
+mkdir --parents "$OUT"
+
+protoc \
+	tko.proto \
+	--proto_path="$ROOT/assets/grpc" \
+	--go_out="$OUT" \
+	--go-grpc_out="$OUT" \
+	--go_opt=paths=source_relative \
+	--go-grpc_opt=paths=source_relative
+
+cd "$ROOT/sdk/python"
+
+cp "$ROOT/assets/grpc/tko.proto" tko/
+
+"$PYTHON_ENV/bin/python3" -m grpc_tools.protoc \
+	tko/tko.proto \
+	--proto_path=. \
+	--python_out=. \
+	--grpc_python_out=.
+
+rm tko/tko.proto

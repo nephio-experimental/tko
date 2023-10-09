@@ -1,0 +1,7 @@
+[Unit]
+Description=tko Instantiation Controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/go/bin/tko-instantiation-controller start --journald -v

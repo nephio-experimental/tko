@@ -1,0 +1,7 @@
+apiVersion: gdce.google.com/v1alpha1
+kind: EdgeCluster
+
+metadata:
+  name: edge
+
+spec: {}

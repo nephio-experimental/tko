@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+NAME=$1
+
+systemctl --user restart "$NAME.service"

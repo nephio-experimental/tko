@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+only_root
+
+apt install \
+protobuf-compiler \
+python3-venv python3-pip \
+postgresql
+
+# See: go/installdocker
+
+dpkg --remove docker-engine docker-runc docker-containerd || true
+
+glinux-add-repo --batch docker-ce-"$(lsb_release -cs)"
+apt update
+apt install docker-ce
+
+systemctl enable --now docker
+
+usermod --append --groups docker "$SUDO_USER"
+
+m 'You *must* reboot to be able to access docker (logging out is not enough)' "$GREEN"

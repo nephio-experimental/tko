@@ -1,0 +1,57 @@
+apiVersion: topology.nephio.org/v1alpha1
+kind: Placement
+
+metadata:
+  name: oran-cu
+
+spec:
+  templates:
+  - template: upf
+    sites:
+    - edge1
+  - template: smf
+    sites:
+    - edge1
+    - edge2
+    - edge3
+    - select:
+        metadata:
+          Site.cloud: GDC-E
+          Site.region: bangalore
+    merge:
+    # If we don't add this, we would get a validation error during deployment, because it is incomplete in the free5GC SMF template
+    - apiVersion: workload.plugin.nephio.org/v1alpha1
+      kind: Namespace
+      name: smf1
+    # Supported by free5GC plugin, so will only be used if free5GC is selected
+    - apiVersion: free5gc.plugin.nephio.org/v1alpha1
+      kind: SMF
+      name: free5gc-smf
+
+---
+
+apiVersion: workload.plugin.nephio.org/v1alpha1
+kind: Namespace
+
+metadata:
+  name: smf1
+  annotations:
+    nephio.org/prepare: Postpone # after merge
+    nephio.org/rename: smf
+
+spec:
+  namespace: smf
+
+---
+
+apiVersion: free5gc.plugin.nephio.org/v1alpha1
+kind: SMF
+
+metadata:
+  name: free5gc-smf
+  annotations:
+    nephio.org/prepare: Here # before merge
+
+# Overriding the default
+spec:
+  blahBlah: 2

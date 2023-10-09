@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+rm --force --recursive "$PYTHON_ENV"
+python3 -m venv "$PYTHON_ENV"
+
+. "$PYTHON_ENV/bin/activate"
+pip install --upgrade pip
+pip install ruamel.yaml grpcio-tools

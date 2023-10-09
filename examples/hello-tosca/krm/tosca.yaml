@@ -1,0 +1,8 @@
+apiVersion: topology.nephio.org/v1alpha1
+kind: TOSCA
+
+metadata:
+  name: hello-tosca
+
+spec:
+  url: /tmp/hello-tosca.csar

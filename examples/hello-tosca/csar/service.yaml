@@ -1,0 +1,45 @@
+tosca_definitions_version: tosca_simple_yaml_1_3
+
+metadata:
+
+  template_name: TKO Example
+  template_author: Nephio
+
+imports:
+
+- namespace_prefix: tko
+  file: profiles/tko.yaml
+- namespace_prefix: free5gc
+  file: profiles/free5gc.yaml
+
+topology_template:
+
+  node_templates:
+
+    upf:
+      type: free5gc:UPF
+      properties:
+        namespace: upf
+      requirements:
+      - host: edge1
+
+    smf:
+      type: free5gc:SMF
+      properties:
+        namespace: smf
+        blah-blah: 4
+      requirements:
+      - host: chicago
+      #- upf: upf
+
+    edge1:
+      type: tko:Site
+      properties:
+        site-id: local/hello-world
+
+    chicago:
+      type: tko:Sites
+      properties:
+        metadata:
+          Site.cloud: GDC-E
+          Site.region: chicago

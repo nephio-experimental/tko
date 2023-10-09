@@ -1,0 +1,49 @@
+tosca_definitions_version: tosca_simple_yaml_1_3
+
+namespace: tko
+
+capability_types:
+
+  Host: {}
+
+relationship_types:
+
+  Host: {}
+
+node_types:
+
+  Template:
+    properties:
+      template-id:
+        type: string
+        required: false
+        metadata:
+          tko.apiVersion: topology.nephio.org/v1alpha1
+          tko.kind: Template
+          tko.suffix: -template
+          tko.target: explicit.id
+    requirements:
+    - host:
+        capability: Host
+        relationship: Host
+
+  Site:
+    properties:
+      site-id:
+        type: string
+        required: false
+        metadata:
+          tko.apiVersion: topology.nephio.org/v1alpha1
+          tko.kind: Site
+          tko.suffix: -site
+          tko.target: siteId
+    capabilities:
+      host: Host
+
+  Sites:
+    properties:
+      metadata:
+        type: map
+        entry_schema: string
+    capabilities:
+      host: Host

@@ -1,0 +1,19 @@
+apiVersion: workload.plugin.nephio.org/v1alpha1
+kind: Namespace
+
+metadata:
+  name: smf
+
+# must merge spec!
+
+---
+
+apiVersion: free5gc.plugin.nephio.org/v1alpha1
+kind: SMF
+
+metadata:
+  name: free5gc-smf
+
+# default spec, can be overriden in merge
+spec:
+  blahBlah: 2

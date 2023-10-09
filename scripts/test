@@ -1,0 +1,88 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+m 'stopping controllers...'
+
+"$HERE/stop-service" tko-instantiation-controller
+"$HERE/stop-service" tko-preparation-controller
+"$HERE/stop-service" tko-api-server
+
+if [ "$1" == -c ]; then
+    kind delete cluster --name edge1 || true
+    kind delete cluster --name edge2 || true
+fi
+
+"$HERE/build"
+
+m 'starting controllers...'
+
+"$HERE/restart-service" tko-api-server
+"$HERE/restart-service" tko-preparation-controller
+"$HERE/restart-service" tko-instantiation-controller
+
+sleep 5
+
+m 'registering templates...'
+
+tko template register hello-world:v1 --metadata=type=demo --url="$ROOT/examples/hello-world/" -v
+tko template register hello-tosca:v1 --metadata=type=demo --url="$ROOT/examples/hello-tosca/krm/" -v
+tko template register nf/free5gc/upf:v1 --metadata=type=nf --url="$ROOT/examples/free5gc-upf/" -v
+tko template register nf/free5gc/smf:v1 --metadata=type=nf --url="$ROOT/examples/free5gc-smf/" -v
+tko template register topology/oran/cu:v1 --metadata=type=topology --url="$ROOT/examples/oran-cu/" -v
+tko template register site/gdce:v1 --metadata=type=site --url="$ROOT/examples/gdce-site/" -v
+
+m 'registering sites...'
+
+tko site register local/hello-world --metadata=type=local --url="$ROOT/examples/local-site/" -v
+tko site register cu/edge-100 site/gdce:v1 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+tko site register cu/edge-101 site/gdce:v1 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+tko site register cu/edge-102 site/gdce:v1 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
+
+m 'registering plugins...'
+
+tko plugin register validate free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/validate_free5gc_smf.py"
+tko plugin register prepare workload.plugin.nephio.org v1alpha1 Namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=namespace=spec.namespace
+tko plugin register prepare free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/prepare_free5gc_smf.py"
+tko plugin register instantiate kind.x-k8s.io v1alpha4 Cluster "$ROOT/examples/plugins/instantiate_kind.py"
+tko plugin register instantiate gdce.google.com v1alpha1 EdgeCluster "$ROOT/examples/plugins/instantiate_gdce.py"
+
+m 'creating CSAR...'
+
+pushd "$ROOT/examples/hello-tosca/csar/" > /dev/null
+rm --force /tmp/hello-tosca.csar
+zip --recurse-paths /tmp/hello-tosca.csar .
+popd > /dev/null
+
+m 'creating deployments...'
+
+tko deployment create hello-world:v1 --site=local/hello-world -v
+tko deployment create hello-tosca:v1 -v
+tko deployment create topology/oran/cu:v1 -v
+
+# D=$(tko deployment create topology/oran/cu:v1 -v)
+# m "deployment name: $D"
+# tko deployment get "$D"
+# M=$(tko deployment mod start "$D" --url="$ROOT/work/deployment/")
+# m "modification token: $M"
+# kpt fn eval --image=gcr.io/kpt-fn/set-namespace:v0.4.1 "$ROOT/work/deployment/" -- namespace=network-function
+# tko deployment mod end "$M" --url="$ROOT/work/deployment/"
+# TODO: set prepared?
+
+m 'templates:'
+
+tko template list
+
+m 'sites:'
+
+tko site list
+
+m 'plugins:'
+
+tko plugin list
+
+m 'deployments:'
+
+tko deployment list

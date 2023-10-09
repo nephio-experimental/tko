@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: _ # placeholder for kpt set-namespace
+  annotations:
+    nephio.org/bookmark: namespace
+
+---
+
+apiVersion: workload.nephio.org/v1alpha1
+kind: HelmChart
+
+metadata:
+  name: free5gc-smf
+
+spec:
+  # See: https://artifacthub.io/packages/helm/bitnami/mysql
+  repository: https://charts.bitnami.com/bitnami
+  chart: mysql
+  parameters:
+    namespaceOverride: ${ v1 Namespace ? > metadata.name }

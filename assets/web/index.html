@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet" />
+    <link href="css/tko.css" rel="stylesheet" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+    <script src="js/tko.js"></script>
+
+    <!-- See: https://fontawesome.com/v5/search?s=solid -->
+
+    <title>TKO (PoC)</title>
+</head>
+
+<body>
+
+    <div class="d-flex flex-column min-vh-100">
+        <div id="header" class="hstack align-items-center">
+            <div class="title">
+                <a href="https://github.com/nephio-experimental/tko">TKO <span style="color: red">PoC</span></a>
+            </div>
+        </div>
+        <div id="main" class="d-flex flex-row flex-grow-1">
+            <nav id="tab" class="d-flex flex-column nav nav-pills" role="tablist" aria-orientation="vertical">
+                <div class="section">Runtime</div>
+                <button id="deployments-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#deployments" type="button" role="tab" aria-controls="deployments" aria-selected="false">
+                    <i class="fa fa-lg fa-biking" aria-hidden="true"></i>
+                    Deployments
+                </button>
+                <button id="sites-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#sites" type="button" role="tab" aria-controls="sites" aria-selected="false">
+                    <i class="fa fa-lg fa-server" aria-hidden="true"></i>
+                    Sites
+                </button>
+
+                <div class="section">Design</div>
+                <button id="templates-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#templates" type="button" role="tab" aria-controls="templates" aria-selected="false">
+                    <i class="fa fa-lg fa-pencil" aria-hidden="true"></i>
+                    Templates
+                </button>
+                <button id="plugins-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#plugins" type="button" role="tab" aria-controls="plugins" aria-selected="false">
+                    <i class="fa fa-lg fa-plug" aria-hidden="true"></i>
+                    Plugins
+                </button>
+            </nav>
+
+            <div id="tab-content" class="tab-content w-100">
+                <div id="deployments" class="tab-pane fade" role="tabpanel" aria-labelledby="deployments-tab">
+
+                    <div id="deployments-list">
+                        <h2>Deployments</h2>
+                        <table class="table table-hover w-auto">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Template</th>
+                                    <th scope="col">Parent</th>
+                                    <th scope="col">Site</th>
+                                    <th scope="col">Prepared</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-group-divider">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="deployments-details" style="display: none">
+                        <button id="deployments-close" type="button" class="btn-close" aria-label="Close"></button>
+                        <h2>Deployment: <span id="deployments-title"></span></h2>
+                        <pre><code id="deployments-yaml" class="hljs"></code></pre>
+                    </div>
+
+                </div>
+
+                <div id="sites" class="tab-pane fade" role="tabpanel" aria-labelledby="sites-tab">
+
+                    <div id="sites-list">
+                        <h2>Sites</h2>
+                        <table class="table table-hover w-auto">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Template</th>
+                                    <th scope="col">Metadata</th>
+                                    <th scope="col">Deployments</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-group-divider">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="sites-details" style="display: none">
+                        <button id="sites-close" type="button" class="btn-close" aria-label="Close"></button>
+                        <h2>Site: <span id="sites-title"></span></h2>
+                        <pre><code id="sites-yaml" class="hljs"></code></pre>
+                    </div>
+
+                </div>
+
+                <div id="templates" class="tab-pane fade" role="tabpanel" aria-labelledby="templates-tab">
+
+                    <div id="templates-list">
+                        <h2>Templates</h2>
+                        <table class="table table-hover w-auto">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Metadata</th>
+                                    <th scope="col">Deployments</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-group-divider">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="templates-details" style="display: none">
+                        <button id="templates-close" type="button" class="btn-close" aria-label="Close"></button>
+                        <h2>Template: <span id="templates-title"></span></h2>
+                        <pre><code id="templates-yaml" class="hljs"></code></pre>
+                    </div>
+
+                </div>
+
+                <div id="plugins" class="tab-pane fade" role="tabpanel" aria-labelledby="plugins-tab">
+
+                    <h2>Plugins</h2>
+                    <table class="table table-hover w-auto">
+                        <thead>
+                            <tr>
+                                <th scope="col">Type</th>
+                                <th scope="col">GVK</th>
+                                <th scope="col">Executor</th>
+                                <th scope="col">Arguments</th>
+                                <th scope="col">Properties</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-group-divider">
+                        </tbody>
+                    </table>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

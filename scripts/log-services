@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+TERMINAL=$(ps -p $(ps -p $(ps -p $$ -o ppid=) -o ppid=) -o args=)
+case "$TERMINAL" in
+    *gnome-terminal*) TERMINAL=gnome-terminal;;
+    *tilix*) TERMINAL=tilix;;
+	*) m "unsupported terminal: $TERMINAL" "$RED"
+esac
+
+function follow () {
+    case "$TERMINAL" in
+        gnome-terminal)
+            gnome-terminal --tab --title="$1" -- "$HERE/log-service" "$1" --follow
+            ;;
+        tilix)
+            tilix --action=session-add-down --title="$1" --command="\"$HERE/log-service\" \"$1\" --follow"
+            ;;
+    esac
+}
+
+follow api-server
+follow preparation-controller
+follow instantiation-controller

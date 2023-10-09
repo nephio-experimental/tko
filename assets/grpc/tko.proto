@@ -1,0 +1,229 @@
+syntax = "proto3";
+
+package tko;
+
+option go_package = "github.com/nephio-experimental/tko/grpc";
+
+service API {
+    rpc registerTemplate(Template) returns (RegisterResponse);
+    rpc deleteTemplate(DeleteTemplate) returns (DeleteResponse);
+    rpc getTemplate(GetTemplate) returns (Template);
+    rpc listTemplates(ListTemplates) returns (stream ListTemplatesResponse);
+
+    rpc registerSite(Site) returns (RegisterResponse);
+    rpc deleteSite(DeleteSite) returns (DeleteResponse);
+    rpc getSite(GetSite) returns (Site);
+    rpc listSites(ListSites) returns (stream ListSitesResponse);
+
+    rpc createDeployment(CreateDeployment) returns (CreateDeploymentResponse);
+    rpc deleteDeployment(DeleteDeployment) returns (DeleteResponse);
+    rpc getDeployment(GetDeployment) returns (Deployment);
+    rpc listDeployments(ListDeployments) returns (stream ListDeploymentsResponse);
+    rpc startDeploymentModification(StartDeploymentModification) returns (StartDeploymentModificationResponse);
+    rpc endDeploymentModification(EndDeploymentModification) returns (EndDeploymentModificationResponse);
+    rpc cancelDeploymentModification(CancelDeploymentModification) returns (CancelDeploymentModificationResponse);
+
+    rpc registerPlugin(Plugin) returns (RegisterResponse);
+    rpc deletePlugin(DeletePlugin) returns (DeleteResponse);
+    rpc getPlugin(GetPlugin) returns (Plugin);
+    rpc listPlugins(ListPlugins) returns (stream ListPluginsResponse);
+}
+
+message RegisterResponse {
+    bool registered = 1;
+    string notRegisteredReason = 2;
+}
+
+message DeleteResponse {
+    bool deleted = 1;
+    string notDeletedReason = 2;
+}
+
+// Templates
+
+message Template {
+    string templateId = 1;
+    map<string, string> metadata = 2;
+    string resourcesFormat = 3;
+    bytes resources = 4; // TODO: stream
+    repeated string deploymentIds = 5;
+}
+
+message GetTemplate {
+    string templateId = 1;
+    string preferredResourcesFormat = 2;
+}
+
+message DeleteTemplate {
+    string templateId = 1;
+}
+
+message ListTemplates {
+    repeated string templateIdPatterns = 1;
+    map<string, string> metadataPatterns = 2;
+}
+
+message ListTemplatesResponse {
+    string templateId = 1;
+    map<string, string> metadata = 2;
+    repeated string deploymentIds = 3;
+}
+
+// Sites
+
+message Site {
+    string siteId = 1;
+    string templateId = 2;
+    map<string, string> metadata = 3;
+    string resourcesFormat = 4;
+    bytes resources = 5; // TODO: stream
+    repeated string deploymentIds = 6;
+}
+
+message GetSite {
+    string siteId = 1;
+    string preferredResourcesFormat = 2;
+}
+
+message DeleteSite {
+    string siteId = 1;
+}
+
+message ListSites {
+    repeated string siteIdPatterns = 1;
+    repeated string templateIdPatterns = 2;
+    map<string, string> metadataPatterns = 3;
+}
+
+message ListSitesResponse {
+    string siteId = 1;
+    string templateId = 2;
+    map<string, string> metadata = 3;
+    repeated string deploymentIds = 4;
+}
+
+// Deployments
+
+message Deployment {
+    string deploymentId = 1;
+    string parentDeploymentId = 2;
+    string templateId = 3;
+    string siteId = 4;
+    bool prepared = 5;
+    string resourcesFormat = 6;
+    bytes resources = 7; // TODO: stream
+}
+
+message CreateDeployment {
+    string parentDeploymentId = 1;
+    string templateId = 2;
+    string siteId = 3;
+    bool prepared = 4;
+    string mergeResourcesFormat = 5;
+    bytes mergeResources = 6; // TODO: stream
+}
+
+message DeleteDeployment {
+    string deploymentId = 1;
+}
+
+message CreateDeploymentResponse {
+    bool created = 1;
+    string notCreatedReason = 2;
+    string deploymentId = 3;
+}
+
+message GetDeployment {
+    string deploymentId = 1;
+    string preferredResourcesFormat = 2;
+}
+
+message ListDeployments {
+    string prepared = 1;
+    string parentDeploymentId = 2;
+    repeated string templateIdPatterns = 3;
+    map<string, string> templateMetadataPatterns = 4;
+    repeated string siteIdPatterns = 5;
+    map<string, string> siteMetadataPatterns = 6;
+}
+
+message ListDeploymentsResponse {
+    string deploymentId = 1;
+    string parentDeploymentId = 2;
+    string templateId = 3;
+    string siteId = 4;
+    bool prepared = 5;
+}
+
+message StartDeploymentModification {
+    string deploymentId = 1;
+    string preferredResourcesFormat = 2;
+}
+
+message StartDeploymentModificationResponse {
+    bool started = 1;
+    string notStartedReason = 2;
+    string modificationToken = 3;
+    string resourcesFormat = 4;
+    bytes resources = 5; // TODO: stream
+}
+
+message EndDeploymentModification {
+    string modificationToken = 1;
+    string resourcesFormat = 2;
+    bytes resources = 3; // TODO: stream
+}
+
+message EndDeploymentModificationResponse {
+    bool modified = 1;
+    string notModifiedReason = 2;
+    string deploymentId = 3;
+}
+
+message CancelDeploymentModification {
+    string modificationToken = 1;
+}
+
+message CancelDeploymentModificationResponse {
+    bool cancelled = 1;
+    string notCancelledReason = 2;
+}
+
+// Plugins
+
+message Plugin {
+    string type = 1;
+    string group = 2;
+    string version = 3;
+    string kind = 4;
+    string executor = 5;
+    repeated string arguments = 6;
+    map<string, string> properties = 7;
+}
+
+message GetPlugin {
+    string type = 1;
+    string group = 2;
+    string version = 3;
+    string kind = 4;
+}
+
+message DeletePlugin {
+    string type = 1;
+    string group = 2;
+    string version = 3;
+    string kind = 4;
+}
+
+message ListPlugins {
+}
+
+message ListPluginsResponse {
+    string type = 1;
+    string group = 2;
+    string version = 3;
+    string kind = 4;
+    string executor = 5;
+    repeated string arguments = 6;
+    map<string, string> properties = 7;
+}

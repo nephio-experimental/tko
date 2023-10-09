@@ -1,0 +1,29 @@
+apiVersion: topology.nephio.org/v1alpha1
+kind: Template
+
+metadata:
+  name: upf
+
+spec:
+  explicit:
+    repository: . # this repository
+    id: nf/free5gc/upf:v1
+
+---
+
+apiVersion: topology.nephio.org/v1alpha1
+kind: Template
+
+metadata:
+  name: smf
+
+spec:
+  explicit:
+    repository: . # this repository
+    id: nf/free5gc/smf:v1
+  #implicit:
+  #  repository: '*' # any repository
+  #  filters:
+  #  - apiVersion: metadata.nephio.org/v1alpha1
+  #    kind: NetworkFunction
+  #    name: smf

@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+only_root
+
+FORCE=false
+if [ "$1" == -f ]; then
+	FORCE=true
+fi
+
+install_tool kind "$KIND_VERSION" \
+"https://github.com/kubernetes-sigs/kind/releases/download/v$KIND_VERSION/kind-linux-amd64"
+
+install_tool kubectl "$KUBECTL_VERSION" \
+"https://storage.googleapis.com/kubernetes-release/release/v$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+
+install_tool helm "$HELM_VERSION" \
+"https://get.helm.sh/helm-v$HELM_VERSION-linux-amd64.tar.gz" 1 \
+"linux-amd64/"
+
+install_tool kpt "$KPT_VERSION" \
+"https://github.com/kptdev/kpt/releases/download/v$KPT_VERSION/kpt_linux_amd64-$KPT_VERSION.tar.gz" 0
