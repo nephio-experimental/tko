@@ -13,11 +13,11 @@ func cloneMetadata(metadata map[string]string) map[string]string {
 	return metadata_
 }
 
-func cloneResources(resources []util.Resource) []util.Resource {
-	return ard.Copy(resources).([]util.Resource)
+func cloneResources(resources util.Resources) util.Resources {
+	return ard.Copy(resources).(util.Resources)
 }
 
-func updateMetadata(metadata map[string]string, resources []util.Resource) {
+func updateMetadata(metadata map[string]string, resources util.Resources) {
 	for _, resource := range resources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 			if resourceIdentifier.GVK.Group == "metadata.nephio.org" {

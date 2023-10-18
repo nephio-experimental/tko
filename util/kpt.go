@@ -8,7 +8,7 @@ import (
 	"github.com/tliron/go-ard"
 )
 
-func KptFnEval(image string, inputs map[string]string, resources []Resource) ([]ard.Map, error) {
+func KptFnEval(image string, inputs map[string]string, resources Resources) ([]ard.Map, error) {
 	args := []string{"fn", "eval", "--image=" + image, "-", "--"}
 	for name, value := range inputs {
 		args = append(args, name+"="+value)

@@ -15,7 +15,7 @@ func sortById(info []ard.StringMap) {
 	})
 }
 
-func writeResources(writer io.Writer, resources []util.Resource) {
+func writeResources(writer io.Writer, resources util.Resources) {
 	content := make([]any, len(resources))
 	for index, resource := range resources {
 		content[index] = resource

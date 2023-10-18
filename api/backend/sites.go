@@ -15,7 +15,7 @@ type SiteInfo struct {
 	DeploymentIDs []string
 }
 
-func (self *SiteInfo) Update(resources []util.Resource) {
+func (self *SiteInfo) Update(resources util.Resources) {
 	updateMetadata(self.Metadata, resources)
 }
 
@@ -25,7 +25,7 @@ func (self *SiteInfo) Update(resources []util.Resource) {
 
 type Site struct {
 	SiteInfo
-	Resources []util.Resource
+	Resources util.Resources
 }
 
 func NewSiteFromBytes(siteId string, templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (*Site, error) {

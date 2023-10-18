@@ -32,7 +32,7 @@ var deploymentCreateCommand = &cobra.Command{
 }
 
 func CreateDeployment(context contextpkg.Context, parentDeploymentId string, templateId string, siteId string, prepared bool, url string, stdin bool) {
-	var mergeResources []tkoutil.Resource
+	var mergeResources tkoutil.Resources
 	if stdin || (url != "") {
 		var err error
 		mergeResources, err = readResources(context, url, stdin)

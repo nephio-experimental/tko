@@ -14,7 +14,7 @@ type TemplateInfo struct {
 	DeploymentIDs []string
 }
 
-func (self *TemplateInfo) Update(resources []util.Resource) {
+func (self *TemplateInfo) Update(resources util.Resources) {
 	updateMetadata(self.Metadata, resources)
 }
 
@@ -24,7 +24,7 @@ func (self *TemplateInfo) Update(resources []util.Resource) {
 
 type Template struct {
 	TemplateInfo
-	Resources []util.Resource
+	Resources util.Resources
 }
 
 func NewTemplateFromBytes(templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (*Template, error) {

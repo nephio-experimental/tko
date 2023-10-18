@@ -172,7 +172,7 @@ func (self *ValidatingBackend) StartDeploymentModification(deploymentId string) 
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) EndDeploymentModification(modificationToken string, resources []util.Resource) (string, error) {
+func (self *ValidatingBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
 	if modificationToken == "" {
 		return "", NewBadArgumentError("modificationToken is empty")
 	}

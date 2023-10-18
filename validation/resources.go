@@ -10,7 +10,7 @@ import (
 	validatorpkg "github.com/yannh/kubeconform/pkg/validator"
 )
 
-func (self *Validation) ValidateResources(resources []util.Resource, complete bool) error {
+func (self *Validation) ValidateResources(resources util.Resources, complete bool) error {
 	var errs []error
 
 	for _, resource := range resources {

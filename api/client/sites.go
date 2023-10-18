@@ -17,10 +17,10 @@ type SiteInfo struct {
 
 type Site struct {
 	SiteInfo
-	Resources []util.Resource `json:"resources" yaml:"resources"`
+	Resources util.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) RegisterSite(siteId string, templateId string, metadata map[string]string, resources []util.Resource) (bool, string, error) {
+func (self *Client) RegisterSite(siteId string, templateId string, metadata map[string]string, resources util.Resources) (bool, string, error) {
 	if resources_, err := self.encodeResources(resources); err == nil {
 		return self.RegisterSiteRaw(siteId, templateId, metadata, self.ResourcesFormat, resources_)
 	} else {

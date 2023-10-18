@@ -13,13 +13,13 @@ var PlacementGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Placement")
 
 type Deployment struct {
 	TemplateID     string
-	MergeResources []util.Resource
+	MergeResources util.Resources
 	SiteID         string
 	Site           util.Resource
 }
 
 // ([preparation.PrepareFunc] signature)
-func PreparePlacement(context *preparation.Context) (bool, []util.Resource, error) {
+func PreparePlacement(context *preparation.Context) (bool, util.Resources, error) {
 	context.Log.Infof("preparing topology.nephio.org Placement: %s", context.TargetResourceIdentifer.Name)
 
 	if placement, ok := context.GetResource(); ok {

@@ -49,6 +49,6 @@ func NewClient(grpcProtocol string, grpcAddress string, grpcPort int, resourcesF
 
 // Utils
 
-func (self *Client) encodeResources(resources []tkoutil.Resource) ([]byte, error) {
+func (self *Client) encodeResources(resources tkoutil.Resources) ([]byte, error) {
 	return tkoutil.EncodeResources(self.ResourcesFormat, resources)
 }

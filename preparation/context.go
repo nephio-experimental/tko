@@ -13,11 +13,11 @@ type Context struct {
 	Preparation             *Preparation
 	Log                     commonlog.Logger
 	DeploymentID            string
-	DeploymentResources     []util.Resource
+	DeploymentResources     util.Resources
 	TargetResourceIdentifer util.ResourceIdentifier
 }
 
-func (self *Preparation) NewContext(deploymentId string, deploymentResources []util.Resource, targetResourceIdentifer util.ResourceIdentifier, log commonlog.Logger) *Context {
+func (self *Preparation) NewContext(deploymentId string, deploymentResources util.Resources, targetResourceIdentifer util.ResourceIdentifier, log commonlog.Logger) *Context {
 	return &Context{
 		Preparation:             self,
 		Log:                     log,
@@ -31,7 +31,7 @@ func (self *Context) GetResource() (util.Resource, bool) {
 	return self.TargetResourceIdentifer.GetResource(self.DeploymentResources)
 }
 
-func (self *Context) GetMergeResources(objectReferences []any) (bool, []util.Resource, error) {
+func (self *Context) GetMergeResources(objectReferences []any) (bool, util.Resources, error) {
 	if resources, err := util.GetReferentResources(objectReferences, self.DeploymentResources); err == nil {
 		// Ensure that all mergeable resources have been prepared if they must be prepared
 		for _, resource := range resources {

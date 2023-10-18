@@ -13,12 +13,12 @@ type Context struct {
 	Instantiation           *Instantiation
 	Log                     commonlog.Logger
 	SiteID                  string
-	SiteResources           []util.Resource
+	SiteResources           util.Resources
 	TargetResourceIdentifer util.ResourceIdentifier
-	Deployments             map[string][]util.Resource
+	Deployments             map[string]util.Resources
 }
 
-func (self *Instantiation) NewContext(siteId string, siteResources []util.Resource, targetResourceIdentifer util.ResourceIdentifier, deployments map[string][]util.Resource, log commonlog.Logger) *Context {
+func (self *Instantiation) NewContext(siteId string, siteResources util.Resources, targetResourceIdentifer util.ResourceIdentifier, deployments map[string]util.Resources, log commonlog.Logger) *Context {
 	return &Context{
 		Instantiation:           self,
 		Log:                     log,

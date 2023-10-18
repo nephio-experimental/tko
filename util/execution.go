@@ -36,7 +36,7 @@ func ExecuteCommand(arguments []string, input any, output any) error {
 	return nil
 }
 
-func ExecuteKpt(image string, properties map[string]string, resource Resource, resources []Resource) ([]Resource, error) {
+func ExecuteKpt(image string, properties map[string]string, resource Resource, resources Resources) (Resources, error) {
 	inputs := make(map[string]string)
 
 	for name, path := range properties {

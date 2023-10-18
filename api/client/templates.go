@@ -16,10 +16,10 @@ type TemplateInfo struct {
 
 type Template struct {
 	TemplateInfo
-	Resources []util.Resource `json:"resources" yaml:"resources"`
+	Resources util.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) RegisterTemplate(templateId string, metadata map[string]string, resources []util.Resource) (bool, string, error) {
+func (self *Client) RegisterTemplate(templateId string, metadata map[string]string, resources util.Resources) (bool, string, error) {
 	if resources_, err := self.encodeResources(resources); err == nil {
 		return self.RegisterTemplateRaw(templateId, metadata, self.ResourcesFormat, resources_)
 	} else {

@@ -50,7 +50,7 @@ func Print(content any) {
 	Write(os.Stdout, content)
 }
 
-func PrintResources(resources []tkoutil.Resource) {
+func PrintResources(resources tkoutil.Resources) {
 	WriteResources(os.Stdout, resources)
 }
 
@@ -59,7 +59,7 @@ func Write(writer io.Writer, content any) {
 	util.FailOnError(err)
 }
 
-func WriteResources(writer io.Writer, resources []tkoutil.Resource) {
+func WriteResources(writer io.Writer, resources tkoutil.Resources) {
 	content := make([]any, len(resources))
 	for index, resource := range resources {
 		content[index] = resource

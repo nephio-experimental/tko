@@ -32,12 +32,12 @@ func (self *Instantiation) InstantiateSite(siteInfo client.SiteInfo) {
 	}
 }
 
-func (self *Instantiation) instantiateSite(siteId string, siteResources []util.Resource, deploymentIds []string, log commonlog.Logger) {
+func (self *Instantiation) instantiateSite(siteId string, siteResources util.Resources, deploymentIds []string, log commonlog.Logger) {
 	for _, resource := range siteResources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 			if instantiator, ok, err := self.GetInstantiator(resourceIdentifier.GVK); err == nil {
 				if ok {
-					deployments := make(map[string][]util.Resource)
+					deployments := make(map[string]util.Resources)
 					for _, deploymentId := range deploymentIds {
 						if deployment, ok, err := self.Client.GetDeployment(deploymentId); err == nil {
 							if ok {

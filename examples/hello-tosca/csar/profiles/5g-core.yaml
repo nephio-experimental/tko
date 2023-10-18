@@ -4,8 +4,8 @@ namespace: 5g-core
 
 imports:
 
-- namespace_prefix: tko
-  file: tko.yaml
+- namespace_prefix: nephio
+  file: nephio.yaml
 
 capability_types:
 
@@ -14,11 +14,11 @@ capability_types:
 node_types:
 
   UPF:
-    derived_from: tko:Template
+    derived_from: nephio:Template
     capabilities:
       upf: UPF
 
   SMF:
-    derived_from: tko:Template
+    derived_from: nephio:Template
     requirements:
     - upf: UPF

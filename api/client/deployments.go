@@ -20,10 +20,10 @@ type DeploymentInfo struct {
 
 type Deployment struct {
 	DeploymentInfo
-	Resources []util.Resource `json:"resources" yaml:"resources"`
+	Resources util.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) CreateDeployment(parentDeploymentId string, templateId string, siteId string, prepared bool, mergeResources []util.Resource) (bool, string, string, error) {
+func (self *Client) CreateDeployment(parentDeploymentId string, templateId string, siteId string, prepared bool, mergeResources util.Resources) (bool, string, string, error) {
 	if mergeResources_, err := self.encodeResources(mergeResources); err == nil {
 		return self.CreateDeploymentRaw(parentDeploymentId, templateId, siteId, prepared, self.ResourcesFormat, mergeResources_)
 	} else {
@@ -107,7 +107,7 @@ func (self *Client) ListDeployments(prepared string, parentDeploymentId string, 
 	}
 }
 
-func (self *Client) StartDeploymentModification(deploymentId string) (bool, string, string, []util.Resource, error) {
+func (self *Client) StartDeploymentModification(deploymentId string) (bool, string, string, util.Resources, error) {
 	if response, err := self.client.StartDeploymentModification(context.TODO(), &api.StartDeploymentModification{DeploymentId: deploymentId}); err == nil {
 		if resources, err := util.DecodeResources(response.ResourcesFormat, response.Resources); err == nil {
 			return response.Started, response.NotStartedReason, response.ModificationToken, resources, nil
@@ -119,7 +119,7 @@ func (self *Client) StartDeploymentModification(deploymentId string) (bool, stri
 	}
 }
 
-func (self *Client) EndDeploymentModification(modificationToken string, resources []util.Resource) (bool, string, string, error) {
+func (self *Client) EndDeploymentModification(modificationToken string, resources util.Resources) (bool, string, string, error) {
 	if resources_, err := self.encodeResources(resources); err == nil {
 		return self.EndDeploymentModificationRaw(modificationToken, self.ResourcesFormat, resources_)
 	} else {
@@ -147,7 +147,7 @@ func (self *Client) CancelDeploymentModification(modificationToken string) (bool
 	}
 }
 
-type ModifyDeploymentFunc func(resources []util.Resource) (bool, []util.Resource, error)
+type ModifyDeploymentFunc func(resources util.Resources) (bool, util.Resources, error)
 
 func (self *Client) ModifyDeployment(deploymentId string, modify ModifyDeploymentFunc) (bool, error) {
 	if started, reason, modificationToken, resources, err := self.StartDeploymentModification(deploymentId); err == nil {

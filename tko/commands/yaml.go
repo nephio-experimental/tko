@@ -13,12 +13,12 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func readResources(context contextpkg.Context, url string, stdin bool) ([]tkoutil.Resource, error) {
+func readResources(context contextpkg.Context, url string, stdin bool) (tkoutil.Resources, error) {
 	if stdin && (url != "") {
 		util.Fail("cannot specify both --stdin=true and --url=")
 	}
 
-	var resources []tkoutil.Resource
+	var resources tkoutil.Resources
 
 	var err error
 	if stdin {
@@ -36,12 +36,12 @@ func readResources(context contextpkg.Context, url string, stdin bool) ([]tkouti
 	return resources, nil
 }
 
-func readResourcesFromStdin() ([]tkoutil.Resource, error) {
+func readResourcesFromStdin() (tkoutil.Resources, error) {
 	log.Info("reading resources from stdin")
 	return tkoutil.ReadResources("yaml", os.Stdin)
 }
 
-func readResourcesFromUrl(context contextpkg.Context, url string) ([]tkoutil.Resource, error) {
+func readResourcesFromUrl(context contextpkg.Context, url string) (tkoutil.Resources, error) {
 	urlContext := exturl.NewContext()
 	util.OnExitError(urlContext.Release)
 
@@ -69,7 +69,7 @@ func readResourcesFromUrl(context contextpkg.Context, url string) ([]tkoutil.Res
 		return nil, err
 	}
 
-	var resources []tkoutil.Resource
+	var resources tkoutil.Resources
 
 	for {
 		if stream, err := streamPackage.Next(); err == nil {

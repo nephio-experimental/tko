@@ -39,7 +39,7 @@ func NewResourceIdentifierForObjectReference(objectReference ard.Map) (ResourceI
 	return self, false
 }
 
-func (self ResourceIdentifier) GetResource(resources []Resource) (Resource, bool) {
+func (self ResourceIdentifier) GetResource(resources Resources) (Resource, bool) {
 	for _, resource := range resources {
 		if self.Is(resource) {
 			return resource, true

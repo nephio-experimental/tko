@@ -15,18 +15,18 @@ node_types:
       template-id:
         default: nf/free5gc/upf:v1
         metadata:
-          tko.apiVersion: topology.nephio.org/v1alpha1
-          tko.kind: Template
-          tko.suffix: -template
-          tko.target: explicit.id
+          nephio.apiVersion: topology.nephio.org/v1alpha1
+          nephio.kind: Template
+          nephio.suffix: -template
+          nephio.target: explicit.id
       namespace:
         type: string
         default: upf
         metadata:
-          tko.apiVersion: workload.plugin.nephio.org/v1alpha1
-          tko.kind: Namespace
-          tko.name: upf
-          tko.target: namespace
+          nephio.apiVersion: workload.plugin.nephio.org/v1alpha1
+          nephio.kind: Namespace
+          nephio.name: upf
+          nephio.target: namespace
 
   SMF:
     derived_from: core:SMF
@@ -34,23 +34,23 @@ node_types:
       template-id:
         default: nf/free5gc/smf:v1
         metadata:
-          tko.apiVersion: topology.nephio.org/v1alpha1
-          tko.kind: Template
-          tko.suffix: -template
-          tko.target: explicit.id
+          nephio.apiVersion: topology.nephio.org/v1alpha1
+          nephio.kind: Template
+          nephio.suffix: -template
+          nephio.target: explicit.id
       namespace:
         type: string
         default: smf
         metadata:
-          tko.apiVersion: workload.plugin.nephio.org/v1alpha1
-          tko.kind: Namespace
-          tko.name: smf
-          tko.target: namespace
+          nephio.apiVersion: workload.plugin.nephio.org/v1alpha1
+          nephio.kind: Namespace
+          nephio.name: smf
+          nephio.target: namespace
       blah-blah:
         type: integer
         default: 1
         metadata:
-          tko.apiVersion: free5gc.plugin.nephio.org/v1alpha1
-          tko.kind: SMF
-          tko.name: smf
-          tko.target: blahBlah
+          nephio.apiVersion: free5gc.plugin.nephio.org/v1alpha1
+          nephio.kind: SMF
+          nephio.name: smf
+          nephio.target: blahBlah

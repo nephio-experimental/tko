@@ -10,12 +10,12 @@ import (
 
 type Context struct {
 	Validation              *Validation
-	Resources               []util.Resource
+	Resources               util.Resources
 	TargetResourceIdentifer util.ResourceIdentifier
 	Complete                bool
 }
 
-func (self *Validation) NewContext(resources []util.Resource, targetResourceIdentifer util.ResourceIdentifier, complete bool) *Context {
+func (self *Validation) NewContext(resources util.Resources, targetResourceIdentifer util.ResourceIdentifier, complete bool) *Context {
 	return &Context{
 		Validation:              self,
 		Resources:               resources,

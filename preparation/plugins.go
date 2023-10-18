@@ -14,7 +14,7 @@ type PluginInput struct {
 	GRPC                    PluginInputGRPC         `yaml:"grpc"`
 	LogFile                 string                  `yaml:"logFile"`
 	DeploymentID            string                  `yaml:"deploymentId"`
-	DeploymentResources     []util.Resource         `yaml:"deploymentResources"`
+	DeploymentResources     util.Resources          `yaml:"deploymentResources"`
 	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
 }
 
@@ -25,9 +25,9 @@ type PluginInputGRPC struct {
 }
 
 type PluginOutput struct {
-	Prepared  bool            `yaml:"prepared,omitempty"`
-	Resources []util.Resource `yaml:"resources,omitempty"`
-	Error     string          `yaml:"error,omitempty"`
+	Prepared  bool           `yaml:"prepared,omitempty"`
+	Resources util.Resources `yaml:"resources,omitempty"`
+	Error     string         `yaml:"error,omitempty"`
 }
 
 func (self *Context) ToPluginInput(logFile string) PluginInput {

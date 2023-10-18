@@ -77,10 +77,10 @@ func (self *SqlBackend) Release() error {
 
 // Utils
 
-func (self *SqlBackend) encodeResources(resources []util.Resource) ([]byte, error) {
+func (self *SqlBackend) encodeResources(resources util.Resources) ([]byte, error) {
 	return util.EncodeResources(self.resourcesFormat, resources)
 }
 
-func (self *SqlBackend) decodeResources(content []byte) ([]util.Resource, error) {
+func (self *SqlBackend) decodeResources(content []byte) (util.Resources, error) {
 	return util.DecodeResources(self.resourcesFormat, content)
 }

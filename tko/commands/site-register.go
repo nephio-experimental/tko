@@ -30,7 +30,7 @@ var siteRegisterCommand = &cobra.Command{
 }
 
 func RegisterSite(context contextpkg.Context, siteId string, templateId string, metadata map[string]string, url string, stdin bool) {
-	var resources []tkoutil.Resource
+	var resources tkoutil.Resources
 	if stdin || (url != "") {
 		var err error
 		resources, err = readResources(context, url, stdin)

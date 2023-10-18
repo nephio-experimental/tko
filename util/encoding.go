@@ -11,9 +11,9 @@ import (
 	"github.com/tliron/go-transcribe"
 )
 
-func EncodeResources(format string, resources []Resource) ([]byte, error) {
+func EncodeResources(format string, resources Resources) ([]byte, error) {
 	if resources == nil {
-		resources = []Resource{}
+		resources = Resources{}
 	}
 
 	switch format {
@@ -38,13 +38,13 @@ func EncodeResources(format string, resources []Resource) ([]byte, error) {
 	}
 }
 
-func DecodeResources(format string, content []byte) ([]Resource, error) {
+func DecodeResources(format string, content []byte) (Resources, error) {
 	switch format {
 	case "yaml":
 		return ReadResources(format, bytes.NewReader(content))
 
 	case "cbor":
-		var resources []Resource
+		var resources Resources
 		if err := cbor.Unmarshal(content, &resources); err == nil {
 			return resources, nil
 		} else {
@@ -56,11 +56,11 @@ func DecodeResources(format string, content []byte) ([]Resource, error) {
 	}
 }
 
-func ReadResources(format string, reader io.Reader) ([]Resource, error) {
+func ReadResources(format string, reader io.Reader) (Resources, error) {
 	switch format {
 	case "yaml":
 		if resources, err := ard.ReadAllYAML(reader); err == nil {
-			resources_ := make([]Resource, len(resources))
+			resources_ := make(Resources, len(resources))
 			var ok bool
 			for index, resource := range resources {
 				if resources_[index], ok = resource.(Resource); !ok {

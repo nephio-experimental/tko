@@ -171,7 +171,7 @@ func (self *MemoryBackend) StartDeploymentModification(deploymentId string) (str
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) EndDeploymentModification(modificationToken string, resources []util.Resource) (string, error) {
+func (self *MemoryBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -256,7 +256,7 @@ func (self *MemoryBackend) mergeDeploymentResources(deployment *backend.Deployme
 		resources = util.MergeResources(resources, deployment.Resources)
 
 		// Merge default Deployment resource
-		resources = util.MergeResources(resources, []util.Resource{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared)})
+		resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared)})
 
 		deployment.Resources = resources
 	}

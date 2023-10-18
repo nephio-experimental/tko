@@ -13,7 +13,7 @@ import (
 var SiteGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Site")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareSite(context *preparation.Context) (bool, []util.Resource, error) {
+func PrepareSite(context *preparation.Context) (bool, util.Resources, error) {
 	context.Log.Infof("preparing topology.nephio.org Site: %s", context.TargetResourceIdentifer.Name)
 
 	// TODO: check that all Placements have been prepared first?
@@ -67,7 +67,7 @@ func PrepareSite(context *preparation.Context) (bool, []util.Resource, error) {
 	return false, context.DeploymentResources, nil
 }
 
-func GetSite(resources []util.Resource, siteName string) (util.Resource, bool) {
+func GetSite(resources util.Resources, siteName string) (util.Resource, bool) {
 	return SiteGVK.NewResourceIdentifier(siteName).GetResource(resources)
 }
 

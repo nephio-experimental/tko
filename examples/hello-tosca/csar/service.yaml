@@ -7,8 +7,8 @@ metadata:
 
 imports:
 
-- namespace_prefix: tko
-  file: profiles/tko.yaml
+- namespace_prefix: nephio
+  file: profiles/nephio.yaml
 - namespace_prefix: free5gc
   file: profiles/free5gc.yaml
 
@@ -33,12 +33,12 @@ topology_template:
       #- upf: upf
 
     edge1:
-      type: tko:Site
+      type: nephio:Site
       properties:
         site-id: local/hello-world
 
     chicago:
-      type: tko:Sites
+      type: nephio:Sites
       properties:
         metadata:
           Site.cloud: GDC-E

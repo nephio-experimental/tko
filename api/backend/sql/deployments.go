@@ -20,7 +20,7 @@ func (self *SqlBackend) SetDeployment(deployment *backend.Deployment) error {
 				resources = util.MergeResources(resources, deployment.Resources)
 
 				// Merge default Deployment resource
-				resources = util.MergeResources(resources, []util.Resource{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared)})
+				resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared)})
 
 				deployment.Resources = resources
 			} else {
@@ -314,7 +314,7 @@ func (self *SqlBackend) StartDeploymentModification(deploymentId string) (string
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) EndDeploymentModification(modificationToken string, resources []util.Resource) (string, error) {
+func (self *SqlBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
 	if tx, err := self.db.Begin(); err == nil {
 		rows, err := tx.Query(self.sql.SelectDeploymentByModification, modificationToken)
 		if err != nil {

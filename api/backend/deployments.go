@@ -18,7 +18,7 @@ type DeploymentInfo struct {
 	Prepared           bool
 }
 
-func (self *DeploymentInfo) Update(resources []util.Resource, reset bool) {
+func (self *DeploymentInfo) Update(resources util.Resources, reset bool) {
 	if reset {
 		self.Prepared = false
 		self.TemplateID = ""
@@ -43,10 +43,10 @@ func (self *DeploymentInfo) Update(resources []util.Resource, reset bool) {
 
 type Deployment struct {
 	DeploymentInfo
-	Resources []util.Resource
+	Resources util.Resources
 }
 
-func NewDeployment(templateId string, parentDemploymentId string, siteId string, prepared bool, resources []util.Resource) *Deployment {
+func NewDeployment(templateId string, parentDemploymentId string, siteId string, prepared bool, resources util.Resources) *Deployment {
 	return &Deployment{
 		DeploymentInfo: DeploymentInfo{
 			DeploymentID:       ksuid.New().String(),

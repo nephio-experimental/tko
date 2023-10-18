@@ -1,6 +1,6 @@
 tosca_definitions_version: tosca_simple_yaml_1_3
 
-namespace: tko
+namespace: nephio
 
 capability_types:
 
@@ -18,10 +18,10 @@ node_types:
         type: string
         required: false
         metadata:
-          tko.apiVersion: topology.nephio.org/v1alpha1
-          tko.kind: Template
-          tko.suffix: -template
-          tko.target: explicit.id
+          nephio.apiVersion: topology.nephio.org/v1alpha1
+          nephio.kind: Template
+          nephio.suffix: -template
+          nephio.target: explicit.id
     requirements:
     - host:
         capability: Host
@@ -33,10 +33,10 @@ node_types:
         type: string
         required: false
         metadata:
-          tko.apiVersion: topology.nephio.org/v1alpha1
-          tko.kind: Site
-          tko.suffix: -site
-          tko.target: siteId
+          nephio.apiVersion: topology.nephio.org/v1alpha1
+          nephio.kind: Site
+          nephio.suffix: -site
+          nephio.target: siteId
     capabilities:
       host: Host
 

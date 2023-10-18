@@ -41,7 +41,7 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 	}
 }
 
-func (self *Preparation) prepareDeployment(deploymentId string, deploymentResources []util.Resource, log commonlog.Logger) (bool, error) {
+func (self *Preparation) prepareDeployment(deploymentId string, deploymentResources util.Resources, log commonlog.Logger) (bool, error) {
 	modified := false
 
 	// Are we already fully prepared?
@@ -55,7 +55,7 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 	todo := self.GetTODO(deploymentResources, log)
 	for {
 		if resourceIdentifier, ok := todo.Pop(); ok {
-			if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources []util.Resource) (bool, []util.Resource, error) {
+			if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources util.Resources) (bool, util.Resources, error) {
 				// Must re-check because deployment may have been modified
 				if resource, ok := resourceIdentifier.GetResource(resources); ok {
 					if _, preparer := self.ShouldPrepare(resourceIdentifier, resource, nil); preparer != nil {
@@ -79,7 +79,7 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 	}
 
 	// Are we fully prepared?
-	if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources []util.Resource) (bool, []util.Resource, error) {
+	if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources util.Resources) (bool, util.Resources, error) {
 		if self.IsFullyPrepared(resources) {
 			log.Infof("fully prepared")
 			if err := self.Validation.ValidateResources(resources, true); err == nil {
@@ -108,7 +108,7 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 	return modified, nil
 }
 
-func (self *Preparation) GetTODO(resources []util.Resource, log commonlog.Logger) *util.ResourceIdentifiers {
+func (self *Preparation) GetTODO(resources util.Resources, log commonlog.Logger) *util.ResourceIdentifiers {
 	var todo util.ResourceIdentifiers
 	for _, resource := range resources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
@@ -120,7 +120,7 @@ func (self *Preparation) GetTODO(resources []util.Resource, log commonlog.Logger
 	return &todo
 }
 
-func (self *Preparation) IsFullyPrepared(resources []util.Resource) bool {
+func (self *Preparation) IsFullyPrepared(resources util.Resources) bool {
 	prepared := true
 	for _, resource := range resources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {

@@ -10,12 +10,12 @@ import (
 )
 
 type PluginInput struct {
-	GRPC                    PluginInputGRPC            `yaml:"grpc"`
-	LogFile                 string                     `yaml:"logFile"`
-	SiteID                  string                     `yaml:"siteId"`
-	SiteResources           []util.Resource            `yaml:"siteResources"`
-	TargetResourceIdentifer util.ResourceIdentifier    `yaml:"targetResourceIdentifier"`
-	Deployments             map[string][]util.Resource `yaml:"deployments"`
+	GRPC                    PluginInputGRPC           `yaml:"grpc"`
+	LogFile                 string                    `yaml:"logFile"`
+	SiteID                  string                    `yaml:"siteId"`
+	SiteResources           util.Resources            `yaml:"siteResources"`
+	TargetResourceIdentifer util.ResourceIdentifier   `yaml:"targetResourceIdentifier"`
+	Deployments             map[string]util.Resources `yaml:"deployments"`
 }
 
 type PluginInputGRPC struct {

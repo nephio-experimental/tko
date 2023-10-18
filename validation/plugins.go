@@ -12,7 +12,7 @@ import (
 type PluginInput struct {
 	GRPC                    PluginInputGRPC         `yaml:"grpc"`
 	LogFile                 string                  `yaml:"logFile"`
-	Resources               []util.Resource         `yaml:"resources"`
+	Resources               util.Resources          `yaml:"resources"`
 	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
 	Complete                bool                    `yaml:"complete"`
 }

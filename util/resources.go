@@ -10,16 +10,16 @@ var DeploymentGVK = NewGVK("deployment.nephio.org", "v1alpha1", "Deployment")
 
 var DeploymentResourceIdentifier = DeploymentGVK.NewResourceIdentifier("deployment")
 
-func CopyResources(resources []Resource) []Resource {
-	copy := make([]Resource, len(resources))
+func CopyResources(resources Resources) Resources {
+	copy := make(Resources, len(resources))
 	for index, resource := range resources {
 		copy[index] = ard.Copy(resource).(Resource)
 	}
 	return copy
 }
 
-func GetReferentResources(objectReferences ard.List, resources []Resource) ([]Resource, error) {
-	var referentResources []Resource
+func GetReferentResources(objectReferences ard.List, resources Resources) (Resources, error) {
+	var referentResources Resources
 	for _, objectReference := range objectReferences {
 		if objectReference_, ok := objectReference.(ard.Map); ok {
 			if resourceIdentifier, ok := NewResourceIdentifierForObjectReference(objectReference_); ok {

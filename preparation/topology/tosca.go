@@ -15,7 +15,7 @@ import (
 var ToscaGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareTOSCA(context *preparation.Context) (bool, []util.Resource, error) {
+func PrepareTOSCA(context *preparation.Context) (bool, util.Resources, error) {
 	context.Log.Infof("preparing topology.nephio.org TOSCA: %s", context.TargetResourceIdentifer.Name)
 
 	if tosca, ok := context.GetResource(); ok {
@@ -37,7 +37,7 @@ func PrepareTOSCA(context *preparation.Context) (bool, []util.Resource, error) {
 					return false, nil, err
 				}
 
-				var resources []util.Resource
+				var resources util.Resources
 
 				for _, toscaResource := range toscaResources {
 					toscaResource.FillPropertyValues(parser.Clout)
@@ -105,7 +105,7 @@ type ToscaResource struct {
 	TemplateName string
 	SiteName     string
 	Properties   map[string]*ToscaProperty
-	Merge        []util.Resource
+	Merge        util.Resources
 }
 
 func NewToscaResource(vertex *clout.Vertex) *ToscaResource {
@@ -135,7 +135,7 @@ func (self *ToscaResource) FillPropertyValues(clout *clout.Clout) {
 	}
 }
 
-func (self *ToscaResource) ToResources() []util.Resource {
+func (self *ToscaResource) ToResources() util.Resources {
 	resources := make(map[string]util.Resource)
 
 	for _, property := range self.Properties {
@@ -184,7 +184,7 @@ func (self *ToscaResource) ToResources() []util.Resource {
 		ard.With(resource["spec"]).ForceGetPath(property.Target, ".").Set(property.Value)
 	}
 
-	resources_ := make([]util.Resource, 0, len(resources))
+	resources_ := make(util.Resources, 0, len(resources))
 	for _, resource := range resources {
 		resources_ = append(resources_, resource)
 	}
@@ -206,11 +206,11 @@ type ToscaProperty struct {
 func (self *ToscaResource) NewToscaProperty(name string, value ard.Value) {
 	var property ToscaProperty
 	metadata_ := ard.With(value).Get("$meta", "metadata")
-	apiVersion, _ := metadata_.Get("tko.apiVersion").String()
-	kind, _ := metadata_.Get("tko.kind").String()
+	apiVersion, _ := metadata_.Get("nephio.apiVersion").String()
+	kind, _ := metadata_.Get("nephio.kind").String()
 	property.GVK = util.NewGVK2(apiVersion, kind)
-	property.Name, _ = metadata_.Get("tko.name").String()
-	property.Suffix, _ = metadata_.Get("tko.suffix").String()
-	property.Target, _ = metadata_.Get("tko.target").String()
+	property.Name, _ = metadata_.Get("nephio.name").String()
+	property.Suffix, _ = metadata_.Get("nephio.suffix").String()
+	property.Target, _ = metadata_.Get("nephio.target").String()
 	self.Properties[name] = &property
 }

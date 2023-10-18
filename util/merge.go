@@ -4,7 +4,7 @@ import (
 	"github.com/tliron/go-ard"
 )
 
-func MergeResources(resources []Resource, mergeResources []Resource) []Resource {
+func MergeResources(resources Resources, mergeResources Resources) Resources {
 	for _, mergeResource := range mergeResources {
 		if resourceIdentifier, ok := NewResourceIdentifierForResource(mergeResource); ok {
 			renameAnnotation, _ := GetRenameAnnotation(mergeResource)
@@ -39,8 +39,8 @@ func MergeResources(resources []Resource, mergeResources []Resource) []Resource 
 	return resources
 }
 
-func PrepareResourcesForMerge(resources []Resource) []Resource {
-	resources_ := make([]Resource, len(resources))
+func PrepareResourcesForMerge(resources Resources) Resources {
+	resources_ := make(Resources, len(resources))
 	for index, resource := range resources {
 		resource = ard.Copy(resource).(Resource)
 		resources_[index] = resource

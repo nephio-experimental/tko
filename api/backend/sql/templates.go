@@ -198,7 +198,7 @@ func (self *SqlBackend) ListTemplates(templateIdPatterns []string, metadataPatte
 
 // Utils
 
-func (self *SqlBackend) getTemplateResources(tx *sql.Tx, templateId string) ([]util.Resource, error) {
+func (self *SqlBackend) getTemplateResources(tx *sql.Tx, templateId string) (util.Resources, error) {
 	if rows, err := tx.Query(self.sql.SelectTemplateResources, templateId); err == nil {
 		defer func() {
 			if err := rows.Close(); err != nil {

@@ -5,3 +5,5 @@ import (
 )
 
 type Resource = ard.Map
+
+type Resources = []Resource

@@ -31,7 +31,7 @@ func (self *SpannerBackend) StartDeploymentModification(deploymentId string) (st
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) EndDeploymentModification(modificationToken string, resources []util.Resource) (string, error) {
+func (self *SpannerBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
 	return "", nil
 }
 
