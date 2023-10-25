@@ -15,7 +15,7 @@ require (
 	github.com/tliron/kutil v0.3.5
 	github.com/tliron/puccini v0.22.4-0.20231003171237-a409f577fdb9
 	github.com/yannh/kubeconform v0.6.3
-	google.golang.org/grpc v1.58.2
+	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 )
