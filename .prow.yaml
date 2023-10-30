@@ -1,0 +1,17 @@
+presubmits:
+  - name: ne-tko-scancode-toolkit
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: nephio/scancode-toolkit:v31.2.5
+        command:
+        - "/bin/sh"
+        args:
+        - "-c"
+        - |
+          /scancode-toolkit/scancode --ignore "whitelist.json" -clpeui -n 2 --html ${ARTIFACTS}/scancode_report.html . --tallies-with-details
+        resources:
+          requests:
+            cpu: 2
+            memory: 2Gi
