@@ -6,12 +6,12 @@ MODULE=github.com/nephio-experimental/tko
 
 ROOT=$(readlink --canonicalize "$_HERE/..")
 
-PYTHON_ENV=/tmp/tko-python-env
+export PYTHON_ENV=/tmp/tko-python-env
 
 GOPATH=${GOPATH:-$HOME/go}
 export PATH=$GOPATH/bin:$ROOT:$PATH
 
 KIND_VERSION=0.20.0
-KUBECTL_VERSION=1.28.2
-HELM_VERSION=3.13.0
-KPT_VERSION=1.0.0-beta.45
+KUBECTL_VERSION=1.28.4
+HELM_VERSION=3.13.2
+KPT_VERSION=1.0.0-beta.48

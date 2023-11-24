@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/tliron/go-ard"
@@ -17,10 +19,16 @@ func ExecuteCommand(arguments []string, input any, output any) error {
 		return err
 	}
 
+	pythonPath := os.Getenv("PYTHON_ENV")
+	if pythonPath == "" {
+		pythonPath = filepath.Join(os.TempDir(), "tko-python-env")
+	}
+	pythonPath = filepath.Join(pythonPath, "bin")
+
 	var output_ bytes.Buffer
 	var stderr bytes.Buffer
 	cmd := exec.Command(arguments[0], arguments[1:]...)
-	cmd.Env = append(cmd.Env, "PATH=/tmp/tko-python-env/bin")
+	cmd.Env = append(cmd.Env, "PATH="+pythonPath)
 	cmd.Stdin = bytes.NewReader(input_)
 	cmd.Stdout = &output_
 	cmd.Stderr = &stderr
