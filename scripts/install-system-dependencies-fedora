@@ -6,10 +6,16 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 only_root
 
+DNF_ARGS=
+if [ "$1" == -y ]; then
+	DNF_ARGS=--assumeyes
+fi
+
 dnf install \
-protobuf-compiler \
+wget zip \
+golang protobuf-compiler \
 python3-virtualenv \
-postgresql-server postgresql-contrib
+postgresql-server postgresql-contrib $DNF_ARGS
 
 # See: https://docs.fedoraproject.org/en-US/quick-docs/postgresql/
 
@@ -19,9 +25,9 @@ systemctl restart postgresql
 
 # https://developer.fedoraproject.org/tools/docker/docker-installation.html
 
-dnf remove podman-docker
-dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-dnf install docker-ce docker-ce-cli containerd.io
+dnf remove podman-docker $DNF_ARGS
+dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo $DNF_ARGS
+dnf install docker-ce docker-ce-cli containerd.io $DNF_ARGS
 
 systemctl enable --now docker
 

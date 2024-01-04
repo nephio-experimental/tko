@@ -8,12 +8,12 @@ require (
 	github.com/jackc/pgx/v5 v5.5.1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
-	github.com/tliron/commonlog v0.2.8
+	github.com/tliron/commonlog v0.2.10
 	github.com/tliron/exturl v0.4.3
 	github.com/tliron/go-ard v0.2.16
 	github.com/tliron/go-transcribe v0.3.3
 	github.com/tliron/kutil v0.3.13
-	github.com/tliron/puccini v0.22.4-0.20231206211518-01ae9c20f8c4
+	github.com/tliron/puccini v0.22.4-0.20240104161713-cefe9ff08763
 	github.com/yannh/kubeconform v0.6.4
 	google.golang.org/grpc v1.60.1
 	google.golang.org/protobuf v1.31.0
@@ -96,7 +96,7 @@ require (
 	github.com/sirupsen/logrus v1.9.1 // indirect
 	github.com/skeema/knownhosts v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/tliron/commonjs-goja v0.2.2 // indirect
+	github.com/tliron/commonjs-goja v0.2.4 // indirect
 	github.com/tliron/yamlkeys v1.3.6 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect

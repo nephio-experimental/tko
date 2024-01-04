@@ -1,0 +1,1 @@
+{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"/Depot/Projects/Nephio/tko","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}

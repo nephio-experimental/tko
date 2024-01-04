@@ -259,10 +259,10 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.3 h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=
 github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/tliron/commonjs-goja v0.2.2 h1:BVZxLcgqUgosG8fX0SKUHEfZzvq+RivCPu07GrKrLgk=
-github.com/tliron/commonjs-goja v0.2.2/go.mod h1:K5Obk5Vsh3i1idDpatKHW8CPcp4FtOSHRrxDqnbC8jo=
-github.com/tliron/commonlog v0.2.8 h1:vpKrEsZX4nlneC9673pXpeKqv3cFLxwpzNEZF1qiaQQ=
-github.com/tliron/commonlog v0.2.8/go.mod h1:HgQZrJEuiKLLRvUixtPWGcmTmWWtKkCtywF6x9X5Spw=
+github.com/tliron/commonjs-goja v0.2.4 h1:nUH0bbw1TYw0wQN7ckGGFMowsLfZ9tdlKd7aJNg/gDI=
+github.com/tliron/commonjs-goja v0.2.4/go.mod h1:E3gLRcfHp04i9lVUoRhNBkolqIflZ+Erilx+yifKzgQ=
+github.com/tliron/commonlog v0.2.10 h1:fcrlLemZro9rHHjKsq8VrNLNKqiLNM+Wtl9no6hmik4=
+github.com/tliron/commonlog v0.2.10/go.mod h1:XELlm6nokOVcFkRrleWEaC8cZ84UDqAIePaJdehoCII=
 github.com/tliron/exturl v0.4.3 h1:BdRjKdnlumesqwrWdtWOjP+4ytkETk3qfshPaOUaz7g=
 github.com/tliron/exturl v0.4.3/go.mod h1:odoBxRKyJ/nEGjqK+AcZy6R7wKhRcVFhnqvmjgACKf0=
 github.com/tliron/go-ard v0.2.16 h1:IqS5bSq1xEQSO5oE+FWarMOFdg1idKSjpksETqBM9Cc=
@@ -271,8 +271,8 @@ github.com/tliron/go-transcribe v0.3.3 h1:EBYwcw8w+H14G0ZEDBeGvzhlyIw8SkYjysX1nn
 github.com/tliron/go-transcribe v0.3.3/go.mod h1:wStqlu9ZkLhrLC1JLGYW+0B+3CW6xC3D76Vvk+Ww09E=
 github.com/tliron/kutil v0.3.13 h1:hB2k7zWYhuuQ8pqJ6Gu/LxDw8UUnjBlhBbwUt5rUiSs=
 github.com/tliron/kutil v0.3.13/go.mod h1:sazY84VhpRez9rFf6ajtZBdpThJ/OIVL7Mue6GC/rds=
-github.com/tliron/puccini v0.22.4-0.20231206211518-01ae9c20f8c4 h1:rTZFye5rjSxFMSiQqlQRWzxW9qra0DyGslggrhSEhvk=
-github.com/tliron/puccini v0.22.4-0.20231206211518-01ae9c20f8c4/go.mod h1:ULEI06+qMO91S+8+DC8nSBd6N3bdc48WbXpw5Wh0qZk=
+github.com/tliron/puccini v0.22.4-0.20240104161713-cefe9ff08763 h1:qVGkeADhPQpCa1958deas9o8xuFsuurG0qKtbVdvh5o=
+github.com/tliron/puccini v0.22.4-0.20240104161713-cefe9ff08763/go.mod h1:Jzn+MiH3yOQI/d7Vex2yPbpCkNXRYzZqq8ZRSRIFPLE=
 github.com/tliron/yamlkeys v1.3.6 h1:PPV4q7flMqIvmSUSsEZuns7Qt3VIMxkhBj+6KTRvI9c=
 github.com/tliron/yamlkeys v1.3.6/go.mod h1:K/uKQwMke5a9h6YW/Sj9pcp66vU3lRP97OrOjo/ELoU=
 github.com/urfave/cli v1.22.12/go.mod h1:sSBEIC79qR6OvcmsD4U3KABeOTxDqQtdDnaFuUN30b8=
