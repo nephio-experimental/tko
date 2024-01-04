@@ -6,7 +6,7 @@ MODULE=github.com/nephio-experimental/tko
 
 ROOT=$(readlink --canonicalize "$_HERE/..")
 
-export PYTHON_ENV=/tmp/tko-python-env
+export PYTHON_ENV=$HOME/tko-python-env
 
 GOPATH=${GOPATH:-$HOME/go}
 export PATH=$GOPATH/bin:$ROOT:$PATH

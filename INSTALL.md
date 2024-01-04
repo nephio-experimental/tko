@@ -1,24 +1,37 @@
 TKO Installation Guide
 ======================
 
-All general requirements can be installed by running:
+Vagrant
+-------
 
-    sudo scripts/install-system-dependencies
-    scripts/install-python-dependencies
+If you have [Vagrant](https://www.vagrantup.com/) working, we have a Vagrantfile ready to
+create a dev and test environment on top of a Fedora virtual machine. You'll need the
+`vagrant-reload` plugin. To run:
 
-Note that Python will be using a virtual environment at `/tmp/tko-python-env`, so you will need to
-reinstall the Python dependencies if you reboot.
+    vagrant plugin install vagrant-reload
+    vagrant up
+
+The internal web server port will be mapped to your host:
+[http://localhost:60051/](http://localhost:60051/).
+
+OS Requirements
+---------------
 
 ### Fedora
 
     sudo scripts/install-system-dependencies-fedora
 
-(also see [note](https://docs.fedoraproject.org/en-US/quick-docs/postgresql/) about editing
-`/var/lib/pgsql/data/pg_hba.conf`, and make sure to also enable md5 for IPv6.)
-
 ### gLinux
 
     sudo scripts/install-system-dependencies-glinux
+
+Other Requirements
+------------------
+
+    sudo scripts/install-system-dependencies
+    scripts/install-python-dependencies
+
+Note that Python will be using a virtual environment at `~/tko-python-env`.
 
 Or, these are the requirements if you prefer to install them manually:
 
@@ -30,6 +43,9 @@ Or, these are the requirements if you prefer to install them manually:
 * [kpt CLI](https://kpt.dev/installation/kpt-cli)
 * [PostgreSQL](https://www.postgresql.org/)
 * Python: ruamel.yaml
+
+Setup
+-----
 
 To setup our PostreSQL user:
 

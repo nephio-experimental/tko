@@ -11,9 +11,12 @@ m 'stopping controllers...'
 "$HERE/stop-service" tko-api-server
 
 if [ "$1" == -c ]; then
+	m 'deleting clusters...'
     kind delete cluster --name edge1 || true
     kind delete cluster --name edge2 || true
 fi
+
+m 'building...'
 
 "$HERE/build"
 

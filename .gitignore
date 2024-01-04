@@ -1,4 +1,5 @@
 .vscode
+.vagrant
 
 go.work
 go.work.sum

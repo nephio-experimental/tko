@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+
+HERE=/vagrant/scripts
+. "$HERE/_env"
+
+not_root
+
+m 'install-system-dependencies-fedora...' $CYAN
+sudo "$HERE/install-system-dependencies-fedora" -y
+
+m 'install-system-dependencies...' $CYAN
+sudo "$HERE/install-system-dependencies"
+
+m 'setup-postgresql...' $CYAN
+sudo "$HERE/setup-postgresql"
+
+m 'install-python-dependencies...' $CYAN
+"$HERE/install-python-dependencies"
+
+m 'install-systemd-services...' $CYAN
+BACKEND=postgresql "$HERE/install-systemd-services"
+
+echo "export PATH=$HOME/go/bin:$PATH" >> "$HOME/.bashrc"

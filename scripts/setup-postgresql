@@ -6,5 +6,5 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 only_root
 
-sudo -u postgres psql -c "CREATE USER tko WITH PASSWORD 'tko';" || true
-sudo -u postgres psql -c "CREATE DATABASE tko WITH OWNER tko;" || true
+sudo -u postgres -i psql -c "CREATE USER tko WITH PASSWORD 'tko';" || true
+sudo -u postgres -i psql -c "CREATE DATABASE tko WITH OWNER tko;" || true

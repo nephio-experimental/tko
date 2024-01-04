@@ -21,7 +21,11 @@ func ExecuteCommand(arguments []string, input any, output any) error {
 
 	pythonPath := os.Getenv("PYTHON_ENV")
 	if pythonPath == "" {
-		pythonPath = filepath.Join(os.TempDir(), "tko-python-env")
+		if home, err := os.UserHomeDir(); err == nil {
+			pythonPath = filepath.Join(home, "tko-python-env")
+		} else {
+			return err
+		}
 	}
 	pythonPath = filepath.Join(pythonPath, "bin")
 
