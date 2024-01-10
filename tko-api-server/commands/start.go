@@ -31,11 +31,11 @@ func init() {
 	rootCommand.AddCommand(startCommand)
 
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
-	startCommand.Flags().StringVar(&grpcProtocol, "grpc-protocol", "tcp", "protocol for gRPC server")
+	startCommand.Flags().StringVar(&grpcProtocol, "grpc-protocol", "dual", "protocol for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for gRPC server")
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for gRPC server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
-	startCommand.Flags().StringVar(&webProtocol, "web-protocol", "tcp", "protocol for web server")
+	startCommand.Flags().StringVar(&webProtocol, "web-protocol", "dual", "protocol for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "HTTP/2 port for web server")
 }
@@ -44,6 +44,18 @@ var startCommand = &cobra.Command{
 	Use:   "start",
 	Short: "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
+		switch grpcProtocol {
+		case "dual", "ipv6", "ipv4":
+		default:
+			util.Failf("grpc-protocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", grpcProtocol)
+		}
+
+		switch webProtocol {
+		case "dual", "ipv6", "ipv4":
+		default:
+			util.Failf("web-protocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", webProtocol)
+		}
+
 		Serve()
 	},
 }

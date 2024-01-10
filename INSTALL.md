@@ -20,7 +20,7 @@ The virtual machine has the `tko` client. Example:
     tko plugin list
 
 The port is also mapped to the host at port 60050, so you could potentially run the client
-there. (Note that Vagrant unfortunately does not map IPv6, so it would be using IPv4.)
+there:
 
     tko plugin list --grpc-port 60050
 

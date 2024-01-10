@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	api "github.com/nephio-experimental/tko/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
@@ -24,6 +26,17 @@ type Client struct {
 }
 
 func NewClient(grpcProtocol string, grpcAddress string, grpcPort int, resourcesFormat string, log commonlog.Logger) (*Client, error) {
+	switch grpcProtocol {
+	case "dual":
+		grpcProtocol = "tcp"
+	case "ipv6":
+		grpcProtocol = "tcp6"
+	case "ipv4":
+		grpcProtocol = "tcp4"
+	default:
+		return nil, fmt.Errorf("grpcProtocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", grpcProtocol)
+	}
+
 	_, grpcAddress = tkoutil.GRPCDefaults(grpcProtocol, grpcAddress)
 	if grpcAddress, grpcAddressZone, err := util.ToReachableIPAddress(grpcAddress); err == nil {
 		if grpcAddressZone != "" {

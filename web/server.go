@@ -2,6 +2,7 @@ package web
 
 import (
 	contextpkg "context"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -51,15 +52,24 @@ func NewServer(backend backend.Backend, protocol string, address string, port in
 }
 
 func (self *Server) Start() error {
-	if ((self.Protocol == "tcp") || (self.Protocol == "")) && (self.Address == "") {
-		// For dual stack "bind all" (empty address) we need to bind separately for each protocol
-		// See: https://github.com/golang/go/issues/9334
-		if err := self.start("tcp6", ""); err != nil {
-			return err
+	switch self.Protocol {
+	case "dual":
+		if self.Address == "" {
+			// We need to bind separately for each protocol
+			// See: https://github.com/golang/go/issues/9334
+			if err := self.start("tcp6", ""); err != nil {
+				return err
+			}
+			return self.start("tcp4", "")
+		} else {
+			return self.start("tcp", self.Address)
 		}
-		return self.start("tcp4", "")
-	} else {
-		return self.start(self.Protocol, self.Address)
+	case "ipv6":
+		return self.start("tcp6", self.Address)
+	case "ipv4":
+		return self.start("tcp5", self.Address)
+	default:
+		panic(fmt.Sprintf("unsupported protocol: %s", self.Protocol))
 	}
 }
 
