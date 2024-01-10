@@ -11,8 +11,23 @@ create a dev and test environment on top of a Fedora virtual machine. You'll nee
     vagrant plugin install vagrant-reload
     vagrant up
 
-The internal web server port will be mapped to your host:
+The internal web server port will be mapped to your host at port 60051:
 [http://localhost:60051/](http://localhost:60051/).
+
+The virtual machine has the `tko` client. Example:
+
+    vagrant ssh
+    tko plugin list
+
+The port is also mapped to the host at port 60050, so you could potentially run the client
+there. (Note that Vagrant unfortunately does not map IPv6, so it would be using IPv4.)
+
+    tko plugin list --grpc-port 60050
+
+If you want the virtual machine to to continuously sync file changes from the host (it's
+one-way, only from the host to the virtual machine):
+
+    vagrant rsync-auto
 
 OS Requirements
 ---------------

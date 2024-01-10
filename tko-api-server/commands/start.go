@@ -90,7 +90,7 @@ func Serve() {
 	util.FailOnError(err)
 	err = webServer.Start()
 	util.FailOnError(err)
-	util.OnExitError(webServer.Stop)
+	util.OnExit(webServer.Stop)
 
 	// Block forever
 	select {}

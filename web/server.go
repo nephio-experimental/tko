@@ -23,8 +23,8 @@ type Server struct {
 	Port     int
 	Log      commonlog.Logger
 
-	httpServer *http.Server
-	mux        *http.ServeMux
+	httpServers []*http.Server
+	mux         *http.ServeMux
 }
 
 func NewServer(backend backend.Backend, protocol string, address string, port int, log commonlog.Logger) (*Server, error) {
@@ -47,18 +47,32 @@ func NewServer(backend backend.Backend, protocol string, address string, port in
 	self.mux.HandleFunc("/api/template", self.getTemplate)
 	self.mux.HandleFunc("/api/plugin/list", self.listPlugins)
 
-	self.httpServer = &http.Server{
-		Handler: self.mux,
-	}
-
 	return &self, nil
 }
 
 func (self *Server) Start() error {
-	if listener, err := net.Listen(self.Protocol, util.JoinIPAddressPort(self.Address, self.Port)); err == nil {
-		self.Log.Noticef("starting web server on %s", listener.Addr().String())
+	if ((self.Protocol == "tcp") || (self.Protocol == "")) && (self.Address == "") {
+		// For dual stack "bind all" (empty address) we need to bind separately for each protocol
+		// See: https://github.com/golang/go/issues/9334
+		if err := self.start("tcp6", ""); err != nil {
+			return err
+		}
+		return self.start("tcp4", "")
+	} else {
+		return self.start(self.Protocol, self.Address)
+	}
+}
+
+func (self *Server) start(protocol string, address string) error {
+	httpServer := http.Server{
+		Handler: self.mux,
+	}
+
+	if listener, err := net.Listen(protocol, util.JoinIPAddressPort(address, self.Port)); err == nil {
+		self.Log.Noticef("starting web server %d on %s %s", len(self.httpServers), protocol, listener.Addr().String())
+		self.httpServers = append(self.httpServers, &httpServer)
 		go func() {
-			if err := self.httpServer.Serve(listener); err != nil {
+			if err := httpServer.Serve(listener); err != nil {
 				if err == http.ErrServerClosed {
 					self.Log.Info("stopped web server")
 				} else {
@@ -72,10 +86,15 @@ func (self *Server) Start() error {
 	}
 }
 
-func (self *Server) Stop() error {
+func (self *Server) Stop() {
 	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), 5*time.Second)
 	defer cancel()
 
-	self.Log.Notice("stopping web server")
-	return self.httpServer.Shutdown(context)
+	for index, httpServer := range self.httpServers {
+		self.Log.Noticef("stopping web server %d", index)
+		if err := httpServer.Shutdown(context); err != nil {
+			self.Log.Critical(err.Error())
+		}
+		self.Log.Noticef("stopped web server %d", index)
+	}
 }
