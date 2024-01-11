@@ -9,6 +9,7 @@ import (
 	"github.com/nephio-experimental/tko/api/backend/sql"
 	"github.com/nephio-experimental/tko/api/client"
 	"github.com/nephio-experimental/tko/api/server"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/nephio-experimental/tko/validation"
 	"github.com/nephio-experimental/tko/web"
 	"github.com/spf13/cobra"
@@ -19,11 +20,11 @@ import (
 const modificationWindow = 10 // seconds
 
 var backendName string
-var grpcProtocol string
+var grpcIpStack string
 var grpcAddress string
 var grpcPort uint
 var grpcFormat string
-var webProtocol string
+var webIpStack string
 var webAddress string
 var webPort uint
 
@@ -31,11 +32,11 @@ func init() {
 	rootCommand.AddCommand(startCommand)
 
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
-	startCommand.Flags().StringVar(&grpcProtocol, "grpc-protocol", "dual", "protocol for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&grpcIpStack, "grpc-ip-stack", "dual", "IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for gRPC server")
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for gRPC server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
-	startCommand.Flags().StringVar(&webProtocol, "web-protocol", "dual", "protocol for web server (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&webIpStack, "web-ip-stack", "dual", "IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "HTTP/2 port for web server")
 }
@@ -44,18 +45,8 @@ var startCommand = &cobra.Command{
 	Use:   "start",
 	Short: "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
-		switch grpcProtocol {
-		case "dual", "ipv6", "ipv4":
-		default:
-			util.Failf("grpc-protocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", grpcProtocol)
-		}
-
-		switch webProtocol {
-		case "dual", "ipv6", "ipv4":
-		default:
-			util.Failf("web-protocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", webProtocol)
-		}
-
+		util.FailOnError(tkoutil.ValidateIPStack(grpcIpStack, "grpc-ip-stack"))
+		util.FailOnError(tkoutil.ValidateIPStack(webIpStack, "web-ip-stack"))
 		Serve()
 	},
 }
@@ -81,7 +72,7 @@ func Serve() {
 	}
 
 	// Client
-	client_, err := client.NewClient(grpcProtocol, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("client"))
+	client_, err := client.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("client"))
 	util.FailOnError(err)
 
 	validation_, err := validation.NewValidation(client_, commonlog.GetLogger("validation"))
@@ -93,12 +84,12 @@ func Serve() {
 	util.FailOnError(err)
 	util.OnExitError(backend.Release)
 
-	grpcServer := server.NewServer(backend, grpcProtocol, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("grpc"))
+	grpcServer := server.NewServer(backend, grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("grpc"))
 	err = grpcServer.Start()
 	util.FailOnError(err)
 	util.OnExit(grpcServer.Stop)
 
-	webServer, err := web.NewServer(backend, webProtocol, webAddress, int(webPort), commonlog.GetLogger("web"))
+	webServer, err := web.NewServer(backend, webIpStack, webAddress, int(webPort), commonlog.GetLogger("web"))
 	util.FailOnError(err)
 	err = webServer.Start()
 	util.FailOnError(err)

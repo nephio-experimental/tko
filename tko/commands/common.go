@@ -16,6 +16,7 @@ import (
 const toolName = "tko"
 
 var log = commonlog.GetLogger(toolName)
+var clientLog = commonlog.NewScopeLogger(log, "client")
 
 var url string
 var stdin bool
@@ -26,7 +27,7 @@ var siteMetadata map[string]string
 var parentDeploymentId string
 
 func NewClient() *client.Client {
-	client_, err := client.NewClient(grpcProtocol, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("client"))
+	client_, err := client.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, clientLog)
 	util.FailOnError(err)
 	return client_
 }

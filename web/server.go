@@ -2,13 +2,13 @@ package web
 
 import (
 	contextpkg "context"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/assets/web"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
@@ -18,24 +18,24 @@ import (
 //
 
 type Server struct {
-	Backend  backend.Backend
-	Protocol string
-	Address  string
-	Port     int
-	Log      commonlog.Logger
+	Backend backend.Backend
+	IPStack string
+	Address string
+	Port    int
+	Log     commonlog.Logger
 
 	httpServers []*http.Server
 	mux         *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, protocol string, address string, port int, log commonlog.Logger) (*Server, error) {
+func NewServer(backend backend.Backend, ipStack string, address string, port int, log commonlog.Logger) (*Server, error) {
 	self := Server{
-		Backend:  backend,
-		Protocol: protocol,
-		Address:  address,
-		Port:     port,
-		Log:      log,
-		mux:      http.NewServeMux(),
+		Backend: backend,
+		IPStack: ipStack,
+		Address: address,
+		Port:    port,
+		Log:     log,
+		mux:     http.NewServeMux(),
 	}
 
 	self.mux.Handle("/", http.FileServer(http.FS(web.FS)))
@@ -52,34 +52,17 @@ func NewServer(backend backend.Backend, protocol string, address string, port in
 }
 
 func (self *Server) Start() error {
-	switch self.Protocol {
-	case "dual":
-		if self.Address == "" {
-			// We need to bind separately for each protocol
-			// See: https://github.com/golang/go/issues/9334
-			if err := self.start("tcp6", ""); err != nil {
-				return err
-			}
-			return self.start("tcp4", "")
-		} else {
-			return self.start("tcp", self.Address)
-		}
-	case "ipv6":
-		return self.start("tcp6", self.Address)
-	case "ipv4":
-		return self.start("tcp5", self.Address)
-	default:
-		panic(fmt.Sprintf("unsupported protocol: %s", self.Protocol))
-	}
+	return tkoutil.StartServer(self.IPStack, self.Address, self.start)
 }
 
-func (self *Server) start(protocol string, address string) error {
+// ([util.StartServerFunc] signature)
+func (self *Server) start(level2protocol string, address string) error {
 	httpServer := http.Server{
 		Handler: self.mux,
 	}
 
-	if listener, err := net.Listen(protocol, util.JoinIPAddressPort(address, self.Port)); err == nil {
-		self.Log.Noticef("starting web server %d on %s %s", len(self.httpServers), protocol, listener.Addr().String())
+	if listener, err := net.Listen(level2protocol, util.JoinIPAddressPort(address, self.Port)); err == nil {
+		self.Log.Noticef("starting web server %d on %s %s", len(self.httpServers), level2protocol, listener.Addr().String())
 		self.httpServers = append(self.httpServers, &httpServer)
 		go func() {
 			if err := httpServer.Serve(listener); err != nil {

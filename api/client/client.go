@@ -1,8 +1,6 @@
 package client
 
 import (
-	"fmt"
-
 	api "github.com/nephio-experimental/tko/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
@@ -16,41 +14,31 @@ import (
 //
 
 type Client struct {
-	GRPCProtocol    string
-	GRPCAddress     string
-	GRPCPort        int
-	ResourcesFormat string
+	GRPCLevel2Protocol string
+	GRPCAddress        string
+	GRPCPort           int
+	ResourcesFormat    string
 
 	client api.APIClient
 	log    commonlog.Logger
 }
 
-func NewClient(grpcProtocol string, grpcAddress string, grpcPort int, resourcesFormat string, log commonlog.Logger) (*Client, error) {
-	switch grpcProtocol {
-	case "dual":
-		grpcProtocol = "tcp"
-	case "ipv6":
-		grpcProtocol = "tcp6"
-	case "ipv4":
-		grpcProtocol = "tcp4"
-	default:
-		return nil, fmt.Errorf("grpcProtocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", grpcProtocol)
+func NewClient(grpcIpStack string, grpcAddress string, grpcPort int, resourcesFormat string, log commonlog.Logger) (*Client, error) {
+	var level2protocol string
+	var err error
+	if level2protocol, grpcAddress, err = tkoutil.IPLevel2ProtocolAndAddress(grpcIpStack, grpcAddress); err != nil {
+		return nil, err
 	}
 
-	_, grpcAddress = tkoutil.GRPCDefaults(grpcProtocol, grpcAddress)
-	if grpcAddress, grpcAddressZone, err := util.ToReachableIPAddress(grpcAddress); err == nil {
-		if grpcAddressZone != "" {
-			// See: https://github.com/grpc/grpc-go/issues/3272#issuecomment-1239710027
-			grpcAddress += "%25" + grpcAddressZone
-		}
+	if grpcAddress, err := tkoutil.ToReachableIPAddress(grpcAddress); err == nil {
 		if clientConn, err := grpc.Dial(util.JoinIPAddressPort(grpcAddress, grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials())); err == nil {
 			return &Client{
-				GRPCProtocol:    grpcProtocol,
-				GRPCAddress:     grpcAddress,
-				GRPCPort:        grpcPort,
-				ResourcesFormat: resourcesFormat,
-				client:          api.NewAPIClient(clientConn),
-				log:             log,
+				GRPCLevel2Protocol: level2protocol,
+				GRPCAddress:        grpcAddress,
+				GRPCPort:           grpcPort,
+				ResourcesFormat:    resourcesFormat,
+				client:             api.NewAPIClient(clientConn),
+				log:                log,
 			}, nil
 		} else {
 			return nil, err

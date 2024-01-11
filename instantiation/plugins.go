@@ -19,9 +19,9 @@ type PluginInput struct {
 }
 
 type PluginInputGRPC struct {
-	Protocol string `yaml:"protocol"`
-	Address  string `yaml:"address"`
-	Port     int    `yaml:"port"`
+	Level2Protocol string `yaml:"level2protocol"`
+	Address        string `yaml:"address"`
+	Port           int    `yaml:"port"`
 }
 
 type PluginOutput struct {
@@ -31,9 +31,9 @@ type PluginOutput struct {
 func (self *Context) ToPluginInput(logFile string) PluginInput {
 	return PluginInput{
 		GRPC: PluginInputGRPC{
-			Protocol: self.Instantiation.Client.GRPCProtocol,
-			Address:  self.Instantiation.Client.GRPCAddress,
-			Port:     self.Instantiation.Client.GRPCPort,
+			Level2Protocol: self.Instantiation.Client.GRPCLevel2Protocol,
+			Address:        self.Instantiation.Client.GRPCAddress,
+			Port:           self.Instantiation.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
 		SiteID:                  self.SiteID,

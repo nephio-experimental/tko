@@ -1,6 +1,7 @@
 package commands
 
 import (
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/terminal"
@@ -15,7 +16,7 @@ var colorize string
 var strict bool
 var pretty bool
 
-var grpcProtocol string
+var grpcIpStack string
 var grpcAddress string
 var grpcPort uint
 var grpcFormat string
@@ -30,7 +31,7 @@ func init() {
 	rootCommand.PersistentFlags().BoolVarP(&strict, "strict", "y", false, "strict output (for \"yaml\" format only)")
 	rootCommand.PersistentFlags().BoolVarP(&pretty, "pretty", "p", true, "prettify output")
 
-	rootCommand.PersistentFlags().StringVar(&grpcProtocol, "grpc-protocol", "dual", "protocol for tko API Server (\"dual\", \"ipv6\", or \"ipv4\")")
+	rootCommand.PersistentFlags().StringVar(&grpcIpStack, "grpc-ip-stack", "dual", "IP stack for tko API Server (\"dual\", \"ipv6\", or \"ipv4\")")
 	rootCommand.PersistentFlags().StringVar(&grpcAddress, "grpc-address", "", "address for tko API Server")
 	rootCommand.PersistentFlags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for tko API Server")
 	rootCommand.PersistentFlags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
@@ -43,11 +44,7 @@ var rootCommand = &cobra.Command{
 		util.InitializeColorization(colorize)
 		commonlog.Initialize(verbose, logTo)
 
-		switch grpcProtocol {
-		case "dual", "ipv6", "ipv4":
-		default:
-			util.Failf("grpc-protocol is not \"dual\", \"ipv6\", or \"ipv4\": %s", grpcProtocol)
-		}
+		util.FailOnError(tkoutil.ValidateIPStack(grpcIpStack, "grpc-ip-stack"))
 	},
 }
 

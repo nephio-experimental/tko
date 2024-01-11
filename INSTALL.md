@@ -4,11 +4,12 @@ TKO Installation Guide
 Vagrant
 -------
 
-If you have [Vagrant](https://www.vagrantup.com/) working, we have a Vagrantfile ready to
-create a dev and test environment on top of a Fedora virtual machine. You'll need the
+If you have [Vagrant](https://www.vagrantup.com/), we have a Vagrantfile ready for
+a dev and test environment on top of a Fedora virtual machine. You'll need the
 `vagrant-reload` plugin. To run:
 
     vagrant plugin install vagrant-reload
+    cd tko
     vagrant up
 
 The internal web server port will be mapped to your host at port 60051:
