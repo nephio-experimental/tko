@@ -69,7 +69,7 @@ func (self *Server) start(level2protocol string, address string) error {
 				if err == http.ErrServerClosed {
 					self.Log.Info("stopped web server")
 				} else {
-					self.Log.Errorf("%s", err.Error())
+					self.Log.Error(err.Error())
 				}
 			}
 		}()

@@ -20,5 +20,5 @@ func writeResources(writer io.Writer, resources util.Resources) {
 	for index, resource := range resources {
 		content[index] = resource
 	}
-	(&transcribe.Transcriber{Writer: writer, Indent: "  "}).WriteYAML(content)
+	transcribe.NewTranscriber().SetWriter(writer).SetIndentSpaces(2).WriteYAML(content)
 }

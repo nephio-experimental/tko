@@ -24,7 +24,7 @@ func EncodeResources(format string, resources Resources) ([]byte, error) {
 		}
 
 		var buffer bytes.Buffer
-		if err := (&transcribe.Transcriber{Writer: &buffer, Indent: "  "}).WriteYAML(content); err == nil {
+		if err := transcribe.NewTranscriber().SetWriter(&buffer).SetIndentSpaces(2).WriteYAML(content); err == nil {
 			return buffer.Bytes(), nil
 		} else {
 			return nil, err

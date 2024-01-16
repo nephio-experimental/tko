@@ -19,7 +19,7 @@ func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Requ
 			}
 		}
 		sortById(templates_)
-		(&transcribe.Transcriber{Writer: writer}).WriteJSON(templates_)
+		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(templates_)
 	} else {
 		writer.WriteHeader(500)
 	}

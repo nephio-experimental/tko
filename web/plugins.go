@@ -21,7 +21,7 @@ func (self *Server) listPlugins(writer http.ResponseWriter, request *http.Reques
 			}
 		}
 		sortById(plugins_)
-		(&transcribe.Transcriber{Writer: writer}).WriteJSON(plugins_)
+		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(plugins_)
 	} else {
 		writer.WriteHeader(500)
 	}
