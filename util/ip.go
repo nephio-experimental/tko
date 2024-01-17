@@ -48,8 +48,7 @@ func ValidateIPStack(ipStack string, name string) error {
 func ToReachableIPAddress(address string) (string, error) {
 	if address_, zone, err := util.ToReachableIPAddress(address); err == nil {
 		if zone != "" {
-			// See: https://github.com/grpc/grpc-go/issues/3272#issuecomment-1239710027
-			address_ += "%25" + zone
+			address_ += "%" + zone
 		}
 		return address_, nil
 	} else {

@@ -19,6 +19,7 @@ m 'install-python-dependencies...' $CYAN
 "$HERE/install-python-dependencies"
 
 m 'install-systemd-services...' $CYAN
+# Note: IPv6 is very finnicky with Vagrant/KVM networking
 BACKEND=postgresql "$HERE/install-systemd-services"
 
 echo "export PATH=$HOME/go/bin:$PATH" >> "$HOME/.bashrc"

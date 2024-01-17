@@ -26,7 +26,15 @@ m 'starting controllers...'
 "$HERE/restart-service" tko-preparation-controller
 "$HERE/restart-service" tko-instantiation-controller
 
-sleep 5
+set +e
+while true; do
+	m 'waiting for tko-api-server...'
+	if tko plugin list --quiet; then
+		break
+	fi
+	sleep 1
+done
+set -e
 
 m 'registering templates...'
 

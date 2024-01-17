@@ -1,6 +1,8 @@
 package client
 
 import (
+	"strings"
+
 	api "github.com/nephio-experimental/tko/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
@@ -31,7 +33,10 @@ func NewClient(grpcIpStack string, grpcAddress string, grpcPort int, resourcesFo
 	}
 
 	if grpcAddress, err := tkoutil.ToReachableIPAddress(grpcAddress); err == nil {
-		if clientConn, err := grpc.Dial(util.JoinIPAddressPort(grpcAddress, grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials())); err == nil {
+		// See: https://github.com/grpc/grpc-go/issues/3272#issuecomment-1239710027
+		dialAddress := strings.Replace(grpcAddress, "%", "%25", 1)
+
+		if clientConn, err := grpc.Dial(util.JoinIPAddressPort(dialAddress, grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials())); err == nil {
 			return &Client{
 				GRPCLevel2Protocol: level2protocol,
 				GRPCAddress:        grpcAddress,
