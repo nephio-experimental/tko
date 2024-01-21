@@ -28,67 +28,83 @@ func (self *Client) RegisterTemplate(templateId string, metadata map[string]stri
 }
 
 func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (bool, string, error) {
-	if response, err := self.client.RegisterTemplate(context.TODO(), &api.Template{
-		TemplateId:      templateId,
-		Metadata:        metadata,
-		ResourcesFormat: resourcesFormat,
-		Resources:       resources,
-	}); err == nil {
-		return response.Registered, response.NotRegisteredReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.RegisterTemplate(context.TODO(), &api.Template{
+			TemplateId:      templateId,
+			Metadata:        metadata,
+			ResourcesFormat: resourcesFormat,
+			Resources:       resources,
+		}); err == nil {
+			return response.Registered, response.NotRegisteredReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
 }
 
 func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
-	if template, err := self.client.GetTemplate(context.TODO(), &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-		if resources, err := util.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
-			return Template{
-				TemplateInfo: TemplateInfo{
-					TemplateID:    template.TemplateId,
-					Metadata:      template.Metadata,
-					DeploymentIDs: template.DeploymentIds,
-				},
-				Resources: resources,
-			}, true, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if template, err := apiClient.GetTemplate(context.TODO(), &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
+			if resources, err := util.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
+				return Template{
+					TemplateInfo: TemplateInfo{
+						TemplateID:    template.TemplateId,
+						Metadata:      template.Metadata,
+						DeploymentIDs: template.DeploymentIds,
+					},
+					Resources: resources,
+				}, true, nil
+			} else {
+				return Template{}, false, err
+			}
+		} else if IsNotFoundError(err) {
+			return Template{}, false, nil
 		} else {
 			return Template{}, false, err
 		}
-	} else if IsNotFoundError(err) {
-		return Template{}, false, nil
 	} else {
 		return Template{}, false, err
 	}
 }
 
 func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
-	if response, err := self.client.DeleteTemplate(context.TODO(), &api.DeleteTemplate{TemplateId: templateId}); err == nil {
-		return response.Deleted, response.NotDeletedReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.DeleteTemplate(context.TODO(), &api.DeleteTemplate{TemplateId: templateId}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
 }
 
 func (self *Client) ListTemplates(templateIdPatterns []string, metadataPatterns map[string]string) ([]TemplateInfo, error) {
-	if client, err := self.client.ListTemplates(context.TODO(), &api.ListTemplates{
-		TemplateIdPatterns: templateIdPatterns,
-		MetadataPatterns:   metadataPatterns,
-	}); err == nil {
-		var templateInfos []TemplateInfo
-		for {
-			if response, err := client.Recv(); err == nil {
-				templateInfos = append(templateInfos, TemplateInfo{
-					TemplateID:    response.TemplateId,
-					Metadata:      response.Metadata,
-					DeploymentIDs: response.DeploymentIds,
-				})
-			} else if err == io.EOF {
-				break
-			} else {
-				return nil, err
+	if apiClient, err := self.apiClient(); err == nil {
+		if client, err := apiClient.ListTemplates(context.TODO(), &api.ListTemplates{
+			TemplateIdPatterns: templateIdPatterns,
+			MetadataPatterns:   metadataPatterns,
+		}); err == nil {
+			var templateInfos []TemplateInfo
+			for {
+				if response, err := client.Recv(); err == nil {
+					templateInfos = append(templateInfos, TemplateInfo{
+						TemplateID:    response.TemplateId,
+						Metadata:      response.Metadata,
+						DeploymentIDs: response.DeploymentIds,
+					})
+				} else if err == io.EOF {
+					break
+				} else {
+					return nil, err
+				}
 			}
+			return templateInfos, nil
+		} else {
+			return nil, err
 		}
-		return templateInfos, nil
 	} else {
 		return nil, err
 	}

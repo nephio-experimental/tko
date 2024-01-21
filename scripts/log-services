@@ -24,6 +24,6 @@ function follow () {
     esac
 }
 
-follow api-server
-follow preparation-controller
-follow instantiation-controller
+follow tko-api-server
+follow tko-preparation-controller
+follow tko-meta-scheduler

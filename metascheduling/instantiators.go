@@ -1,11 +1,11 @@
-package instantiation
+package metascheduling
 
 import (
 	"github.com/nephio-experimental/tko/api/client"
 	"github.com/nephio-experimental/tko/util"
 )
 
-type InstantiatorFunc func(context *Context) error
+type InstantiatorFunc func(instantiationContext *Context) error
 
 func (self *Instantiation) RegisterInstantiator(gvk util.GVK, instantiator InstantiatorFunc) {
 	self.instantiators[gvk] = instantiator

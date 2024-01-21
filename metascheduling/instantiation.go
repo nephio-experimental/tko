@@ -1,4 +1,4 @@
-package instantiation
+package metascheduling
 
 import (
 	"github.com/nephio-experimental/tko/api/client"

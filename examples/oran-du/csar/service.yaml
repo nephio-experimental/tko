@@ -35,7 +35,7 @@ topology_template:
     edge1:
       type: nephio:Site
       properties:
-        site-id: local/hello-world
+        site-id: lab/1
 
     chicago:
       type: nephio:Sites

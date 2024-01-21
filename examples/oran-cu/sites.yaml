@@ -5,7 +5,7 @@ metadata:
   name: edge1
 
 spec:
-  siteId: local/hello-world
+  siteId: lab/1
 
 ---
 

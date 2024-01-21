@@ -1,4 +1,4 @@
-package instantiation
+package metascheduling
 
 import (
 	"github.com/nephio-experimental/tko/api/client"
@@ -48,8 +48,8 @@ func (self *Instantiation) instantiateSite(siteId string, siteResources util.Res
 						}
 					}
 
-					context := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
-					if err := instantiator(context); err != nil {
+					instantiationContext := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
+					if err := instantiator(instantiationContext); err != nil {
 						log.Error(err.Error())
 					}
 				}

@@ -14,27 +14,27 @@ import (
 var parser = parserpkg.NewParser()
 
 //
-// ToscaParser
+// TOSCAParser
 //
 
-type ToscaParser struct {
+type TOSCAParser struct {
 	Clout *clout.Clout
 
 	urlContext *exturl.Context
 	problems   *problems.Problems
 }
 
-func NewToscaParser() *ToscaParser {
-	return &ToscaParser{
+func NewTOSCAParser() *TOSCAParser {
+	return &TOSCAParser{
 		urlContext: exturl.NewContext(),
 	}
 }
 
-func (self *ToscaParser) Release() error {
+func (self *TOSCAParser) Release() error {
 	return self.urlContext.Release()
 }
 
-func (self *ToscaParser) Parse(context contextpkg.Context, url string) error {
+func (self *TOSCAParser) Parse(context contextpkg.Context, url string) error {
 	base, err := self.urlContext.NewWorkingDirFileURL()
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (self *ToscaParser) Parse(context contextpkg.Context, url string) error {
 	}
 }
 
-func (self *ToscaParser) Coerce() error {
+func (self *TOSCAParser) Coerce() error {
 	self.execContext().Coerce()
 
 	if !self.problems.Empty() {
@@ -85,7 +85,7 @@ func (self *ToscaParser) Coerce() error {
 	return nil
 }
 
-func (self *ToscaParser) execContext() *js.ExecContext {
+func (self *TOSCAParser) execContext() *js.ExecContext {
 	return &js.ExecContext{
 		Clout:      self.Clout,
 		Problems:   self.problems,

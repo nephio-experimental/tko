@@ -19,7 +19,7 @@ type Server struct {
 	api.UnimplementedAPIServer
 
 	Backend                backend.Backend
-	IPStack                string
+	IPStack                util.IPStack
 	Address                string
 	Port                   int
 	DefaultResourcesFormat string
@@ -28,7 +28,7 @@ type Server struct {
 	grpcServers []*grpc.Server
 }
 
-func NewServer(backend backend.Backend, ipStack string, address string, port int, defaultResourcesFormat string, log commonlog.Logger) *Server {
+func NewServer(backend backend.Backend, ipStack util.IPStack, address string, port int, defaultResourcesFormat string, log commonlog.Logger) *Server {
 	return &Server{
 		Backend:                backend,
 		IPStack:                ipStack,
@@ -45,18 +45,21 @@ func (self *Server) Start() error {
 
 // ([util.StartServerFunc] signature)
 func (self *Server) start(level2protocol string, address string) error {
-	grpcServer := grpc.NewServer()
-	api.RegisterAPIServer(grpcServer, self)
-
-	if address, err := tkoutil.ToReachableIPAddress(address); err == nil {
-		if listener, err := net.Listen(level2protocol, util.JoinIPAddressPort(address, self.Port)); err == nil {
+	if address, err := util.ToReachableIPAddress(address); err == nil {
+		address = util.JoinIPAddressPort(address, self.Port)
+		if listener, err := net.Listen(level2protocol, address); err == nil {
 			self.Log.Noticef("starting gRPC server %d on %s %s", len(self.grpcServers), level2protocol, listener.Addr().String())
+
+			grpcServer := grpc.NewServer()
+			api.RegisterAPIServer(grpcServer, self)
 			self.grpcServers = append(self.grpcServers, grpcServer)
+
 			go func() {
 				if err := grpcServer.Serve(listener); err != nil {
 					self.Log.Critical(err.Error())
 				}
 			}()
+
 			return nil
 		} else {
 			return err
@@ -70,7 +73,7 @@ func (self *Server) Stop() {
 	for index, grpcServer := range self.grpcServers {
 		if grpcServer != nil {
 			self.Log.Noticef("stopping gRPC server %d", index)
-			grpcServer.Stop()
+			grpcServer.Stop() // TODO: GracefulStop()?
 			self.Log.Noticef("stopped gRPC server %d", index)
 		}
 	}

@@ -1,4 +1,4 @@
-package instantiation
+package metascheduling
 
 import (
 	"errors"
@@ -57,15 +57,15 @@ func NewCommandPluginInstantiator(plugin client.PluginInfo) (InstantiatorFunc, e
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
 
-	return func(context *Context) error {
-		context.Log.Infof("instantiate via command plugin for %s: %s", context.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
+	return func(instantiationContext *Context) error {
+		instantiationContext.Log.Infof("instantiate via command plugin for %s: %s", instantiationContext.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
 
-		logFifo := util.NewLogFIFO("tko-instantiation", context.Log)
+		logFifo := util.NewLogFIFO("tko-instantiation", instantiationContext.Log)
 		if err := logFifo.Start(); err != nil {
 			return err
 		}
 
-		input := context.ToPluginInput(logFifo.Path)
+		input := instantiationContext.ToPluginInput(logFifo.Path)
 		var output PluginOutput
 		if err := util.ExecuteCommand(plugin.Arguments, input, &output); err == nil {
 			if output.Error == "" {

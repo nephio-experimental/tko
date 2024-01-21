@@ -201,7 +201,7 @@ func (self *ValidatingBackend) SetPlugin(plugin *Plugin) error {
 		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"instantiate\"")
 	}
 
-	// Note: plugin.Group can be empty
+	// Note: plugin.Group can be empty (for default group)
 	if plugin.Version == "" {
 		return NewBadArgumentError("version is empty")
 	}
@@ -223,7 +223,7 @@ func (self *ValidatingBackend) GetPlugin(pluginId PluginID) (*Plugin, error) {
 		return nil, NewBadArgumentError("type must be \"validate\", \"prepare\", or \"instantiate\"")
 	}
 
-	// Note: plugin.Group can be empty
+	// Note: plugin.Group can be empty (for default group)
 	if pluginId.Version == "" {
 		return nil, NewBadArgumentError("version is empty")
 	}
@@ -242,7 +242,7 @@ func (self *ValidatingBackend) DeletePlugin(pluginId PluginID) error {
 		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"instantiate\"")
 	}
 
-	// Note: plugin.Group can be empty
+	// Note: plugin.Group can be empty (for default group)
 	if pluginId.Version == "" {
 		return NewBadArgumentError("version is empty")
 	}

@@ -21,16 +21,20 @@ type PluginID struct {
 }
 
 func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments []string, properties map[string]string) (bool, string, error) {
-	if response, err := self.client.RegisterPlugin(context.TODO(), &api.Plugin{
-		Type:       pluginId.Type,
-		Group:      pluginId.Group,
-		Version:    pluginId.Version,
-		Kind:       pluginId.Kind,
-		Executor:   executor,
-		Arguments:  arguments,
-		Properties: properties,
-	}); err == nil {
-		return response.Registered, response.NotRegisteredReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.RegisterPlugin(context.TODO(), &api.Plugin{
+			Type:       pluginId.Type,
+			Group:      pluginId.Group,
+			Version:    pluginId.Version,
+			Kind:       pluginId.Kind,
+			Executor:   executor,
+			Arguments:  arguments,
+			Properties: properties,
+		}); err == nil {
+			return response.Registered, response.NotRegisteredReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
@@ -44,56 +48,68 @@ func NewPluginID(type_ string, gvk util.GVK) PluginID {
 }
 
 func (self *Client) GetPlugin(pluginId PluginID) (PluginInfo, bool, error) {
-	if plugin, err := self.client.GetPlugin(context.TODO(), &api.GetPlugin{
-		Type:    pluginId.Type,
-		Group:   pluginId.Group,
-		Version: pluginId.Version,
-		Kind:    pluginId.Kind,
-	}); err == nil {
-		return PluginInfo{
-			PluginID:   NewPluginID(plugin.Type, util.NewGVK(plugin.Group, plugin.Version, plugin.Kind)),
-			Executor:   plugin.Executor,
-			Arguments:  plugin.Arguments,
-			Properties: plugin.Properties,
-		}, true, nil
-	} else if IsNotFoundError(err) {
-		return PluginInfo{}, false, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if plugin, err := apiClient.GetPlugin(context.TODO(), &api.GetPlugin{
+			Type:    pluginId.Type,
+			Group:   pluginId.Group,
+			Version: pluginId.Version,
+			Kind:    pluginId.Kind,
+		}); err == nil {
+			return PluginInfo{
+				PluginID:   NewPluginID(plugin.Type, util.NewGVK(plugin.Group, plugin.Version, plugin.Kind)),
+				Executor:   plugin.Executor,
+				Arguments:  plugin.Arguments,
+				Properties: plugin.Properties,
+			}, true, nil
+		} else if IsNotFoundError(err) {
+			return PluginInfo{}, false, nil
+		} else {
+			return PluginInfo{}, false, err
+		}
 	} else {
 		return PluginInfo{}, false, err
 	}
 }
 
 func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
-	if response, err := self.client.DeletePlugin(context.TODO(), &api.DeletePlugin{
-		Type:    pluginId.Type,
-		Group:   pluginId.Group,
-		Version: pluginId.Version,
-		Kind:    pluginId.Kind,
-	}); err == nil {
-		return response.Deleted, response.NotDeletedReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.DeletePlugin(context.TODO(), &api.DeletePlugin{
+			Type:    pluginId.Type,
+			Group:   pluginId.Group,
+			Version: pluginId.Version,
+			Kind:    pluginId.Kind,
+		}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
 }
 
 func (self *Client) ListPlugins() ([]PluginInfo, error) {
-	if client, err := self.client.ListPlugins(context.TODO(), new(api.ListPlugins)); err == nil {
-		var plugins []PluginInfo
-		for {
-			if response, err := client.Recv(); err == nil {
-				plugins = append(plugins, PluginInfo{
-					PluginID:   NewPluginID(response.Type, util.NewGVK(response.Group, response.Version, response.Kind)),
-					Executor:   response.Executor,
-					Arguments:  response.Arguments,
-					Properties: response.Properties,
-				})
-			} else if err == io.EOF {
-				break
-			} else {
-				return nil, err
+	if apiClient, err := self.apiClient(); err == nil {
+		if client, err := apiClient.ListPlugins(context.TODO(), new(api.ListPlugins)); err == nil {
+			var plugins []PluginInfo
+			for {
+				if response, err := client.Recv(); err == nil {
+					plugins = append(plugins, PluginInfo{
+						PluginID:   NewPluginID(response.Type, util.NewGVK(response.Group, response.Version, response.Kind)),
+						Executor:   response.Executor,
+						Arguments:  response.Arguments,
+						Properties: response.Properties,
+					})
+				} else if err == io.EOF {
+					break
+				} else {
+					return nil, err
+				}
 			}
+			return plugins, nil
+		} else {
+			return nil, err
 		}
-		return plugins, nil
 	} else {
 		return nil, err
 	}

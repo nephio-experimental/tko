@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.Template) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerTemplate: %s", template)
 
@@ -27,7 +27,7 @@ func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.T
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) DeleteTemplate(context contextpkg.Context, deleteTemplate *api.DeleteTemplate) (*api.DeleteResponse, error) {
 	self.Log.Infof("deleteTemplate: %s", deleteTemplate)
 
@@ -40,7 +40,7 @@ func (self *Server) DeleteTemplate(context contextpkg.Context, deleteTemplate *a
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.GetTemplate) (*api.Template, error) {
 	self.Log.Infof("getTemplate: %s", getTemplate)
 
@@ -65,7 +65,7 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.API_ListTemplatesServer) error {
 	self.Log.Infof("listTemplates: %s", listTemplates)
 

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) CreateDeployment(context contextpkg.Context, createDeployment *api.CreateDeployment) (*api.CreateDeploymentResponse, error) {
 	self.Log.Infof("createDeployment: %s", createDeployment)
 
@@ -28,7 +28,7 @@ func (self *Server) CreateDeployment(context contextpkg.Context, createDeploymen
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) DeleteDeployment(context contextpkg.Context, deleteDeployment *api.DeleteDeployment) (*api.DeleteResponse, error) {
 	self.Log.Infof("deleteDeployment: %s", deleteDeployment)
 
@@ -41,7 +41,7 @@ func (self *Server) DeleteDeployment(context contextpkg.Context, deleteDeploymen
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api.GetDeployment) (*api.Deployment, error) {
 	self.Log.Infof("getDeployment: %s", getDeployment)
 
@@ -68,7 +68,7 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.API_ListDeploymentsServer) error {
 	self.Log.Infof("listDeployments: %s", listDeployments)
 
@@ -91,7 +91,7 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 	return nil
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) StartDeploymentModification(context contextpkg.Context, startDeploymentModification *api.StartDeploymentModification) (*api.StartDeploymentModificationResponse, error) {
 	self.Log.Infof("startDeploymentModification: %s", startDeploymentModification)
 
@@ -117,7 +117,7 @@ func (self *Server) StartDeploymentModification(context contextpkg.Context, star
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) EndDeploymentModification(context contextpkg.Context, endDeploymentModification *api.EndDeploymentModification) (*api.EndDeploymentModificationResponse, error) {
 	self.Log.Infof("endDeploymentModification: %s", endDeploymentModification)
 
@@ -135,7 +135,7 @@ func (self *Server) EndDeploymentModification(context contextpkg.Context, endDep
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) CancelDeploymentModification(context contextpkg.Context, cancelDeploymentModification *api.CancelDeploymentModification) (*api.CancelDeploymentModificationResponse, error) {
 	self.Log.Infof("cancelDeploymentModification: %s", cancelDeploymentModification)
 

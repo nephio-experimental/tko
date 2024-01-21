@@ -7,7 +7,7 @@ import (
 	api "github.com/nephio-experimental/tko/grpc"
 )
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugin) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerPlugin: %s", plugin)
 
@@ -25,7 +25,7 @@ func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugi
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) DeletePlugin(context contextpkg.Context, deletePlugin *api.DeletePlugin) (*api.DeleteResponse, error) {
 	self.Log.Infof("deletePlugin: %s", deletePlugin)
 
@@ -38,7 +38,7 @@ func (self *Server) DeletePlugin(context contextpkg.Context, deletePlugin *api.D
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) GetPlugin(context contextpkg.Context, getPlugin *api.GetPlugin) (*api.Plugin, error) {
 	self.Log.Infof("getPlugin: %s", getPlugin)
 
@@ -57,7 +57,7 @@ func (self *Server) GetPlugin(context contextpkg.Context, getPlugin *api.GetPlug
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_ListPluginsServer) error {
 	self.Log.Infof("listPlugins: %s", listPlugins)
 

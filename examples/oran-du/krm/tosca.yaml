@@ -2,7 +2,7 @@ apiVersion: topology.nephio.org/v1alpha1
 kind: TOSCA
 
 metadata:
-  name: hello-tosca
+  name: oran-du
 
 spec:
-  url: /tmp/hello-tosca.csar
+  url: /tmp/tko-oran-du.csar

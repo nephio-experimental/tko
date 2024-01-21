@@ -28,7 +28,7 @@ To see the service logs (you can do this in separate terminal tabs):
 
     scripts/log-service tko-api-server --follow
     scripts/log-service tko-preparation-controller --follow
-    scripts/log-service tko-instantiation-controller --follow
+    scripts/log-service tko-meta-scheduler --follow
 
 To see the instantiated KIND clusters:
 

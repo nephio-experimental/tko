@@ -2,9 +2,7 @@ package commands
 
 import (
 	clientpkg "github.com/nephio-experimental/tko/api/client"
-	"github.com/nephio-experimental/tko/preparation"
-	"github.com/nephio-experimental/tko/preparation/topology"
-	validationpkg "github.com/nephio-experimental/tko/validation"
+	"github.com/nephio-experimental/tko/metascheduling"
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
@@ -27,7 +25,7 @@ func init() {
 
 var startCommand = &cobra.Command{
 	Use:   "start",
-	Short: "Start the TKO Preparation Controller",
+	Short: "Start the TKO Meta-Scheduler",
 	Run: func(cmd *cobra.Command, args []string) {
 		grpcIpStack = util.IPStack(grpcIpStackString)
 		util.FailOnError(grpcIpStack.Validate("grpc-ip-stack"))
@@ -41,17 +39,8 @@ func Serve() {
 	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("client"))
 	util.FailOnError(err)
 
-	// Validation
-	validation, err := validationpkg.NewValidation(client, commonlog.GetLogger("validation"))
-	util.FailOnError(err)
-
 	// Controller
-	controller := preparation.NewController(preparation.NewPreparation(client, validation, commonlog.GetLogger("preparation")), commonlog.GetLogger("controller"))
-
-	// Topology preparation
-	controller.Preparation.RegisterPreparer(topology.PlacementGVK, topology.PreparePlacement)
-	controller.Preparation.RegisterPreparer(topology.SiteGVK, topology.PrepareSite)
-	controller.Preparation.RegisterPreparer(topology.TOSCAGVK, topology.PrepareTOSCA)
+	controller := metascheduling.NewController(metascheduling.NewInstantiation(client, commonlog.GetLogger("meta-scheduling")), commonlog.GetLogger("controller"))
 
 	controller.Start()
 	util.OnExit(controller.Stop)

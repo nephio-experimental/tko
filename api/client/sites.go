@@ -29,71 +29,87 @@ func (self *Client) RegisterSite(siteId string, templateId string, metadata map[
 }
 
 func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (bool, string, error) {
-	if response, err := self.client.RegisterSite(context.TODO(), &api.Site{
-		SiteId:          siteId,
-		TemplateId:      templateId,
-		Metadata:        metadata,
-		ResourcesFormat: resourcesFormat,
-		Resources:       resources,
-	}); err == nil {
-		return response.Registered, response.NotRegisteredReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.RegisterSite(context.TODO(), &api.Site{
+			SiteId:          siteId,
+			TemplateId:      templateId,
+			Metadata:        metadata,
+			ResourcesFormat: resourcesFormat,
+			Resources:       resources,
+		}); err == nil {
+			return response.Registered, response.NotRegisteredReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
 }
 
 func (self *Client) GetSite(siteId string) (Site, bool, error) {
-	if site, err := self.client.GetSite(context.TODO(), &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-		if resources, err := util.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
-			return Site{
-				SiteInfo: SiteInfo{
-					SiteID:        site.SiteId,
-					TemplateID:    site.TemplateId,
-					Metadata:      site.Metadata,
-					DeploymentIDs: site.DeploymentIds,
-				},
-				Resources: resources,
-			}, true, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if site, err := apiClient.GetSite(context.TODO(), &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
+			if resources, err := util.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
+				return Site{
+					SiteInfo: SiteInfo{
+						SiteID:        site.SiteId,
+						TemplateID:    site.TemplateId,
+						Metadata:      site.Metadata,
+						DeploymentIDs: site.DeploymentIds,
+					},
+					Resources: resources,
+				}, true, nil
+			} else {
+				return Site{}, false, err
+			}
+		} else if IsNotFoundError(err) {
+			return Site{}, false, nil
 		} else {
 			return Site{}, false, err
 		}
-	} else if IsNotFoundError(err) {
-		return Site{}, false, nil
 	} else {
 		return Site{}, false, err
 	}
 }
 
 func (self *Client) DeleteSite(siteId string) (bool, string, error) {
-	if response, err := self.client.DeleteSite(context.TODO(), &api.DeleteSite{SiteId: siteId}); err == nil {
-		return response.Deleted, response.NotDeletedReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.DeleteSite(context.TODO(), &api.DeleteSite{SiteId: siteId}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
 }
 
 func (self *Client) ListSites(siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]SiteInfo, error) {
-	if client, err := self.client.ListSites(context.TODO(), &api.ListSites{
-		SiteIdPatterns:     siteIdPatterns,
-		TemplateIdPatterns: templateIdPatterns,
-		MetadataPatterns:   metadataPatterns,
-	}); err == nil {
-		var siteInfos []SiteInfo
-		for {
-			if response, err := client.Recv(); err == nil {
-				siteInfos = append(siteInfos, SiteInfo{
-					SiteID:        response.SiteId,
-					TemplateID:    response.TemplateId,
-					Metadata:      response.Metadata,
-					DeploymentIDs: response.DeploymentIds,
-				})
-			} else if err == io.EOF {
-				break
-			} else {
-				return nil, err
+	if apiClient, err := self.apiClient(); err == nil {
+		if client, err := apiClient.ListSites(context.TODO(), &api.ListSites{
+			SiteIdPatterns:     siteIdPatterns,
+			TemplateIdPatterns: templateIdPatterns,
+			MetadataPatterns:   metadataPatterns,
+		}); err == nil {
+			var siteInfos []SiteInfo
+			for {
+				if response, err := client.Recv(); err == nil {
+					siteInfos = append(siteInfos, SiteInfo{
+						SiteID:        response.SiteId,
+						TemplateID:    response.TemplateId,
+						Metadata:      response.Metadata,
+						DeploymentIDs: response.DeploymentIds,
+					})
+				} else if err == io.EOF {
+					break
+				} else {
+					return nil, err
+				}
 			}
+			return siteInfos, nil
+		} else {
+			return nil, err
 		}
-		return siteInfos, nil
 	} else {
 		return nil, err
 	}

@@ -8,4 +8,4 @@ not_root
 
 NAME=$1
 
-systemctl --user restart "$NAME.service"
+systemctl --user start "$NAME.service"

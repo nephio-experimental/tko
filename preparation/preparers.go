@@ -7,7 +7,7 @@ import (
 	"github.com/tliron/go-ard"
 )
 
-type PreparerFunc func(context *Context) (bool, []ard.Map, error)
+type PreparerFunc func(preparationContext *Context) (bool, []ard.Map, error)
 
 func (self *Preparation) RegisterPreparer(gvk util.GVK, preparer PreparerFunc) {
 	self.preparers[gvk] = preparer

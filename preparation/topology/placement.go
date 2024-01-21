@@ -19,10 +19,10 @@ type Deployment struct {
 }
 
 // ([preparation.PrepareFunc] signature)
-func PreparePlacement(context *preparation.Context) (bool, util.Resources, error) {
-	context.Log.Infof("preparing topology.nephio.org Placement: %s", context.TargetResourceIdentifer.Name)
+func PreparePlacement(preparationContext *preparation.Context) (bool, util.Resources, error) {
+	preparationContext.Log.Infof("preparing topology.nephio.org Placement: %s", preparationContext.TargetResourceIdentifer.Name)
 
-	if placement, ok := context.GetResource(); ok {
+	if placement, ok := preparationContext.GetResource(); ok {
 		prepared := true
 		var deployments []Deployment
 
@@ -31,9 +31,9 @@ func PreparePlacement(context *preparation.Context) (bool, util.Resources, error
 		for _, template := range templates {
 			template_ := ard.With(template)
 			if templateName, ok := template_.Get("template").String(); ok {
-				if templateId, ok := GetTemplateID(context.DeploymentResources, templateName); ok {
+				if templateId, ok := GetTemplateID(preparationContext.DeploymentResources, templateName); ok {
 					merge, _ := template_.Get("merge").List()
-					_, mergeResources, err := context.GetMergeResources(merge)
+					_, mergeResources, err := preparationContext.GetMergeResources(merge)
 					if err != nil {
 						return false, nil, err
 					}
@@ -41,7 +41,7 @@ func PreparePlacement(context *preparation.Context) (bool, util.Resources, error
 					sites, _ := template_.Get("sites").List()
 					for _, site := range sites {
 						if siteName, ok := site.(string); ok {
-							if site_, ok := GetSite(context.DeploymentResources, siteName); ok {
+							if site_, ok := GetSite(preparationContext.DeploymentResources, siteName); ok {
 								if siteId, ok := GetStatusSiteID(site_); ok {
 									deployments = append(deployments, Deployment{templateId, mergeResources, siteId, site_})
 								} else {
@@ -58,7 +58,7 @@ func PreparePlacement(context *preparation.Context) (bool, util.Resources, error
 								for key, value := range metadata {
 									metadataPatterns[key.(string)] = value.(string)
 								}
-								if siteInfos, err := context.Preparation.Client.ListSites(nil, nil, metadataPatterns); err == nil {
+								if siteInfos, err := preparationContext.Preparation.Client.ListSites(nil, nil, metadataPatterns); err == nil {
 									for _, siteInfo := range siteInfos {
 										deployments = append(deployments, Deployment{templateId, mergeResources, siteInfo.SiteID, nil})
 									}
@@ -74,9 +74,9 @@ func PreparePlacement(context *preparation.Context) (bool, util.Resources, error
 
 		if prepared {
 			for _, deployment := range deployments {
-				if ok, reason, deploymentId, err := context.Preparation.Client.CreateDeployment(context.DeploymentID, deployment.TemplateID, deployment.SiteID, false, deployment.MergeResources); err == nil {
+				if ok, reason, deploymentId, err := preparationContext.Preparation.Client.CreateDeployment(preparationContext.DeploymentID, deployment.TemplateID, deployment.SiteID, false, deployment.MergeResources); err == nil {
 					if ok {
-						context.Log.Infof("created deployment %s (%s) for site %s", deploymentId, deployment.TemplateID, deployment.SiteID)
+						preparationContext.Log.Infof("created deployment %s (%s) for site %s", deploymentId, deployment.TemplateID, deployment.SiteID)
 						/*AppendStatusDeploymentID(placement, deploymentId)
 						if deployment.Site != nil {
 							AppendStatusDeploymentID(deployment.Site, deploymentId)
@@ -94,7 +94,7 @@ func PreparePlacement(context *preparation.Context) (bool, util.Resources, error
 			}
 		}
 
-		return true, context.DeploymentResources, nil
+		return true, preparationContext.DeploymentResources, nil
 	}
 
 	return false, nil, nil

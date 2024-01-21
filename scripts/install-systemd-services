@@ -17,7 +17,7 @@ function install_service () {
 mkdir --parents ~/.config/systemd/user/
 
 install_service tko-api-server
-install_service tko-instantiation-controller
+install_service tko-meta-scheduler
 install_service tko-preparation-controller
 
 systemctl --user daemon-reload

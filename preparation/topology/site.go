@@ -13,12 +13,12 @@ import (
 var SiteGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Site")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareSite(context *preparation.Context) (bool, util.Resources, error) {
-	context.Log.Infof("preparing topology.nephio.org Site: %s", context.TargetResourceIdentifer.Name)
+func PrepareSite(preparationContext *preparation.Context) (bool, util.Resources, error) {
+	preparationContext.Log.Infof("preparing topology.nephio.org Site: %s", preparationContext.TargetResourceIdentifer.Name)
 
 	// TODO: check that all Placements have been prepared first?
 
-	if site, ok := context.GetResource(); ok {
+	if site, ok := preparationContext.GetResource(); ok {
 		prepared := false
 
 		spec := ard.With(site).Get("spec")
@@ -33,7 +33,7 @@ func PrepareSite(context *preparation.Context) (bool, util.Resources, error) {
 				templateId, _ := spec.Get("provisionTemplateId").String()
 
 				merge, _ := spec.Get("merge").List()
-				ok, mergeResources, err := context.GetMergeResources(merge)
+				ok, mergeResources, err := preparationContext.GetMergeResources(merge)
 				if err != nil {
 					return false, nil, err
 				}
@@ -42,9 +42,9 @@ func PrepareSite(context *preparation.Context) (bool, util.Resources, error) {
 				}
 
 				siteId := "provisioned/" + ksuid.New().String()
-				if ok, reason, err := context.Preparation.Client.RegisterSite(siteId, templateId, map[string]string{"type": "provisioned"}, mergeResources); err == nil {
+				if ok, reason, err := preparationContext.Preparation.Client.RegisterSite(siteId, templateId, map[string]string{"type": "provisioned"}, mergeResources); err == nil {
 					if ok {
-						context.Log.Infof("provisioned new site %s for %s", siteId, context.TargetResourceIdentifer.Name)
+						preparationContext.Log.Infof("provisioned new site %s for %s", siteId, preparationContext.TargetResourceIdentifer.Name)
 						SetStatusSiteID(site, siteId)
 						prepared = true
 					} else {
@@ -60,11 +60,11 @@ func PrepareSite(context *preparation.Context) (bool, util.Resources, error) {
 			if !util.SetPreparedAnnotation(site, true) {
 				return false, nil, errors.New("malformed Site resource")
 			}
-			return true, context.DeploymentResources, nil
+			return true, preparationContext.DeploymentResources, nil
 		}
 	}
 
-	return false, context.DeploymentResources, nil
+	return false, preparationContext.DeploymentResources, nil
 }
 
 func GetSite(resources util.Resources, siteName string) (util.Resource, bool) {

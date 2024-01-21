@@ -32,85 +32,105 @@ func (self *Client) CreateDeployment(parentDeploymentId string, templateId strin
 }
 
 func (self *Client) CreateDeploymentRaw(parentDeploymentId string, templateId string, siteId string, prepared bool, mergeResourcesFormat string, mergeResources []byte) (bool, string, string, error) {
-	if response, err := self.client.CreateDeployment(context.TODO(), &api.CreateDeployment{
-		ParentDeploymentId:   parentDeploymentId,
-		TemplateId:           templateId,
-		SiteId:               siteId,
-		Prepared:             prepared,
-		MergeResourcesFormat: mergeResourcesFormat,
-		MergeResources:       mergeResources,
-	}); err == nil {
-		return response.Created, response.NotCreatedReason, response.DeploymentId, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.CreateDeployment(context.TODO(), &api.CreateDeployment{
+			ParentDeploymentId:   parentDeploymentId,
+			TemplateId:           templateId,
+			SiteId:               siteId,
+			Prepared:             prepared,
+			MergeResourcesFormat: mergeResourcesFormat,
+			MergeResources:       mergeResources,
+		}); err == nil {
+			return response.Created, response.NotCreatedReason, response.DeploymentId, nil
+		} else {
+			return false, "", "", err
+		}
 	} else {
 		return false, "", "", err
 	}
 }
 
 func (self *Client) GetDeployment(deploymentId string) (Deployment, bool, error) {
-	if deployment, err := self.client.GetDeployment(context.TODO(), &api.GetDeployment{DeploymentId: deploymentId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-		if resources, err := util.DecodeResources(deployment.ResourcesFormat, deployment.Resources); err == nil {
-			return Deployment{
-				DeploymentInfo: DeploymentInfo{
-					DeploymentID: deployment.DeploymentId,
-					TemplateID:   deployment.TemplateId,
-					SiteID:       deployment.SiteId,
-					Prepared:     deployment.Prepared,
-				},
-				Resources: resources,
-			}, true, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if deployment, err := apiClient.GetDeployment(context.TODO(), &api.GetDeployment{DeploymentId: deploymentId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
+			if resources, err := util.DecodeResources(deployment.ResourcesFormat, deployment.Resources); err == nil {
+				return Deployment{
+					DeploymentInfo: DeploymentInfo{
+						DeploymentID: deployment.DeploymentId,
+						TemplateID:   deployment.TemplateId,
+						SiteID:       deployment.SiteId,
+						Prepared:     deployment.Prepared,
+					},
+					Resources: resources,
+				}, true, nil
+			} else {
+				return Deployment{}, false, err
+			}
+		} else if IsNotFoundError(err) {
+			return Deployment{}, false, nil
 		} else {
 			return Deployment{}, false, err
 		}
-	} else if IsNotFoundError(err) {
-		return Deployment{}, false, nil
 	} else {
 		return Deployment{}, false, err
 	}
 }
 
 func (self *Client) DeleteDeployment(deploymentId string) (bool, string, error) {
-	if response, err := self.client.DeleteDeployment(context.TODO(), &api.DeleteDeployment{DeploymentId: deploymentId}); err == nil {
-		return response.Deleted, response.NotDeletedReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.DeleteDeployment(context.TODO(), &api.DeleteDeployment{DeploymentId: deploymentId}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}
 }
 
 func (self *Client) ListDeployments(prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]DeploymentInfo, error) {
-	if client, err := self.client.ListDeployments(context.TODO(), &api.ListDeployments{
-		Prepared:                 prepared,
-		ParentDeploymentId:       parentDeploymentId,
-		TemplateIdPatterns:       templateIdPatterns,
-		TemplateMetadataPatterns: templateMetadataPatterns,
-		SiteIdPatterns:           siteIdPatterns,
-		SiteMetadataPatterns:     siteMetadataPatterns,
-	}); err == nil {
-		var deploymentInfos []DeploymentInfo
-		for {
-			if response, err := client.Recv(); err == nil {
-				deploymentInfos = append(deploymentInfos, DeploymentInfo{
-					DeploymentID:       response.DeploymentId,
-					ParentDeploymentID: response.ParentDeploymentId,
-					TemplateID:         response.TemplateId,
-					SiteID:             response.SiteId,
-					Prepared:           response.Prepared,
-				})
-			} else if err == io.EOF {
-				break
-			} else {
-				return nil, err
+	if apiClient, err := self.apiClient(); err == nil {
+		if client, err := apiClient.ListDeployments(context.TODO(), &api.ListDeployments{
+			Prepared:                 prepared,
+			ParentDeploymentId:       parentDeploymentId,
+			TemplateIdPatterns:       templateIdPatterns,
+			TemplateMetadataPatterns: templateMetadataPatterns,
+			SiteIdPatterns:           siteIdPatterns,
+			SiteMetadataPatterns:     siteMetadataPatterns,
+		}); err == nil {
+			var deploymentInfos []DeploymentInfo
+			for {
+				if response, err := client.Recv(); err == nil {
+					deploymentInfos = append(deploymentInfos, DeploymentInfo{
+						DeploymentID:       response.DeploymentId,
+						ParentDeploymentID: response.ParentDeploymentId,
+						TemplateID:         response.TemplateId,
+						SiteID:             response.SiteId,
+						Prepared:           response.Prepared,
+					})
+				} else if err == io.EOF {
+					break
+				} else {
+					return nil, err
+				}
 			}
+			return deploymentInfos, nil
+		} else {
+			return nil, err
 		}
-		return deploymentInfos, nil
 	} else {
 		return nil, err
 	}
 }
 
 func (self *Client) StartDeploymentModification(deploymentId string) (bool, string, string, util.Resources, error) {
-	if response, err := self.client.StartDeploymentModification(context.TODO(), &api.StartDeploymentModification{DeploymentId: deploymentId}); err == nil {
-		if resources, err := util.DecodeResources(response.ResourcesFormat, response.Resources); err == nil {
-			return response.Started, response.NotStartedReason, response.ModificationToken, resources, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.StartDeploymentModification(context.TODO(), &api.StartDeploymentModification{DeploymentId: deploymentId}); err == nil {
+			if resources, err := util.DecodeResources(response.ResourcesFormat, response.Resources); err == nil {
+				return response.Started, response.NotStartedReason, response.ModificationToken, resources, nil
+			} else {
+				return false, "", "", nil, err
+			}
 		} else {
 			return false, "", "", nil, err
 		}
@@ -128,20 +148,28 @@ func (self *Client) EndDeploymentModification(modificationToken string, resource
 }
 
 func (self *Client) EndDeploymentModificationRaw(modificationToken string, resourcesFormat string, resources []byte) (bool, string, string, error) {
-	if response, err := self.client.EndDeploymentModification(context.TODO(), &api.EndDeploymentModification{
-		ModificationToken: modificationToken,
-		ResourcesFormat:   resourcesFormat,
-		Resources:         resources,
-	}); err == nil {
-		return response.Modified, response.NotModifiedReason, response.DeploymentId, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.EndDeploymentModification(context.TODO(), &api.EndDeploymentModification{
+			ModificationToken: modificationToken,
+			ResourcesFormat:   resourcesFormat,
+			Resources:         resources,
+		}); err == nil {
+			return response.Modified, response.NotModifiedReason, response.DeploymentId, nil
+		} else {
+			return false, "", "", err
+		}
 	} else {
 		return false, "", "", err
 	}
 }
 
 func (self *Client) CancelDeploymentModification(modificationToken string) (bool, string, error) {
-	if response, err := self.client.CancelDeploymentModification(context.TODO(), &api.CancelDeploymentModification{ModificationToken: modificationToken}); err == nil {
-		return response.Cancelled, response.NotCancelledReason, nil
+	if apiClient, err := self.apiClient(); err == nil {
+		if response, err := apiClient.CancelDeploymentModification(context.TODO(), &api.CancelDeploymentModification{ModificationToken: modificationToken}); err == nil {
+			return response.Cancelled, response.NotCancelledReason, nil
+		} else {
+			return false, "", err
+		}
 	} else {
 		return false, "", err
 	}

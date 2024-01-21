@@ -8,6 +8,7 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/go-transcribe"
+	"github.com/tliron/kutil/terminal"
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,7 +41,7 @@ func FailOnGRPCError(err error) {
 		case codes.Unknown:
 			util.Fail(status_.Message())
 		default:
-			util.Failf("%s: %s", code, status_.Message())
+			util.Failf("gRPC %s: %s", code, status_.Message())
 		}
 	} else {
 		util.FailOnError(err)
@@ -48,7 +49,9 @@ func FailOnGRPCError(err error) {
 }
 
 func Print(content any) {
-	Write(os.Stdout, content)
+	if !terminal.Quiet {
+		Write(os.Stdout, content)
+	}
 }
 
 func PrintResources(resources tkoutil.Resources) {
@@ -56,8 +59,7 @@ func PrintResources(resources tkoutil.Resources) {
 }
 
 func Write(writer io.Writer, content any) {
-	err := Transcriber(writer).Write(content)
-	util.FailOnError(err)
+	util.FailOnError(Transcriber(writer).Write(content))
 }
 
 func WriteResources(writer io.Writer, resources tkoutil.Resources) {

@@ -1,5 +1,5 @@
 [Unit]
-Description=tko API Server
+Description=TKO API Server
 After=network-online.target
 Wants=network-online.target
 

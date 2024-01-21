@@ -12,25 +12,25 @@ import (
 	cloututil "github.com/tliron/puccini/clout/util"
 )
 
-var ToscaGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
+var TOSCAGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareTOSCA(context *preparation.Context) (bool, util.Resources, error) {
-	context.Log.Infof("preparing topology.nephio.org TOSCA: %s", context.TargetResourceIdentifer.Name)
+func PrepareTOSCA(preparationContext *preparation.Context) (bool, util.Resources, error) {
+	preparationContext.Log.Infof("preparing topology.nephio.org TOSCA: %s", preparationContext.TargetResourceIdentifer.Name)
 
-	if tosca, ok := context.GetResource(); ok {
+	if tosca, ok := preparationContext.GetResource(); ok {
 		if url, ok := ard.With(tosca).Get("spec", "url").String(); ok {
-			parser := util.NewToscaParser()
+			parser := util.NewTOSCAParser()
 			defer parser.Release()
 
 			if err := parser.Parse(contextpkg.TODO(), url); err == nil {
-				toscaResources := make(map[string]*ToscaResource)
+				toscaResources := make(map[string]*TOSCAResource)
 
-				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "tko::Template") {
-					toscaResources[vertextId] = NewToscaResource(vertex)
+				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "nephio::Template") {
+					toscaResources[vertextId] = NewTOSCAResource(vertex)
 				}
-				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "tko::Site") {
-					toscaResources[vertextId] = NewToscaResource(vertex)
+				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "nephio::Site") {
+					toscaResources[vertextId] = NewTOSCAResource(vertex)
 				}
 
 				if err := parser.Coerce(); err != nil {
@@ -45,11 +45,11 @@ func PrepareTOSCA(context *preparation.Context) (bool, util.Resources, error) {
 				}
 
 				var placementTemplates ard.List
-				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "tko::Template") {
+				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "nephio::Template") {
 					var sites ard.List
-					for _, edge := range cloututil.GetToscaRelationships(vertex, "tko::Host") {
+					for _, edge := range cloututil.GetToscaRelationships(vertex, "nephio::Host") {
 						siteResource := toscaResources[edge.TargetID]
-						if cloututil.IsToscaType(edge.Target.Properties, "tko::Site") {
+						if cloututil.IsToscaType(edge.Target.Properties, "nephio::Site") {
 							sites = append(sites, siteResource.SiteName)
 						} else {
 							// Sites
@@ -68,7 +68,7 @@ func PrepareTOSCA(context *preparation.Context) (bool, util.Resources, error) {
 					})
 				}
 
-				resources = util.MergeResources(context.DeploymentResources, resources)
+				resources = util.MergeResources(preparationContext.DeploymentResources, resources)
 
 				resources = append(resources, util.Resource{
 					"apiVersion": "topology.nephio.org/v1alpha1",
@@ -82,7 +82,7 @@ func PrepareTOSCA(context *preparation.Context) (bool, util.Resources, error) {
 				})
 
 				if !util.SetPreparedAnnotation(tosca, true) {
-					return false, nil, errors.New("malformed Tosca resource")
+					return false, nil, errors.New("malformed TOSCA resource")
 				}
 
 				return true, resources, nil
@@ -96,22 +96,22 @@ func PrepareTOSCA(context *preparation.Context) (bool, util.Resources, error) {
 }
 
 //
-// ToscaResource
+// TOSCAResource
 //
 
-type ToscaResource struct {
+type TOSCAResource struct {
 	ID           string
 	Name         string
 	TemplateName string
 	SiteName     string
-	Properties   map[string]*ToscaProperty
+	Properties   map[string]*TOSCAProperty
 	Merge        util.Resources
 }
 
-func NewToscaResource(vertex *clout.Vertex) *ToscaResource {
-	self := ToscaResource{
+func NewTOSCAResource(vertex *clout.Vertex) *TOSCAResource {
+	self := TOSCAResource{
 		ID:         vertex.ID,
-		Properties: make(map[string]*ToscaProperty),
+		Properties: make(map[string]*TOSCAProperty),
 	}
 	properties_ := ard.With(vertex.Properties)
 	self.Name, _ = properties_.Get("name").String()
@@ -123,7 +123,7 @@ func NewToscaResource(vertex *clout.Vertex) *ToscaResource {
 	return &self
 }
 
-func (self *ToscaResource) FillPropertyValues(clout *clout.Clout) {
+func (self *TOSCAResource) FillPropertyValues(clout *clout.Clout) {
 	if vertex, ok := clout.Vertexes[self.ID]; ok {
 		if properties, ok := ard.With(vertex.Properties).Get("properties").StringMap(); ok {
 			for name, value := range properties {
@@ -135,7 +135,7 @@ func (self *ToscaResource) FillPropertyValues(clout *clout.Clout) {
 	}
 }
 
-func (self *ToscaResource) ToResources() util.Resources {
+func (self *TOSCAResource) ToResources() util.Resources {
 	resources := make(map[string]util.Resource)
 
 	for _, property := range self.Properties {
@@ -192,10 +192,10 @@ func (self *ToscaResource) ToResources() util.Resources {
 }
 
 //
-// ToscaProperty
+// TOSCAProperty
 //
 
-type ToscaProperty struct {
+type TOSCAProperty struct {
 	Value  ard.Value
 	GVK    util.GVK
 	Name   string
@@ -203,8 +203,8 @@ type ToscaProperty struct {
 	Target string
 }
 
-func (self *ToscaResource) NewToscaProperty(name string, value ard.Value) {
-	var property ToscaProperty
+func (self *TOSCAResource) NewToscaProperty(name string, value ard.Value) {
+	var property TOSCAProperty
 	metadata_ := ard.With(value).Get("$meta", "metadata")
 	apiVersion, _ := metadata_.Get("nephio.apiVersion").String()
 	kind, _ := metadata_.Get("nephio.kind").String()

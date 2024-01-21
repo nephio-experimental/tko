@@ -21,4 +21,4 @@ function build () {
 build tko
 build tko-api-server
 build tko-preparation-controller
-build tko-instantiation-controller
+build tko-meta-scheduler

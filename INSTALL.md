@@ -12,6 +12,8 @@ a dev and test environment on top of a Fedora virtual machine. You'll need the
     cd tko
     vagrant up
 
+It will take a few minutes.
+
 The internal web server port will be mapped to your host at port 60051:
 [http://localhost:60051/](http://localhost:60051/).
 

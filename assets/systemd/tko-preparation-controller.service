@@ -1,7 +1,7 @@
 [Unit]
-Description=tko Preparation Controller
+Description=TKO Preparation Controller
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=%h/go/bin/tko-preparation-controller start --journald -v
+ExecStart=%h/go/bin/tko-preparation-controller start --journald --grpc-ip-stack=$GRPC_IP_STACK -v

@@ -7,9 +7,8 @@ import (
 	"github.com/nephio-experimental/tko/api/backend/memory"
 	"github.com/nephio-experimental/tko/api/backend/spanner"
 	"github.com/nephio-experimental/tko/api/backend/sql"
-	"github.com/nephio-experimental/tko/api/client"
+	clientpkg "github.com/nephio-experimental/tko/api/client"
 	"github.com/nephio-experimental/tko/api/server"
-	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/nephio-experimental/tko/validation"
 	"github.com/nephio-experimental/tko/web"
 	"github.com/spf13/cobra"
@@ -20,11 +19,13 @@ import (
 const modificationWindow = 10 // seconds
 
 var backendName string
-var grpcIpStack string
+var grpcIpStackString string
+var grpcIpStack util.IPStack
 var grpcAddress string
 var grpcPort uint
 var grpcFormat string
-var webIpStack string
+var webIpStackString string
+var webIpStack util.IPStack
 var webAddress string
 var webPort uint
 
@@ -32,21 +33,25 @@ func init() {
 	rootCommand.AddCommand(startCommand)
 
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
-	startCommand.Flags().StringVar(&grpcIpStack, "grpc-ip-stack", "dual", "IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
-	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for gRPC server")
-	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for gRPC server")
+	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "bind IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "bind address for gRPC server")
+	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "bind HTTP/2 port for gRPC server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
-	startCommand.Flags().StringVar(&webIpStack, "web-ip-stack", "dual", "IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
-	startCommand.Flags().StringVar(&webAddress, "web-address", "", "address for web server")
-	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "HTTP/2 port for web server")
+	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
+	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind HTTP/2 port for web server")
 }
 
 var startCommand = &cobra.Command{
 	Use:   "start",
-	Short: "Start the server",
+	Short: "Start the TKO API Server",
 	Run: func(cmd *cobra.Command, args []string) {
-		util.FailOnError(tkoutil.ValidateIPStack(grpcIpStack, "grpc-ip-stack"))
-		util.FailOnError(tkoutil.ValidateIPStack(webIpStack, "web-ip-stack"))
+		grpcIpStack = util.IPStack(grpcIpStackString)
+		util.FailOnError(grpcIpStack.Validate("grpc-ip-stack"))
+
+		webIpStack = util.IPStack(webIpStackString)
+		util.FailOnError(grpcIpStack.Validate("web-ip-stack"))
+
 		Serve()
 	},
 }
@@ -72,27 +77,26 @@ func Serve() {
 	}
 
 	// Client
-	client_, err := client.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("client"))
-	util.FailOnError(err)
-
-	validation_, err := validation.NewValidation(client_, commonlog.GetLogger("validation"))
+	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("client"))
 	util.FailOnError(err)
 
 	// Wrap backend with validation
-	backend = backendpkg.NewValidatingBackend(backend, validation_)
-	err = backend.Connect()
+	validation_, err := validation.NewValidation(client, commonlog.GetLogger("validation"))
 	util.FailOnError(err)
+	backend = backendpkg.NewValidatingBackend(backend, validation_)
+
+	util.FailOnError(backend.Connect())
 	util.OnExitError(backend.Release)
 
+	// gRPC
 	grpcServer := server.NewServer(backend, grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("grpc"))
-	err = grpcServer.Start()
-	util.FailOnError(err)
+	util.FailOnError(grpcServer.Start())
 	util.OnExit(grpcServer.Stop)
 
+	// Web
 	webServer, err := web.NewServer(backend, webIpStack, webAddress, int(webPort), commonlog.GetLogger("web"))
 	util.FailOnError(err)
-	err = webServer.Start()
-	util.FailOnError(err)
+	util.FailOnError(webServer.Start())
 	util.OnExit(webServer.Stop)
 
 	// Block forever

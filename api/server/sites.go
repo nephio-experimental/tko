@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerSite: %s", site)
 
@@ -27,7 +27,7 @@ func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*a
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) DeleteSite(context contextpkg.Context, deleteSite *api.DeleteSite) (*api.DeleteResponse, error) {
 	self.Log.Infof("deleteSite: %s", deleteSite)
 
@@ -40,7 +40,7 @@ func (self *Server) DeleteSite(context contextpkg.Context, deleteSite *api.Delet
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*api.Site, error) {
 	self.Log.Infof("getSite: %s", getSite)
 
@@ -66,7 +66,7 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 	}
 }
 
-// api.APIServer interface
+// ([api.APIServer] interface)
 func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSitesServer) error {
 	self.Log.Infof("listSites: %s", listSites)
 

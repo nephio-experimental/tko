@@ -1,14 +1,12 @@
 package client
 
 import (
-	"strings"
+	"sync"
 
 	api "github.com/nephio-experimental/tko/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 //
@@ -21,36 +19,40 @@ type Client struct {
 	GRPCPort           int
 	ResourcesFormat    string
 
-	client api.APIClient
-	log    commonlog.Logger
+	apiClient_    api.APIClient
+	apiClientLock sync.Mutex
+	log           commonlog.Logger
 }
 
-func NewClient(grpcIpStack string, grpcAddress string, grpcPort int, resourcesFormat string, log commonlog.Logger) (*Client, error) {
-	var level2protocol string
-	var err error
-	if level2protocol, grpcAddress, err = tkoutil.IPLevel2ProtocolAndAddress(grpcIpStack, grpcAddress); err != nil {
-		return nil, err
-	}
+func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resourcesFormat string, log commonlog.Logger) (*Client, error) {
+	bind := grpcIpStack.ClientBind(grpcAddress)
 
-	if grpcAddress, err := tkoutil.ToReachableIPAddress(grpcAddress); err == nil {
-		// See: https://github.com/grpc/grpc-go/issues/3272#issuecomment-1239710027
-		dialAddress := strings.Replace(grpcAddress, "%", "%25", 1)
-
-		if clientConn, err := grpc.Dial(util.JoinIPAddressPort(dialAddress, grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials())); err == nil {
-			return &Client{
-				GRPCLevel2Protocol: level2protocol,
-				GRPCAddress:        grpcAddress,
-				GRPCPort:           grpcPort,
-				ResourcesFormat:    resourcesFormat,
-				client:             api.NewAPIClient(clientConn),
-				log:                log,
-			}, nil
-		} else {
-			return nil, err
-		}
+	if address, err := util.ToReachableIPAddress(bind.Address); err == nil {
+		return &Client{
+			GRPCLevel2Protocol: bind.Level2Protocol,
+			GRPCAddress:        address,
+			GRPCPort:           grpcPort,
+			ResourcesFormat:    resourcesFormat,
+			log:                log,
+		}, nil
 	} else {
 		return nil, err
 	}
+}
+
+func (self *Client) apiClient() (api.APIClient, error) {
+	self.apiClientLock.Lock()
+	defer self.apiClientLock.Unlock()
+
+	if self.apiClient_ == nil {
+		if clientConn, err := tkoutil.DialGRPCInsecure(self.GRPCAddress, self.GRPCPort); err == nil {
+			self.apiClient_ = api.NewAPIClient(clientConn)
+		} else {
+			return nil, err
+		}
+	}
+
+	return self.apiClient_, nil
 }
 
 // Utils

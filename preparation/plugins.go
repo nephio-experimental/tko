@@ -60,15 +60,15 @@ func NewCommandPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
 
-	return func(context *Context) (bool, []ard.Map, error) {
-		context.Log.Infof("prepare via command plugin for %s: %s", context.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
+	return func(preparationContext *Context) (bool, []ard.Map, error) {
+		preparationContext.Log.Infof("prepare via command plugin for %s: %s", preparationContext.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
 
-		logFifo := util.NewLogFIFO("tko-preparation", context.Log)
+		logFifo := util.NewLogFIFO("tko-preparation", preparationContext.Log)
 		if err := logFifo.Start(); err != nil {
 			return false, nil, err
 		}
 
-		input := context.ToPluginInput(logFifo.Path)
+		input := preparationContext.ToPluginInput(logFifo.Path)
 		var output PluginOutput
 		if err := util.ExecuteCommand(plugin.Arguments, input, &output); err == nil {
 			if output.Error == "" {
@@ -89,14 +89,14 @@ func NewKptPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 
 	image := plugin.Arguments[0]
 
-	return func(context *Context) (bool, []ard.Map, error) {
-		context.Log.Infof("prepare via kpt plugin for %s: %s, %s", context.TargetResourceIdentifer, image, plugin.Properties)
+	return func(preparationContext *Context) (bool, []ard.Map, error) {
+		preparationContext.Log.Infof("prepare via kpt plugin for %s: %s, %s", preparationContext.TargetResourceIdentifer, image, plugin.Properties)
 
-		if resource, ok := context.GetResource(); ok {
+		if resource, ok := preparationContext.GetResource(); ok {
 			//context.Log.Noticef("!!! %s", resource)
-			if resources, err := util.ExecuteKpt(image, plugin.Properties, resource, context.DeploymentResources); err == nil {
+			if resources, err := util.ExecuteKpt(image, plugin.Properties, resource, preparationContext.DeploymentResources); err == nil {
 				// Note: it's OK if the kpt function deleted our plugin resource because that also counts as completion
-				if resource_, ok := context.TargetResourceIdentifer.GetResource(resources); ok {
+				if resource_, ok := preparationContext.TargetResourceIdentifer.GetResource(resources); ok {
 					if !util.SetPreparedAnnotation(resource_, true) {
 						return false, nil, errors.New("malformed resource")
 					}

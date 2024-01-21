@@ -19,7 +19,7 @@ import (
 
 type Server struct {
 	Backend backend.Backend
-	IPStack string
+	IPStack util.IPStack
 	Address string
 	Port    int
 	Log     commonlog.Logger
@@ -28,7 +28,7 @@ type Server struct {
 	mux         *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, ipStack string, address string, port int, log commonlog.Logger) (*Server, error) {
+func NewServer(backend backend.Backend, ipStack util.IPStack, address string, port int, log commonlog.Logger) (*Server, error) {
 	self := Server{
 		Backend: backend,
 		IPStack: ipStack,
@@ -57,13 +57,15 @@ func (self *Server) Start() error {
 
 // ([util.StartServerFunc] signature)
 func (self *Server) start(level2protocol string, address string) error {
-	httpServer := http.Server{
-		Handler: self.mux,
-	}
-
-	if listener, err := net.Listen(level2protocol, util.JoinIPAddressPort(address, self.Port)); err == nil {
+	address = util.JoinIPAddressPort(address, self.Port)
+	if listener, err := net.Listen(level2protocol, address); err == nil {
 		self.Log.Noticef("starting web server %d on %s %s", len(self.httpServers), level2protocol, listener.Addr().String())
+
+		httpServer := http.Server{
+			Handler: self.mux,
+		}
 		self.httpServers = append(self.httpServers, &httpServer)
+
 		go func() {
 			if err := httpServer.Serve(listener); err != nil {
 				if err == http.ErrServerClosed {
@@ -73,6 +75,7 @@ func (self *Server) start(level2protocol string, address string) error {
 				}
 			}
 		}()
+
 		return nil
 	} else {
 		return err
