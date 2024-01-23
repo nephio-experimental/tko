@@ -196,9 +196,9 @@ func (self *ValidatingBackend) CancelDeploymentModification(modificationToken st
 // ([Backend] interface)
 func (self *ValidatingBackend) SetPlugin(plugin *Plugin) error {
 	switch plugin.Type {
-	case "validate", "prepare", "instantiate":
+	case "validate", "prepare", "schedule":
 	default:
-		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"instantiate\"")
+		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"schedule\"")
 	}
 
 	// Note: plugin.Group can be empty (for default group)
@@ -218,9 +218,9 @@ func (self *ValidatingBackend) SetPlugin(plugin *Plugin) error {
 // ([Backend] interface)
 func (self *ValidatingBackend) GetPlugin(pluginId PluginID) (*Plugin, error) {
 	switch pluginId.Type {
-	case "validate", "prepare", "instantiate":
+	case "validate", "prepare", "schedule":
 	default:
-		return nil, NewBadArgumentError("type must be \"validate\", \"prepare\", or \"instantiate\"")
+		return nil, NewBadArgumentError("type must be \"validate\", \"prepare\", or \"schedule\"")
 	}
 
 	// Note: plugin.Group can be empty (for default group)
@@ -237,9 +237,9 @@ func (self *ValidatingBackend) GetPlugin(pluginId PluginID) (*Plugin, error) {
 // ([Backend] interface)
 func (self *ValidatingBackend) DeletePlugin(pluginId PluginID) error {
 	switch pluginId.Type {
-	case "validate", "prepare", "instantiate":
+	case "validate", "prepare", "schedule":
 	default:
-		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"instantiate\"")
+		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"schedule\"")
 	}
 
 	// Note: plugin.Group can be empty (for default group)

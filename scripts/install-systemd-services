@@ -18,6 +18,6 @@ mkdir --parents ~/.config/systemd/user/
 
 install_service tko-api-server
 install_service tko-meta-scheduler
-install_service tko-preparation-controller
+install_service tko-preparer
 
 systemctl --user daemon-reload

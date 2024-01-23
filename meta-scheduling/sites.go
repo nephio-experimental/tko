@@ -6,11 +6,11 @@ import (
 	"github.com/tliron/commonlog"
 )
 
-func (self *Instantiation) InstantiateSites() error {
-	//self.Log.Notice("instantiating sites")
+func (self *MetaScheduling) ScheduleSites() error {
+	//self.Log.Notice("scheduling sites")
 	if siteInfos, err := self.Client.ListSites(nil, nil, nil); err == nil {
 		for _, siteInfo := range siteInfos {
-			self.InstantiateSite(siteInfo)
+			self.ScheduleSite(siteInfo)
 		}
 		return nil
 	} else {
@@ -18,12 +18,12 @@ func (self *Instantiation) InstantiateSites() error {
 	}
 }
 
-func (self *Instantiation) InstantiateSite(siteInfo client.SiteInfo) {
+func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 	log := commonlog.NewScopeLogger(self.Log, siteInfo.SiteID)
-	log.Noticef("instantiating site %s", siteInfo.SiteID)
+	log.Noticef("scheduling site %s", siteInfo.SiteID)
 	if site, ok, err := self.Client.GetSite(siteInfo.SiteID); err == nil {
 		if ok {
-			self.instantiateSite(siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)
+			self.scheduleSite(siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)
 		} else {
 			log.Infof("site disappeared: %s", siteInfo.SiteID)
 		}
@@ -32,10 +32,10 @@ func (self *Instantiation) InstantiateSite(siteInfo client.SiteInfo) {
 	}
 }
 
-func (self *Instantiation) instantiateSite(siteId string, siteResources util.Resources, deploymentIds []string, log commonlog.Logger) {
+func (self *MetaScheduling) scheduleSite(siteId string, siteResources util.Resources, deploymentIds []string, log commonlog.Logger) {
 	for _, resource := range siteResources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
-			if instantiator, ok, err := self.GetInstantiator(resourceIdentifier.GVK); err == nil {
+			if scheduler, ok, err := self.GetScheduler(resourceIdentifier.GVK); err == nil {
 				if ok {
 					deployments := make(map[string]util.Resources)
 					for _, deploymentId := range deploymentIds {
@@ -48,8 +48,8 @@ func (self *Instantiation) instantiateSite(siteId string, siteResources util.Res
 						}
 					}
 
-					instantiationContext := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
-					if err := instantiator(instantiationContext); err != nil {
+					schedulingContext := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
+					if err := scheduler(schedulingContext); err != nil {
 						log.Error(err.Error())
 					}
 				}

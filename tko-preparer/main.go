@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nephio-experimental/tko/tko-preparation-controller/commands"
+	"github.com/nephio-experimental/tko/tko-preparer/commands"
 	"github.com/tliron/kutil/util"
 )
 

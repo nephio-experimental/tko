@@ -7,7 +7,7 @@ sys.path.append(str(pathlib.Path(__file__).parents[2] / 'sdk' / 'python'))
 import tko
 
 
-def instantiate():
+def schedule():
   # gdce.google.com/v1alpha1, EdgeCluster
   cluster = tko.get_target_resource()
   if cluster is not None:
@@ -17,4 +17,4 @@ def instantiate():
     #    raise Exception(s)
 
 
-tko.instantiate(instantiate)
+tko.schedule(schedule)

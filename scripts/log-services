@@ -25,5 +25,5 @@ function follow () {
 }
 
 follow tko-api-server
-follow tko-preparation-controller
+follow tko-preparer
 follow tko-meta-scheduler

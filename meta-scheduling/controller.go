@@ -14,22 +14,22 @@ import (
 type Controller struct {
 	*util.Controller
 
-	Instantiation *Instantiation
+	MetaScheduling *MetaScheduling
 
 	log commonlog.Logger
 }
 
-func NewController(instantiation *Instantiation, log commonlog.Logger) *Controller {
+func NewController(instantiation *MetaScheduling, log commonlog.Logger) *Controller {
 	self := Controller{
-		Instantiation: instantiation,
-		log:           log,
+		MetaScheduling: instantiation,
+		log:            log,
 	}
 	self.Controller = util.NewController(self.run, 3*time.Second, log)
 	return &self
 }
 
 func (self *Controller) run() error {
-	if err := self.Instantiation.InstantiateSites(); err != nil {
+	if err := self.MetaScheduling.ScheduleSites(); err != nil {
 		self.log.Error(err.Error())
 	}
 	return nil

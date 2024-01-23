@@ -7,7 +7,7 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 m 'stopping controllers...'
 
 "$HERE/stop-service" tko-meta-scheduler
-"$HERE/stop-service" tko-preparation-controller
+"$HERE/stop-service" tko-preparer
 "$HERE/stop-service" tko-api-server
 
 if [ "$1" == -c ]; then
@@ -23,7 +23,7 @@ m 'building...'
 m 'starting controllers...'
 
 "$HERE/start-service" tko-api-server
-"$HERE/start-service" tko-preparation-controller
+"$HERE/start-service" tko-preparer
 "$HERE/start-service" tko-meta-scheduler
 
 set +e
@@ -41,8 +41,8 @@ m 'registering plugins...'
 tko plugin register validate free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/validate_free5gc_smf.py"
 tko plugin register prepare workload.plugin.nephio.org v1alpha1 Namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=namespace=spec.namespace
 tko plugin register prepare free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/prepare_free5gc_smf.py"
-tko plugin register instantiate kind.x-k8s.io v1alpha4 Cluster "$ROOT/examples/plugins/instantiate_kind.py"
-tko plugin register instantiate gdce.google.com v1alpha1 EdgeCluster "$ROOT/examples/plugins/instantiate_gdce.py"
+tko plugin register schedule kind.x-k8s.io v1alpha4 Cluster "$ROOT/examples/plugins/schedule_kind.py"
+tko plugin register schedule gdce.google.com v1alpha1 EdgeCluster "$ROOT/examples/plugins/schedule_gdce.py"
 
 m 'registering templates...'
 

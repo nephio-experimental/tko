@@ -92,7 +92,7 @@ def prepare(f):
   yaml.dump(output, sys.stdout)
 
 
-def instantiate(f):
+def schedule(f):
   global input, output, log_file
   try:
     input = yaml.load(sys.stdin)

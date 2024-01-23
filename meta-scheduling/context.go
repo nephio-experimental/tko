@@ -10,7 +10,7 @@ import (
 //
 
 type Context struct {
-	Instantiation           *Instantiation
+	MetaScheduling          *MetaScheduling
 	Log                     commonlog.Logger
 	SiteID                  string
 	SiteResources           util.Resources
@@ -18,9 +18,9 @@ type Context struct {
 	Deployments             map[string]util.Resources
 }
 
-func (self *Instantiation) NewContext(siteId string, siteResources util.Resources, targetResourceIdentifer util.ResourceIdentifier, deployments map[string]util.Resources, log commonlog.Logger) *Context {
+func (self *MetaScheduling) NewContext(siteId string, siteResources util.Resources, targetResourceIdentifer util.ResourceIdentifier, deployments map[string]util.Resources, log commonlog.Logger) *Context {
 	return &Context{
-		Instantiation:           self,
+		MetaScheduling:          self,
 		Log:                     log,
 		SiteID:                  siteId,
 		SiteResources:           siteResources,

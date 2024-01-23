@@ -27,7 +27,7 @@ The `tko` CLI is quite rich. Very quick example:
 To see the service logs (you can do this in separate terminal tabs):
 
     scripts/log-service tko-api-server --follow
-    scripts/log-service tko-preparation-controller --follow
+    scripts/log-service tko-preparer --follow
     scripts/log-service tko-meta-scheduler --follow
 
 To see the instantiated KIND clusters:

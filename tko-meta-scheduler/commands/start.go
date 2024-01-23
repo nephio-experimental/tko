@@ -2,7 +2,7 @@ package commands
 
 import (
 	clientpkg "github.com/nephio-experimental/tko/api/client"
-	"github.com/nephio-experimental/tko/metascheduling"
+	metascheduling "github.com/nephio-experimental/tko/meta-scheduling"
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
@@ -40,7 +40,7 @@ func Serve() {
 	util.FailOnError(err)
 
 	// Controller
-	controller := metascheduling.NewController(metascheduling.NewInstantiation(client, commonlog.GetLogger("meta-scheduling")), commonlog.GetLogger("controller"))
+	controller := metascheduling.NewController(metascheduling.NewMetaScheduling(client, commonlog.GetLogger("meta-scheduling")), commonlog.GetLogger("controller"))
 
 	controller.Start()
 	util.OnExit(controller.Stop)

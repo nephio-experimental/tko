@@ -31,9 +31,9 @@ type PluginOutput struct {
 func (self *Context) ToPluginInput(logFile string) PluginInput {
 	return PluginInput{
 		GRPC: PluginInputGRPC{
-			Level2Protocol: self.Instantiation.Client.GRPCLevel2Protocol,
-			Address:        self.Instantiation.Client.GRPCAddress,
-			Port:           self.Instantiation.Client.GRPCPort,
+			Level2Protocol: self.MetaScheduling.Client.GRPCLevel2Protocol,
+			Address:        self.MetaScheduling.Client.GRPCAddress,
+			Port:           self.MetaScheduling.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
 		SiteID:                  self.SiteID,
@@ -43,29 +43,29 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginInstantiator(plugin client.PluginInfo) (InstantiatorFunc, error) {
+func NewPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) {
 	switch plugin.Executor {
 	case "command":
-		return NewCommandPluginInstantiator(plugin)
+		return NewCommandPluginScheduler(plugin)
 	default:
 		return nil, fmt.Errorf("unsupported plugin type: %s", plugin.Type)
 	}
 }
 
-func NewCommandPluginInstantiator(plugin client.PluginInfo) (InstantiatorFunc, error) {
+func NewCommandPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) {
 	if len(plugin.Arguments) < 1 {
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
 
-	return func(instantiationContext *Context) error {
-		instantiationContext.Log.Infof("instantiate via command plugin for %s: %s", instantiationContext.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
+	return func(schedulingContext *Context) error {
+		schedulingContext.Log.Infof("schedule via command plugin for %s: %s", schedulingContext.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
 
-		logFifo := util.NewLogFIFO("tko-instantiation", instantiationContext.Log)
+		logFifo := util.NewLogFIFO("tko-meta-scheduling", schedulingContext.Log)
 		if err := logFifo.Start(); err != nil {
 			return err
 		}
 
-		input := instantiationContext.ToPluginInput(logFifo.Path)
+		input := schedulingContext.ToPluginInput(logFifo.Path)
 		var output PluginOutput
 		if err := util.ExecuteCommand(plugin.Arguments, input, &output); err == nil {
 			if output.Error == "" {

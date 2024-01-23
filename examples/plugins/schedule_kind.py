@@ -8,7 +8,7 @@ sys.path.append(str(pathlib.Path(__file__).parents[2] / 'sdk' / 'python'))
 import tko, tko.kind, tko.kubectl, tko.helm
 
 
-def instantiate():
+def schedule():
   # kind.x-k8s.io/v1alpha4, Cluster
   cluster = tko.get_target_resource()
   if cluster is not None:
@@ -31,4 +31,4 @@ def instantiate():
         tko.helm.install(chart, deployment, context=context)
 
 
-tko.instantiate(instantiate)
+tko.schedule(schedule)
