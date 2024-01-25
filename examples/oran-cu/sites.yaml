@@ -69,7 +69,7 @@ metadata:
 
 spec:
   provisionIfNotFound: true
-  provisionTemplateId: site/gdce:v1
+  provisionTemplateId: site/gdce:v1.0.0
   merge:
   - apiVersion: gdce.google.com/v1alpha1
     kind: ToR

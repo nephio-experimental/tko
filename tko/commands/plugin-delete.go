@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"

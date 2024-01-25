@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tko;
 
-option go_package = "github.com/nephio-experimental/tko/grpc";
+option go_package = "github.com/nephio-experimental/tko/api/grpc";
 
 service API {
     rpc registerTemplate(Template) returns (RegisterResponse);

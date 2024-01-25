@@ -8,4 +8,4 @@ not_root
 
 NAME=$1
 
-journalctl --user --unit="$NAME.service" "${@:2}"
+journalctl --user-unit="$NAME.service" "${@:2}"

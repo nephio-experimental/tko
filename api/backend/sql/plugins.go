@@ -1,6 +1,7 @@
 package sql
 
 import (
+	contextpkg "context"
 	"encoding/json"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -8,7 +9,7 @@ import (
 )
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) SetPlugin(plugin *backend.Plugin) error {
+func (self *SQLBackend) SetPlugin(context contextpkg.Context, plugin *backend.Plugin) error {
 	var argumentsJson, propertiesJson []byte
 	var err error
 	if argumentsJson, err = json.Marshal(plugin.Arguments); err != nil {
@@ -18,13 +19,13 @@ func (self *SqlBackend) SetPlugin(plugin *backend.Plugin) error {
 		return err
 	}
 
-	_, err = self.sql.PreparedInsertPlugin.Exec(plugin.Type, plugin.Group, plugin.Version, plugin.Kind, plugin.Executor, argumentsJson, propertiesJson)
+	_, err = self.statements.PreparedInsertPlugin.ExecContext(context, plugin.Type, plugin.Group, plugin.Version, plugin.Kind, plugin.Executor, argumentsJson, propertiesJson)
 	return err
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) GetPlugin(pluginId backend.PluginID) (*backend.Plugin, error) {
-	rows, err := self.sql.PreparedSelectPlugin.Query(pluginId.Type, pluginId.Group, pluginId.Version, pluginId.Kind)
+func (self *SQLBackend) GetPlugin(context contextpkg.Context, pluginId backend.PluginID) (*backend.Plugin, error) {
+	rows, err := self.statements.PreparedSelectPlugin.QueryContext(context, pluginId.Type, pluginId.Group, pluginId.Version, pluginId.Kind)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +63,8 @@ func (self *SqlBackend) GetPlugin(pluginId backend.PluginID) (*backend.Plugin, e
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) DeletePlugin(pluginId backend.PluginID) error {
-	if result, err := self.sql.PreparedDeletePlugin.Exec(pluginId.Type, pluginId.Group, pluginId.Version, pluginId.Kind); err == nil {
+func (self *SQLBackend) DeletePlugin(context contextpkg.Context, pluginId backend.PluginID) error {
+	if result, err := self.statements.PreparedDeletePlugin.ExecContext(context, pluginId.Type, pluginId.Group, pluginId.Version, pluginId.Kind); err == nil {
 		if count, err := result.RowsAffected(); err == nil {
 			if count == 0 {
 				return backend.NewNotFoundErrorf("deployment: %s", pluginId)
@@ -78,8 +79,8 @@ func (self *SqlBackend) DeletePlugin(pluginId backend.PluginID) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) ListPlugins() ([]backend.Plugin, error) {
-	rows, err := self.sql.PreparedSelectPlugins.Query()
+func (self *SQLBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugin, error) {
+	rows, err := self.statements.PreparedSelectPlugins.QueryContext(context)
 	if err != nil {
 		return nil, err
 	}

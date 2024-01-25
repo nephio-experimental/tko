@@ -1,25 +1,27 @@
 package spanner
 
 import (
+	contextpkg "context"
+
 	"github.com/nephio-experimental/tko/api/backend"
 )
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) SetSite(site *backend.Site) error {
+func (self *SpannerBackend) SetSite(context contextpkg.Context, site *backend.Site) error {
 	return nil
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) GetSite(siteId string) (*backend.Site, error) {
+func (self *SpannerBackend) GetSite(context contextpkg.Context, siteId string) (*backend.Site, error) {
 	return nil, nil
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) DeleteSite(siteId string) error {
+func (self *SpannerBackend) DeleteSite(context contextpkg.Context, siteId string) error {
 	return nil
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListSites(siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
+func (self *SpannerBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
 	return nil, nil
 }

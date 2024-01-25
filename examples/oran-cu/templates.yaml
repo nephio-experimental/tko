@@ -7,7 +7,7 @@ metadata:
 spec:
   explicit:
     repository: . # this repository
-    id: nf/free5gc/upf:v1
+    id: nf/free5gc/upf:v1.0.0
 
 ---
 
@@ -20,7 +20,7 @@ metadata:
 spec:
   explicit:
     repository: . # this repository
-    id: nf/free5gc/smf:v1
+    id: nf/free5gc/smf:v1.0.0
   #implicit:
   #  repository: '*' # any repository
   #  filters:

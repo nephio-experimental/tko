@@ -1,11 +1,13 @@
 package memory
 
 import (
+	contextpkg "context"
+
 	"github.com/nephio-experimental/tko/api/backend"
 )
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) SetTemplate(template *backend.Template) error {
+func (self *MemoryBackend) SetTemplate(context contextpkg.Context, template *backend.Template) error {
 	template = template.Clone()
 	if template.Metadata == nil {
 		template.Metadata = make(map[string]string)
@@ -22,7 +24,7 @@ func (self *MemoryBackend) SetTemplate(template *backend.Template) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) GetTemplate(templateId string) (*backend.Template, error) {
+func (self *MemoryBackend) GetTemplate(context contextpkg.Context, templateId string) (*backend.Template, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -34,7 +36,7 @@ func (self *MemoryBackend) GetTemplate(templateId string) (*backend.Template, er
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) DeleteTemplate(templateId string) error {
+func (self *MemoryBackend) DeleteTemplate(context contextpkg.Context, templateId string) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -57,7 +59,7 @@ func (self *MemoryBackend) DeleteTemplate(templateId string) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListTemplates(templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
+func (self *MemoryBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 

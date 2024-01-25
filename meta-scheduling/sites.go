@@ -1,7 +1,7 @@
 package metascheduling
 
 import (
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 )
@@ -19,13 +19,15 @@ func (self *MetaScheduling) ScheduleSites() error {
 }
 
 func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
-	log := commonlog.NewScopeLogger(self.Log, siteInfo.SiteID)
-	log.Noticef("scheduling site %s", siteInfo.SiteID)
+	log := commonlog.NewKeyValueLogger(self.Log,
+		"site", siteInfo.SiteID)
+
+	log.Notice("scheduling site")
 	if site, ok, err := self.Client.GetSite(siteInfo.SiteID); err == nil {
 		if ok {
 			self.scheduleSite(siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)
 		} else {
-			log.Infof("site disappeared: %s", siteInfo.SiteID)
+			log.Info("site disappeared")
 		}
 	} else {
 		log.Error(err.Error())
@@ -35,7 +37,7 @@ func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 func (self *MetaScheduling) scheduleSite(siteId string, siteResources util.Resources, deploymentIds []string, log commonlog.Logger) {
 	for _, resource := range siteResources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
-			if scheduler, ok, err := self.GetScheduler(resourceIdentifier.GVK); err == nil {
+			if schedule, ok, err := self.GetScheduler(resourceIdentifier.GVK); err == nil {
 				if ok {
 					deployments := make(map[string]util.Resources)
 					for _, deploymentId := range deploymentIds {
@@ -49,7 +51,7 @@ func (self *MetaScheduling) scheduleSite(siteId string, siteResources util.Resou
 					}
 
 					schedulingContext := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
-					if err := scheduler(schedulingContext); err != nil {
+					if err := schedule(schedulingContext); err != nil {
 						log.Error(err.Error())
 					}
 				}

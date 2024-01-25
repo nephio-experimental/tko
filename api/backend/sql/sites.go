@@ -1,12 +1,14 @@
 package sql
 
 import (
+	contextpkg "context"
+
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/util"
 )
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) SetSite(site *backend.Site) error {
+func (self *SQLBackend) SetSite(context contextpkg.Context, site *backend.Site) error {
 	site = site.Clone()
 	if site.Metadata == nil {
 		site.Metadata = make(map[string]string)
@@ -14,9 +16,9 @@ func (self *SqlBackend) SetSite(site *backend.Site) error {
 
 	site.Update()
 
-	if tx, err := self.db.Begin(); err == nil {
+	if tx, err := self.db.BeginTx(context, nil); err == nil {
 		if site.TemplateID != "" {
-			if resources, err := self.getTemplateResources(tx, site.TemplateID); err == nil {
+			if resources, err := self.getTemplateResources(context, tx, site.TemplateID); err == nil {
 				// Merge our resources over template resources
 				resources = util.MergeResources(resources, site.Resources)
 
@@ -27,11 +29,11 @@ func (self *SqlBackend) SetSite(site *backend.Site) error {
 		}
 
 		if resources, err := self.encodeResources(site.Resources); err == nil {
-			if _, err := tx.Exec(self.sql.InsertSite, site.SiteID, nilIfEmptyString(site.TemplateID), resources); err == nil {
+			if _, err := tx.ExecContext(context, self.statements.InsertSite, site.SiteID, nilIfEmptyString(site.TemplateID), resources); err == nil {
 				if len(site.Metadata) > 0 {
-					if insertSiteMetadata, err := tx.Prepare(self.sql.InsertSiteMetadata); err == nil {
+					if insertSiteMetadata, err := tx.PrepareContext(context, self.statements.InsertSiteMetadata); err == nil {
 						for key, value := range site.Metadata {
-							if _, err := insertSiteMetadata.Exec(site.SiteID, key, value); err != nil {
+							if _, err := insertSiteMetadata.ExecContext(context, site.SiteID, key, value); err != nil {
 								insertSiteMetadata.Close()
 								if err := tx.Rollback(); err != nil {
 									self.log.Error(err.Error())
@@ -49,9 +51,9 @@ func (self *SqlBackend) SetSite(site *backend.Site) error {
 				}
 
 				if len(site.DeploymentIDs) > 0 {
-					if insertSiteDeployment, err := tx.Prepare(self.sql.InsertSiteDeployment); err == nil {
+					if insertSiteDeployment, err := tx.PrepareContext(context, self.statements.InsertSiteDeployment); err == nil {
 						for _, deploymentId := range site.DeploymentIDs {
-							if _, err := insertSiteDeployment.Exec(site.SiteID, deploymentId); err != nil {
+							if _, err := insertSiteDeployment.ExecContext(context, site.SiteID, deploymentId); err != nil {
 								insertSiteDeployment.Close()
 								if err := tx.Rollback(); err != nil {
 									self.log.Error(err.Error())
@@ -84,8 +86,8 @@ func (self *SqlBackend) SetSite(site *backend.Site) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) GetSite(siteId string) (*backend.Site, error) {
-	rows, err := self.sql.PreparedSelectSite.Query(siteId)
+func (self *SQLBackend) GetSite(context contextpkg.Context, siteId string) (*backend.Site, error) {
+	rows, err := self.statements.PreparedSelectSite.QueryContext(context, siteId)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +136,8 @@ func (self *SqlBackend) GetSite(siteId string) (*backend.Site, error) {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) DeleteSite(siteId string) error {
-	if result, err := self.sql.PreparedDeleteSite.Exec(siteId); err == nil {
+func (self *SQLBackend) DeleteSite(context contextpkg.Context, siteId string) error {
+	if result, err := self.statements.PreparedDeleteSite.ExecContext(context, siteId); err == nil {
 		if count, err := result.RowsAffected(); err == nil {
 			if count == 0 {
 				return backend.NewNotFoundErrorf("site: %s", siteId)
@@ -150,8 +152,8 @@ func (self *SqlBackend) DeleteSite(siteId string) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) ListSites(siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
-	sql := self.sql.SelectSites
+func (self *SQLBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
+	sql := self.statements.SelectSites
 	var args SqlArgs
 	var where SqlWhere
 	var with SqlWith
@@ -177,7 +179,7 @@ func (self *SqlBackend) ListSites(siteIdPatterns []string, templateIdPatterns []
 	sql = where.Apply(sql)
 	sql = with.Apply(sql)
 
-	rows, err := self.db.Query(sql, args.Args...)
+	rows, err := self.db.QueryContext(context, sql, args.Args...)
 	if err != nil {
 		return nil, err
 	}

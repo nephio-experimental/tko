@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+# This script is intended to be run inside the Vagrant virtual machine
+
 HERE=/vagrant/scripts
 . "$HERE/_env"
 
@@ -19,7 +21,6 @@ m 'install-python-dependencies...' $CYAN
 "$HERE/install-python-dependencies"
 
 m 'install-systemd-services...' $CYAN
-# Note: IPv6 is very finnicky with Vagrant/KVM networking
-BACKEND=postgresql "$HERE/install-systemd-services"
+BACKEND=postgresql BACKEND_CLEAN=true "$HERE/install-systemd-services"
 
 echo "export PATH=$HOME/go/bin:$PATH" >> "$HOME/.bashrc"

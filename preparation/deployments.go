@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 )
@@ -26,15 +26,18 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 		return
 	}
 
-	log := commonlog.NewScopeLogger(self.Log, deploymentInfo.DeploymentID)
-	log.Noticef("preparing deployment %s (%s)", deploymentInfo.DeploymentID, deploymentInfo.TemplateID)
+	log := commonlog.NewKeyValueLogger(self.Log,
+		"deployment", deploymentInfo.DeploymentID)
+
+	log.Notice("preparing deployment",
+		"template", deploymentInfo.TemplateID)
 	if deployment, ok, err := self.Client.GetDeployment(deploymentInfo.DeploymentID); err == nil {
 		if ok {
 			if _, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Resources, log); err != nil {
 				log.Error(err.Error())
 			}
 		} else {
-			log.Infof("deployment disappeared: %s", deploymentInfo.DeploymentID)
+			log.Info("deployment disappeared")
 		}
 	} else {
 		log.Error(err.Error())
@@ -58,11 +61,12 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 			if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources util.Resources) (bool, util.Resources, error) {
 				// Must re-check because deployment may have been modified
 				if resource, ok := resourceIdentifier.GetResource(resources); ok {
-					if _, preparer := self.ShouldPrepare(resourceIdentifier, resource, nil); preparer != nil {
+					if _, prepare := self.ShouldPrepare(resourceIdentifier, resource, nil); prepare != nil {
 						context := self.NewContext(deploymentId, resources, resourceIdentifier, log)
-						return preparer(context)
+						return prepare(context)
 					} else {
-						log.Errorf("no preparer for %s", resourceIdentifier.GVK)
+						log.Errorf("no preparer",
+							"resourceType", resourceIdentifier.GVK)
 					}
 				}
 				return false, nil, nil
@@ -81,7 +85,7 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 	// Are we fully prepared?
 	if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources util.Resources) (bool, util.Resources, error) {
 		if self.IsFullyPrepared(resources) {
-			log.Infof("fully prepared")
+			log.Info("fully prepared")
 			if err := self.Validation.ValidateResources(resources, true); err == nil {
 				if deployment, ok := util.DeploymentResourceIdentifier.GetResource(resources); ok {
 					if !util.SetPreparedAnnotation(deployment, true) {

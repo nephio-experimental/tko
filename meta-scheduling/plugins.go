@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 )
 
@@ -58,7 +58,9 @@ func NewCommandPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) 
 	}
 
 	return func(schedulingContext *Context) error {
-		schedulingContext.Log.Infof("schedule via command plugin for %s: %s", schedulingContext.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
+		schedulingContext.Log.Info("schedule via command plugin",
+			"resource", schedulingContext.TargetResourceIdentifer,
+			"arguments", strings.Join(plugin.Arguments, " "))
 
 		logFifo := util.NewLogFIFO("tko-meta-scheduling", schedulingContext.Log)
 		if err := logFifo.Start(); err != nil {

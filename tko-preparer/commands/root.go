@@ -24,11 +24,13 @@ func init() {
 
 var rootCommand = &cobra.Command{
 	Use:   toolName,
-	Short: "TKO Preparation Controller",
+	Short: "TKO Preparer",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		util.InitializeColorization(colorize)
 		if journald {
-			commonlog.SetBackend(journal.NewBackend())
+			backend := journal.NewBackend()
+			backend.VarsInMessage = true
+			commonlog.SetBackend(backend)
 		} else {
 			commonlog.SetBackend(simple.NewBackend())
 		}

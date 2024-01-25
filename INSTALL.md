@@ -1,86 +1,101 @@
 TKO Installation Guide
 ======================
 
-Vagrant
--------
+Vagrant Virtual Machine
+-----------------------
 
-If you have [Vagrant](https://www.vagrantup.com/), we have a Vagrantfile ready for
-a dev and test environment on top of a Fedora virtual machine. You'll need the
-`vagrant-reload` plugin. To run:
+We have a [Vagrantfile](https://www.vagrantup.com/) to create a dev and test environment
+on top of a Fedora virtual machine. You'll need the `vagrant-reload` plugin. To run:
 
-    vagrant plugin install vagrant-reload
     cd tko
+    vagrant plugin install vagrant-reload
     vagrant up
 
-It will take a few minutes.
+It will take a few minutes to install all dependencies. When done, it will reboot the
+virtual machine and run the tests (see [testing](#testing) below).
 
-The internal web server port will be mapped to your host at port 60051:
-[http://localhost:60051/](http://localhost:60051/).
+The internal web server port is mapped to your host at port 60051, so you can access
+the web UI at [http://localhost:60051/](http://localhost:60051/).
 
-The virtual machine has the `tko` client. Example:
+You can run `vagrant ssh` and then `cd /vagrant` to gain access to the environment.
+We also provide a script to run commands on the virtual machine from the host. Examples:
 
-    vagrant ssh
-    tko plugin list
+    scripts/vagrant tko template list
+    scripts/vagrant kubectl get pods --all-namespaces --context=kind-edge1
+    scripts/vagrant scripts/test
 
-The port is also mapped to the host at port 60050, so you could potentially run the client
-there:
+If you have `tko` installed on the host, you can also run the client there. The API
+gRPC port is mapped to the host at port 60050, so you need to point to it explicitly:
 
-    tko plugin list --grpc-port 60050
+    tko plugin list --grpc-port=60050
 
-If you want the virtual machine to to continuously sync file changes from the host (it's
-one-way, only from the host to the virtual machine):
+Continue to [user guide](USAGE.md).
+
+During development, if you want the virtual machine to continuously sync file changes
+from the host (it's one-way, only from the host to the virtual machine at directory
+`/vagrant`), run this in a separate terminal:
 
     vagrant rsync-auto
 
-OS Requirements
----------------
+Native Installation
+-------------------
 
-### Fedora
+### OS Requirements
+
+For Fedora-family hosts:
 
     sudo scripts/install-system-dependencies-fedora
 
-### gLinux
+For Google gLinux hosts:
 
     sudo scripts/install-system-dependencies-glinux
 
-Other Requirements
-------------------
+### Other Requirements
 
     sudo scripts/install-system-dependencies
     scripts/install-python-dependencies
 
 Note that Python will be using a virtual environment at `~/tko-python-env`.
 
-Or, these are the requirements if you prefer to install them manually:
+If you're using the PostgreSQL backend, set up permissions:
 
-* [Go](https://g3doc.corp.google.com/go/g3doc/codelabs/getting-started.md) (you should already have it in gLinux, but can install the latest version manually)
-* [Docker](http://go/installdocker)
+    sudo scripts/setup-postgresql
+
+These are the requirements if you prefer to install them manually:
+
+* [Go](https://g3doc.corp.google.com/go/g3doc/codelabs/getting-started.md)
+  (you should already have it in gLinux, but can still install the latest version manually)
+* [Docker](https://docs.docker.com/get-docker/) ([instructions for Google gLinux](http://go/installdocker))
 * [KIND](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 * [Helm](https://helm.sh/docs/intro/install/)
 * [kpt CLI](https://kpt.dev/installation/kpt-cli)
 * [PostgreSQL](https://www.postgresql.org/)
-* Python: ruamel.yaml
+* Python: [ruamel.yaml](https://pypi.org/project/ruamel.yaml/)
 
-Setup
------
-
-To setup our PostreSQL user:
-
-    sudo scripts/setup-postgresql
+### Setup
 
 Make sure Go-built binaries are in your path by adding this to your `~/.bashrc` file:
 
     export PATH="$HOME/go/bin:$PATH"
 
-And then run this to use it now:
+Also run that command locally to make it work in the current terminal.
 
-    . ~/.bashrc
+Build TKO binaries:
+
+    scripts/build
 
 Install our systemd services (in user mode) on top of the PostgreSQL backend:
 
-    BACKEND=postgresql scripts/install-systemd-services
+    BACKEND=postgresql BACKEND_CLEAN=true scripts/install-systemd-services
 
-Finally, build tko, start the services, and deploy a few examples:
+(By default it will install using the non-persistent memory backend, which is useful for
+testing.)
 
-    scripts/test
+Start the systemd services:
+
+    scripts/start-service tko-api
+    scripts/start-service tko-preparer
+    scripts/start-service tko-meta-scheduler
+
+Continue to [user guide](USAGE.md).

@@ -1,6 +1,7 @@
 package memory
 
 import (
+	contextpkg "context"
 	"time"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -15,7 +16,7 @@ type Deployment struct {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) SetDeployment(deployment *backend.Deployment) error {
+func (self *MemoryBackend) SetDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
 	deployment = deployment.Clone()
 
 	self.lock.Lock()
@@ -40,7 +41,7 @@ func (self *MemoryBackend) SetDeployment(deployment *backend.Deployment) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) GetDeployment(deploymentId string) (*backend.Deployment, error) {
+func (self *MemoryBackend) GetDeployment(context contextpkg.Context, deploymentId string) (*backend.Deployment, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -52,7 +53,7 @@ func (self *MemoryBackend) GetDeployment(deploymentId string) (*backend.Deployme
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) DeleteDeployment(deploymentId string) error {
+func (self *MemoryBackend) DeleteDeployment(context contextpkg.Context, deploymentId string) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -86,7 +87,7 @@ func (self *MemoryBackend) deleteDeployment(deploymentId string, deployment *Dep
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListDeployments(prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
+func (self *MemoryBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
 	filterPrepared := prepared == "true"
 	filterNotPrepared := prepared == "false"
 
@@ -147,7 +148,7 @@ func (self *MemoryBackend) ListDeployments(prepared string, parentDeploymentId s
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) StartDeploymentModification(deploymentId string) (string, *backend.Deployment, error) {
+func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *backend.Deployment, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -171,7 +172,7 @@ func (self *MemoryBackend) StartDeploymentModification(deploymentId string) (str
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
+func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -211,7 +212,7 @@ func (self *MemoryBackend) EndDeploymentModification(modificationToken string, r
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) CancelDeploymentModification(modificationToken string) error {
+func (self *MemoryBackend) CancelDeploymentModification(context contextpkg.Context, modificationToken string) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 

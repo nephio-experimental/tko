@@ -1,6 +1,7 @@
 package sql
 
 import (
+	contextpkg "context"
 	"database/sql"
 
 	"github.com/nephio-experimental/tko/util"
@@ -8,50 +9,53 @@ import (
 )
 
 //
-// SqlBackend
+// SQLBackend
 //
 
-type SqlBackend struct {
+type SQLBackend struct {
+	DropTablesFirst bool
+
 	driver          string
 	dataSource      string
 	resourcesFormat string
 
-	sql *Sql
-	db  *sql.DB
+	statements *Statements
+	db         *sql.DB
 
-	log                commonlog.Logger
-	modificationWindow int64 // microseconds
+	log                     commonlog.Logger
+	maxModificationDuration int64 // microseconds
 }
 
-// modificationWindow in seconds
-func NewSqlBackend(driver string, dataSource string, resourcesFormat string, modificationWindow int, log commonlog.Logger) *SqlBackend {
-	return &SqlBackend{
-		driver:             driver,
-		dataSource:         dataSource,
-		resourcesFormat:    resourcesFormat,
-		log:                log,
-		modificationWindow: int64(modificationWindow) * 1000000,
+func NewSQLBackend(driver string, dataSource string, resourcesFormat string, maxModificationDurationSeconds float64, log commonlog.Logger) *SQLBackend {
+	return &SQLBackend{
+		driver:                  driver,
+		dataSource:              dataSource,
+		resourcesFormat:         resourcesFormat,
+		log:                     log,
+		maxModificationDuration: int64(maxModificationDurationSeconds * 1_000_000.0),
 	}
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) Connect() error {
+func (self *SQLBackend) Connect(context contextpkg.Context) error {
 	self.log.Notice("connect")
 	var err error
 	if self.db, err = sql.Open(self.driver, self.dataSource); err == nil {
-		self.sql = NewSql(self.driver, self.db, self.log)
+		self.statements = NewStatements(self.driver, self.db, self.log)
 
-		err = self.sql.DropTables()
+		if self.DropTablesFirst {
+			err = self.statements.DropTables(context)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = self.statements.CreateTables(context)
 		if err != nil {
 			return err
 		}
 
-		err = self.sql.CreateTables()
-		if err != nil {
-			return err
-		}
-
-		err = self.sql.Prepare()
+		err = self.statements.Prepare(context)
 		if err != nil {
 			return err
 		}
@@ -63,10 +67,10 @@ func (self *SqlBackend) Connect() error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) Release() error {
+func (self *SQLBackend) Release(context contextpkg.Context) error {
 	self.log.Notice("release")
-	if self.sql != nil {
-		self.sql.Release()
+	if self.statements != nil {
+		self.statements.Release()
 	}
 	if self.db != nil {
 		return self.db.Close()
@@ -77,10 +81,10 @@ func (self *SqlBackend) Release() error {
 
 // Utils
 
-func (self *SqlBackend) encodeResources(resources util.Resources) ([]byte, error) {
+func (self *SQLBackend) encodeResources(resources util.Resources) ([]byte, error) {
 	return util.EncodeResources(self.resourcesFormat, resources)
 }
 
-func (self *SqlBackend) decodeResources(content []byte) (util.Resources, error) {
+func (self *SQLBackend) decodeResources(content []byte) (util.Resources, error) {
 	return util.DecodeResources(self.resourcesFormat, content)
 }

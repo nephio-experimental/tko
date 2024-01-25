@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
 )
@@ -61,7 +61,9 @@ func NewCommandPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 	}
 
 	return func(preparationContext *Context) (bool, []ard.Map, error) {
-		preparationContext.Log.Infof("prepare via command plugin for %s: %s", preparationContext.TargetResourceIdentifer, strings.Join(plugin.Arguments, " "))
+		preparationContext.Log.Info("prepare via command plugin",
+			"resource", preparationContext.TargetResourceIdentifer,
+			"arguments", strings.Join(plugin.Arguments, " "))
 
 		logFifo := util.NewLogFIFO("tko-preparation", preparationContext.Log)
 		if err := logFifo.Start(); err != nil {
@@ -90,7 +92,10 @@ func NewKptPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 	image := plugin.Arguments[0]
 
 	return func(preparationContext *Context) (bool, []ard.Map, error) {
-		preparationContext.Log.Infof("prepare via kpt plugin for %s: %s, %s", preparationContext.TargetResourceIdentifer, image, plugin.Properties)
+		preparationContext.Log.Info("prepare via kpt plugin",
+			"resource", preparationContext.TargetResourceIdentifer,
+			"image", image,
+			"properties", plugin.Properties)
 
 		if resource, ok := preparationContext.GetResource(); ok {
 			//context.Log.Noticef("!!! %s", resource)

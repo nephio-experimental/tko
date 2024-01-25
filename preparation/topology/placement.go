@@ -20,7 +20,8 @@ type Deployment struct {
 
 // ([preparation.PrepareFunc] signature)
 func PreparePlacement(preparationContext *preparation.Context) (bool, util.Resources, error) {
-	preparationContext.Log.Infof("preparing topology.nephio.org Placement: %s", preparationContext.TargetResourceIdentifer.Name)
+	preparationContext.Log.Info("preparing topology.nephio.org Placement",
+		"resource", preparationContext.TargetResourceIdentifer)
 
 	if placement, ok := preparationContext.GetResource(); ok {
 		prepared := true

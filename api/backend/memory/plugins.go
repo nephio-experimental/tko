@@ -1,11 +1,13 @@
 package memory
 
 import (
+	contextpkg "context"
+
 	"github.com/nephio-experimental/tko/api/backend"
 )
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) SetPlugin(plugin *backend.Plugin) error {
+func (self *MemoryBackend) SetPlugin(context contextpkg.Context, plugin *backend.Plugin) error {
 	plugin = plugin.Clone()
 
 	if plugin.Properties == nil {
@@ -21,7 +23,7 @@ func (self *MemoryBackend) SetPlugin(plugin *backend.Plugin) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) GetPlugin(pluginId backend.PluginID) (*backend.Plugin, error) {
+func (self *MemoryBackend) GetPlugin(context contextpkg.Context, pluginId backend.PluginID) (*backend.Plugin, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -33,7 +35,7 @@ func (self *MemoryBackend) GetPlugin(pluginId backend.PluginID) (*backend.Plugin
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) DeletePlugin(pluginId backend.PluginID) error {
+func (self *MemoryBackend) DeletePlugin(context contextpkg.Context, pluginId backend.PluginID) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -46,7 +48,7 @@ func (self *MemoryBackend) DeletePlugin(pluginId backend.PluginID) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListPlugins() ([]backend.Plugin, error) {
+func (self *MemoryBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugin, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 

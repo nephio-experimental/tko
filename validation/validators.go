@@ -1,14 +1,14 @@
 package validation
 
 import (
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 )
 
-type ValidatorFunc func(context *Context) error
+type ValidatorFunc func(validationContext *Context) []error
 
-func (self *Validation) RegisterValidator(gvk util.GVK, instantiator ValidatorFunc) {
-	self.validators[gvk] = instantiator
+func (self *Validation) RegisterValidator(gvk util.GVK, validate ValidatorFunc) {
+	self.validators[gvk] = validate
 }
 
 func (self *Validation) GetValidator(gvk util.GVK) (ValidatorFunc, bool, error) {
@@ -16,8 +16,8 @@ func (self *Validation) GetValidator(gvk util.GVK) (ValidatorFunc, bool, error) 
 		return validator, true, nil
 	} else if plugin, ok, err := self.Client.GetPlugin(client.NewPluginID("validate", gvk)); err == nil {
 		if ok {
-			if validator, err := NewPluginValidator(plugin); err == nil {
-				return validator, true, nil
+			if validate, err := NewPluginValidator(plugin); err == nil {
+				return validate, true, nil
 			} else {
 				return nil, false, err
 			}

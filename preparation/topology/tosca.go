@@ -16,7 +16,8 @@ var TOSCAGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
 
 // ([preparation.PrepareFunc] signature)
 func PrepareTOSCA(preparationContext *preparation.Context) (bool, util.Resources, error) {
-	preparationContext.Log.Infof("preparing topology.nephio.org TOSCA: %s", preparationContext.TargetResourceIdentifer.Name)
+	preparationContext.Log.Info("preparing topology.nephio.org TOSCA",
+		"resource", preparationContext.TargetResourceIdentifer)
 
 	if tosca, ok := preparationContext.GetResource(); ok {
 		if url, ok := ard.With(tosca).Get("spec", "url").String(); ok {

@@ -7,16 +7,17 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 not_root
 
 export BACKEND=${BACKEND:-memory}
+export BACKEND_CLEAN=${BACKEND_CLEAN:-false}
 export GRPC_IP_STACK=${GRPC_IP_STACK:-dual}
+
+mkdir --parents ~/.config/systemd/user/
 
 function install_service () {
     local NAME=$1
     cat "$ROOT/assets/systemd/$NAME.service" | envsubst > ~/".config/systemd/user/$NAME.service"
 }
 
-mkdir --parents ~/.config/systemd/user/
-
-install_service tko-api-server
+install_service tko-api
 install_service tko-meta-scheduler
 install_service tko-preparer
 

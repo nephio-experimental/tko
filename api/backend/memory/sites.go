@@ -1,12 +1,14 @@
 package memory
 
 import (
+	contextpkg "context"
+
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/util"
 )
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) SetSite(site *backend.Site) error {
+func (self *MemoryBackend) SetSite(context contextpkg.Context, site *backend.Site) error {
 	site = site.Clone()
 	if site.Metadata == nil {
 		site.Metadata = make(map[string]string)
@@ -32,7 +34,7 @@ func (self *MemoryBackend) SetSite(site *backend.Site) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) GetSite(siteId string) (*backend.Site, error) {
+func (self *MemoryBackend) GetSite(context contextpkg.Context, siteId string) (*backend.Site, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -44,7 +46,7 @@ func (self *MemoryBackend) GetSite(siteId string) (*backend.Site, error) {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) DeleteSite(siteId string) error {
+func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -62,7 +64,7 @@ func (self *MemoryBackend) DeleteSite(siteId string) error {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListSites(siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
+func (self *MemoryBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 

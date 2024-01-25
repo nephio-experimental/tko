@@ -1,6 +1,7 @@
 package sql
 
 import (
+	contextpkg "context"
 	"database/sql"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -8,7 +9,7 @@ import (
 )
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) SetTemplate(template *backend.Template) error {
+func (self *SQLBackend) SetTemplate(context contextpkg.Context, template *backend.Template) error {
 	template = template.Clone()
 	if template.Metadata == nil {
 		template.Metadata = make(map[string]string)
@@ -17,12 +18,12 @@ func (self *SqlBackend) SetTemplate(template *backend.Template) error {
 	template.Update()
 
 	if resources, err := self.encodeResources(template.Resources); err == nil {
-		if tx, err := self.db.Begin(); err == nil {
-			if _, err := tx.Exec(self.sql.InsertTemplate, template.TemplateID, resources); err == nil {
+		if tx, err := self.db.BeginTx(context, nil); err == nil {
+			if _, err := tx.ExecContext(context, self.statements.InsertTemplate, template.TemplateID, resources); err == nil {
 				if len(template.Metadata) > 0 {
-					if insertTemplateMetadata, err := tx.Prepare(self.sql.InsertTemplateMetadata); err == nil {
+					if insertTemplateMetadata, err := tx.PrepareContext(context, self.statements.InsertTemplateMetadata); err == nil {
 						for key, value := range template.Metadata {
-							if _, err := insertTemplateMetadata.Exec(template.TemplateID, key, value); err != nil {
+							if _, err := insertTemplateMetadata.ExecContext(context, template.TemplateID, key, value); err != nil {
 								insertTemplateMetadata.Close()
 								if err := tx.Rollback(); err != nil {
 									self.log.Error(err.Error())
@@ -40,9 +41,9 @@ func (self *SqlBackend) SetTemplate(template *backend.Template) error {
 				}
 
 				if len(template.DeploymentIDs) > 0 {
-					if insertTemplateDeployment, err := tx.Prepare(self.sql.InsertTemplateDeployment); err == nil {
+					if insertTemplateDeployment, err := tx.PrepareContext(context, self.statements.InsertTemplateDeployment); err == nil {
 						for _, deploymentId := range template.DeploymentIDs {
-							if _, err := insertTemplateDeployment.Exec(template.TemplateID, deploymentId); err != nil {
+							if _, err := insertTemplateDeployment.ExecContext(context, template.TemplateID, deploymentId); err != nil {
 								insertTemplateDeployment.Close()
 								if err := tx.Rollback(); err != nil {
 									self.log.Error(err.Error())
@@ -75,8 +76,8 @@ func (self *SqlBackend) SetTemplate(template *backend.Template) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) GetTemplate(templateId string) (*backend.Template, error) {
-	rows, err := self.sql.PreparedSelectTemplate.Query(templateId)
+func (self *SQLBackend) GetTemplate(context contextpkg.Context, templateId string) (*backend.Template, error) {
+	rows, err := self.statements.PreparedSelectTemplate.QueryContext(context, templateId)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +122,8 @@ func (self *SqlBackend) GetTemplate(templateId string) (*backend.Template, error
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) DeleteTemplate(templateId string) error {
-	if result, err := self.sql.PreparedDeleteTemplate.Exec(templateId); err == nil {
+func (self *SQLBackend) DeleteTemplate(context contextpkg.Context, templateId string) error {
+	if result, err := self.statements.PreparedDeleteTemplate.ExecContext(context, templateId); err == nil {
 		if count, err := result.RowsAffected(); err == nil {
 			if count == 0 {
 				return backend.NewNotFoundErrorf("template: %s", templateId)
@@ -137,8 +138,8 @@ func (self *SqlBackend) DeleteTemplate(templateId string) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) ListTemplates(templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
-	sql := self.sql.SelectTemplates
+func (self *SQLBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
+	sql := self.statements.SelectTemplates
 	var args SqlArgs
 	var where SqlWhere
 	var with SqlWith
@@ -159,7 +160,7 @@ func (self *SqlBackend) ListTemplates(templateIdPatterns []string, metadataPatte
 	sql = where.Apply(sql)
 	sql = with.Apply(sql)
 
-	rows, err := self.db.Query(sql, args.Args...)
+	rows, err := self.db.QueryContext(context, sql, args.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +199,8 @@ func (self *SqlBackend) ListTemplates(templateIdPatterns []string, metadataPatte
 
 // Utils
 
-func (self *SqlBackend) getTemplateResources(tx *sql.Tx, templateId string) (util.Resources, error) {
-	if rows, err := tx.Query(self.sql.SelectTemplateResources, templateId); err == nil {
+func (self *SQLBackend) getTemplateResources(context contextpkg.Context, tx *sql.Tx, templateId string) (util.Resources, error) {
+	if rows, err := tx.QueryContext(context, self.statements.SelectTemplateResources, templateId); err == nil {
 		defer func() {
 			if err := rows.Close(); err != nil {
 				self.log.Error(err.Error())

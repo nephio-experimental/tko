@@ -1,6 +1,7 @@
 package memory
 
 import (
+	contextpkg "context"
 	"sync"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -36,13 +37,13 @@ func NewMemoryBackend(modificationWindow int, log commonlog.Logger) *MemoryBacke
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) Connect() error {
+func (self *MemoryBackend) Connect(context contextpkg.Context) error {
 	self.log.Notice("connect")
 	return nil
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) Release() error {
+func (self *MemoryBackend) Release(context contextpkg.Context) error {
 	self.log.Notice("release")
 	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/nephio-experimental/tko/api/client"
+	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/go-transcribe"
@@ -27,10 +27,10 @@ var templateMetadata map[string]string
 var siteMetadata map[string]string
 var parentDeploymentId string
 
-func NewClient() *client.Client {
-	client_, err := client.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, clientLog)
+func NewClient() *clientpkg.Client {
+	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, grpcTimeout, clientLog)
 	util.FailOnError(err)
-	return client_
+	return client
 }
 
 func FailOnGRPCError(err error) {

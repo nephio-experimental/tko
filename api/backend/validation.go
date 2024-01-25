@@ -1,6 +1,7 @@
 package backend
 
 import (
+	contextpkg "context"
 	"strings"
 
 	"github.com/nephio-experimental/tko/util"
@@ -26,17 +27,17 @@ func NewValidatingBackend(backend Backend, validation *validation.Validation) *V
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) Connect() error {
-	return self.Backend.Connect()
+func (self *ValidatingBackend) Connect(context contextpkg.Context) error {
+	return self.Backend.Connect(context)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) Release() error {
-	return self.Backend.Release()
+func (self *ValidatingBackend) Release(context contextpkg.Context) error {
+	return self.Backend.Release(context)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) SetTemplate(template *Template) error {
+func (self *ValidatingBackend) SetTemplate(context contextpkg.Context, template *Template) error {
 	if template.TemplateID == "" {
 		return NewBadArgumentError("templateId is empty")
 	}
@@ -47,11 +48,11 @@ func (self *ValidatingBackend) SetTemplate(template *Template) error {
 		return WrapBadArgumentError(err)
 	}
 
-	return self.Backend.SetTemplate(template)
+	return self.Backend.SetTemplate(context, template)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) GetTemplate(templateId string) (*Template, error) {
+func (self *ValidatingBackend) GetTemplate(context contextpkg.Context, templateId string) (*Template, error) {
 	if templateId == "" {
 		return nil, NewBadArgumentError("templateId is empty")
 	}
@@ -59,11 +60,11 @@ func (self *ValidatingBackend) GetTemplate(templateId string) (*Template, error)
 		return nil, NewBadArgumentError("invalid templateId")
 	}
 
-	return self.Backend.GetTemplate(templateId)
+	return self.Backend.GetTemplate(context, templateId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) DeleteTemplate(templateId string) error {
+func (self *ValidatingBackend) DeleteTemplate(context contextpkg.Context, templateId string) error {
 	if templateId == "" {
 		return NewBadArgumentError("templateId is empty")
 	}
@@ -71,16 +72,16 @@ func (self *ValidatingBackend) DeleteTemplate(templateId string) error {
 		return NewBadArgumentError("invalid templateId")
 	}
 
-	return self.Backend.DeleteTemplate(templateId)
+	return self.Backend.DeleteTemplate(context, templateId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListTemplates(templateIdPatterns []string, metadataPatterns map[string]string) ([]TemplateInfo, error) {
-	return self.Backend.ListTemplates(templateIdPatterns, metadataPatterns)
+func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]TemplateInfo, error) {
+	return self.Backend.ListTemplates(context, templateIdPatterns, metadataPatterns)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) SetSite(site *Site) error {
+func (self *ValidatingBackend) SetSite(context contextpkg.Context, site *Site) error {
 	if site.SiteID == "" {
 		return NewBadArgumentError("siteId is empty")
 	}
@@ -91,11 +92,11 @@ func (self *ValidatingBackend) SetSite(site *Site) error {
 		return WrapBadArgumentError(err)
 	}
 
-	return self.Backend.SetSite(site)
+	return self.Backend.SetSite(context, site)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) GetSite(siteId string) (*Site, error) {
+func (self *ValidatingBackend) GetSite(context contextpkg.Context, siteId string) (*Site, error) {
 	if siteId == "" {
 		return nil, NewBadArgumentError("siteId is empty")
 	}
@@ -103,11 +104,11 @@ func (self *ValidatingBackend) GetSite(siteId string) (*Site, error) {
 		return nil, NewBadArgumentError("invalid siteId")
 	}
 
-	return self.Backend.GetSite(siteId)
+	return self.Backend.GetSite(context, siteId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) DeleteSite(siteId string) error {
+func (self *ValidatingBackend) DeleteSite(context contextpkg.Context, siteId string) error {
 	if siteId == "" {
 		return NewBadArgumentError("siteId is empty")
 	}
@@ -115,16 +116,16 @@ func (self *ValidatingBackend) DeleteSite(siteId string) error {
 		return NewBadArgumentError("invalid siteId")
 	}
 
-	return self.Backend.DeleteSite(siteId)
+	return self.Backend.DeleteSite(context, siteId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListSites(siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]SiteInfo, error) {
-	return self.Backend.ListSites(siteIdPatterns, templateIdPatterns, metadataPatterns)
+func (self *ValidatingBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]SiteInfo, error) {
+	return self.Backend.ListSites(context, siteIdPatterns, templateIdPatterns, metadataPatterns)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) SetDeployment(deployment *Deployment) error {
+func (self *ValidatingBackend) SetDeployment(context contextpkg.Context, deployment *Deployment) error {
 	if deployment.DeploymentID == "" {
 		return NewBadArgumentError("deploymentId is empty")
 	}
@@ -136,43 +137,43 @@ func (self *ValidatingBackend) SetDeployment(deployment *Deployment) error {
 		return WrapBadArgumentError(err)
 	}
 
-	return self.Backend.SetDeployment(deployment)
+	return self.Backend.SetDeployment(context, deployment)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) GetDeployment(deploymentId string) (*Deployment, error) {
+func (self *ValidatingBackend) GetDeployment(context contextpkg.Context, deploymentId string) (*Deployment, error) {
 	if deploymentId == "" {
 		return nil, NewBadArgumentError("deploymentId is empty")
 	}
 
-	return self.Backend.GetDeployment(deploymentId)
+	return self.Backend.GetDeployment(context, deploymentId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) DeleteDeployment(deploymentId string) error {
+func (self *ValidatingBackend) DeleteDeployment(context contextpkg.Context, deploymentId string) error {
 	if deploymentId == "" {
 		return NewBadArgumentError("deploymentId is empty")
 	}
 
-	return self.Backend.DeleteDeployment(deploymentId)
+	return self.Backend.DeleteDeployment(context, deploymentId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListDeployments(prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]DeploymentInfo, error) {
-	return self.Backend.ListDeployments(prepared, parentDeploymentId, templateIdPatterns, templateMetadataPatterns, siteIdPatterns, siteMetadataPatterns)
+func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]DeploymentInfo, error) {
+	return self.Backend.ListDeployments(context, prepared, parentDeploymentId, templateIdPatterns, templateMetadataPatterns, siteIdPatterns, siteMetadataPatterns)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) StartDeploymentModification(deploymentId string) (string, *Deployment, error) {
+func (self *ValidatingBackend) StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *Deployment, error) {
 	if deploymentId == "" {
 		return "", nil, NewBadArgumentError("deploymentId is empty")
 	}
 
-	return self.Backend.StartDeploymentModification(deploymentId)
+	return self.Backend.StartDeploymentModification(context, deploymentId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
+func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
 	if modificationToken == "" {
 		return "", NewBadArgumentError("modificationToken is empty")
 	}
@@ -181,20 +182,20 @@ func (self *ValidatingBackend) EndDeploymentModification(modificationToken strin
 		return "", WrapBadArgumentError(err)
 	}
 
-	return self.Backend.EndDeploymentModification(modificationToken, resources)
+	return self.Backend.EndDeploymentModification(context, modificationToken, resources)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) CancelDeploymentModification(modificationToken string) error {
+func (self *ValidatingBackend) CancelDeploymentModification(context contextpkg.Context, modificationToken string) error {
 	if modificationToken == "" {
 		return NewBadArgumentError("modificationToken is empty")
 	}
 
-	return self.Backend.CancelDeploymentModification(modificationToken)
+	return self.Backend.CancelDeploymentModification(context, modificationToken)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) SetPlugin(plugin *Plugin) error {
+func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *Plugin) error {
 	switch plugin.Type {
 	case "validate", "prepare", "schedule":
 	default:
@@ -212,11 +213,11 @@ func (self *ValidatingBackend) SetPlugin(plugin *Plugin) error {
 		return NewBadArgumentError("executor is empty")
 	}
 
-	return self.Backend.SetPlugin(plugin)
+	return self.Backend.SetPlugin(context, plugin)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) GetPlugin(pluginId PluginID) (*Plugin, error) {
+func (self *ValidatingBackend) GetPlugin(context contextpkg.Context, pluginId PluginID) (*Plugin, error) {
 	switch pluginId.Type {
 	case "validate", "prepare", "schedule":
 	default:
@@ -231,11 +232,11 @@ func (self *ValidatingBackend) GetPlugin(pluginId PluginID) (*Plugin, error) {
 		return nil, NewBadArgumentError("kind is empty")
 	}
 
-	return self.Backend.GetPlugin(pluginId)
+	return self.Backend.GetPlugin(context, pluginId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) DeletePlugin(pluginId PluginID) error {
+func (self *ValidatingBackend) DeletePlugin(context contextpkg.Context, pluginId PluginID) error {
 	switch pluginId.Type {
 	case "validate", "prepare", "schedule":
 	default:
@@ -250,12 +251,12 @@ func (self *ValidatingBackend) DeletePlugin(pluginId PluginID) error {
 		return NewBadArgumentError("kind is empty")
 	}
 
-	return self.Backend.DeletePlugin(pluginId)
+	return self.Backend.DeletePlugin(context, pluginId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListPlugins() ([]Plugin, error) {
-	return self.Backend.ListPlugins()
+func (self *ValidatingBackend) ListPlugins(context contextpkg.Context) ([]Plugin, error) {
+	return self.Backend.ListPlugins(context)
 }
 
 // Utils

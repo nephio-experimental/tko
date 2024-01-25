@@ -13,7 +13,7 @@ node_types:
     derived_from: core:UPF
     properties:
       template-id:
-        default: nf/free5gc/upf:v1
+        default: nf/free5gc/upf:v1.0.0
         metadata:
           nephio.apiVersion: topology.nephio.org/v1alpha1
           nephio.kind: Template
@@ -32,7 +32,7 @@ node_types:
     derived_from: core:SMF
     properties:
       template-id:
-        default: nf/free5gc/smf:v1
+        default: nf/free5gc/smf:v1.0.0
         metadata:
           nephio.apiVersion: topology.nephio.org/v1alpha1
           nephio.kind: Template

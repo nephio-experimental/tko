@@ -14,7 +14,8 @@ var SiteGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Site")
 
 // ([preparation.PrepareFunc] signature)
 func PrepareSite(preparationContext *preparation.Context) (bool, util.Resources, error) {
-	preparationContext.Log.Infof("preparing topology.nephio.org Site: %s", preparationContext.TargetResourceIdentifer.Name)
+	preparationContext.Log.Info("preparing topology.nephio.org Site",
+		"resource", preparationContext.TargetResourceIdentifer)
 
 	// TODO: check that all Placements have been prepared first?
 

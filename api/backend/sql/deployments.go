@@ -1,6 +1,7 @@
 package sql
 
 import (
+	contextpkg "context"
 	"time"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -9,13 +10,13 @@ import (
 )
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) SetDeployment(deployment *backend.Deployment) error {
+func (self *SQLBackend) SetDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
 	deployment = deployment.Clone()
 	deployment.UpdateInfo(false)
 
-	if tx, err := self.db.Begin(); err == nil {
+	if tx, err := self.db.BeginTx(context, nil); err == nil {
 		if deployment.TemplateID != "" {
-			if resources, err := self.getTemplateResources(tx, deployment.TemplateID); err == nil {
+			if resources, err := self.getTemplateResources(context, tx, deployment.TemplateID); err == nil {
 				// Merge our resources over template resources
 				resources = util.MergeResources(resources, deployment.Resources)
 
@@ -29,9 +30,9 @@ func (self *SqlBackend) SetDeployment(deployment *backend.Deployment) error {
 		}
 
 		if resources, err := self.encodeResources(deployment.Resources); err == nil {
-			if _, err := tx.Exec(self.sql.InsertDeployment, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, resources); err == nil {
+			if _, err := tx.ExecContext(context, self.statements.InsertDeployment, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, resources); err == nil {
 				if deployment.TemplateID != "" {
-					if _, err := tx.Exec(self.sql.InsertTemplateDeployment, deployment.TemplateID, deployment.DeploymentID); err != nil {
+					if _, err := tx.ExecContext(context, self.statements.InsertTemplateDeployment, deployment.TemplateID, deployment.DeploymentID); err != nil {
 						if err := tx.Rollback(); err != nil {
 							self.log.Error(err.Error())
 						}
@@ -40,7 +41,7 @@ func (self *SqlBackend) SetDeployment(deployment *backend.Deployment) error {
 				}
 
 				if deployment.SiteID != "" {
-					if _, err := tx.Exec(self.sql.InsertSiteDeployment, deployment.SiteID, deployment.DeploymentID); err != nil {
+					if _, err := tx.ExecContext(context, self.statements.InsertSiteDeployment, deployment.SiteID, deployment.DeploymentID); err != nil {
 						if err := tx.Rollback(); err != nil {
 							self.log.Error(err.Error())
 						}
@@ -67,8 +68,8 @@ func (self *SqlBackend) SetDeployment(deployment *backend.Deployment) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) GetDeployment(deploymentId string) (*backend.Deployment, error) {
-	rows, err := self.sql.PreparedSelectDeployment.Query(deploymentId)
+func (self *SQLBackend) GetDeployment(context contextpkg.Context, deploymentId string) (*backend.Deployment, error) {
+	rows, err := self.statements.PreparedSelectDeployment.QueryContext(context, deploymentId)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +116,8 @@ func (self *SqlBackend) GetDeployment(deploymentId string) (*backend.Deployment,
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) DeleteDeployment(deploymentId string) error {
-	if result, err := self.sql.PreparedDeleteDeployment.Exec(deploymentId); err == nil {
+func (self *SQLBackend) DeleteDeployment(context contextpkg.Context, deploymentId string) error {
+	if result, err := self.statements.PreparedDeleteDeployment.ExecContext(context, deploymentId); err == nil {
 		if count, err := result.RowsAffected(); err == nil {
 			if count == 0 {
 				return backend.NewNotFoundErrorf("deployment: %s", deploymentId)
@@ -131,8 +132,8 @@ func (self *SqlBackend) DeleteDeployment(deploymentId string) error {
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) ListDeployments(prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
-	sql := self.sql.SelectDeployments
+func (self *SQLBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
+	sql := self.statements.SelectDeployments
 	var args SqlArgs
 	var where SqlWhere
 	var with SqlWith
@@ -177,7 +178,7 @@ func (self *SqlBackend) ListDeployments(prepared string, parentDeploymentId stri
 	sql = where.Apply(sql)
 	sql = with.Apply(sql)
 
-	rows, err := self.db.Query(sql, args.Args...)
+	rows, err := self.db.QueryContext(context, sql, args.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,9 +219,9 @@ func (self *SqlBackend) ListDeployments(prepared string, parentDeploymentId stri
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) StartDeploymentModification(deploymentId string) (string, *backend.Deployment, error) {
-	if tx, err := self.db.Begin(); err == nil {
-		rows, err := tx.Query(self.sql.SelectDeploymentWithModificaiton, deploymentId)
+func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *backend.Deployment, error) {
+	if tx, err := self.db.BeginTx(context, nil); err == nil {
+		rows, err := tx.QueryContext(context, self.statements.SelectDeploymentWithModificaiton, deploymentId)
 		if err != nil {
 			if err := tx.Rollback(); err != nil {
 				self.log.Error(err.Error())
@@ -266,7 +267,7 @@ func (self *SqlBackend) StartDeploymentModification(deploymentId string) (string
 						modificationToken_ := ksuid.New().String()
 						modificationTimestamp_ := time.Now().UnixMicro()
 
-						if _, err := tx.Exec(self.sql.UpdateDeploymentModification, modificationToken_, modificationTimestamp_, deploymentId); err != nil {
+						if _, err := tx.ExecContext(context, self.statements.UpdateDeploymentModification, modificationToken_, modificationTimestamp_, deploymentId); err != nil {
 							if err := tx.Rollback(); err != nil {
 								self.log.Error(err.Error())
 							}
@@ -314,9 +315,9 @@ func (self *SqlBackend) StartDeploymentModification(deploymentId string) (string
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) EndDeploymentModification(modificationToken string, resources util.Resources) (string, error) {
-	if tx, err := self.db.Begin(); err == nil {
-		rows, err := tx.Query(self.sql.SelectDeploymentByModification, modificationToken)
+func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
+	if tx, err := self.db.BeginTx(context, nil); err == nil {
+		rows, err := tx.QueryContext(context, self.statements.SelectDeploymentByModification, modificationToken)
 		if err != nil {
 			if err := tx.Rollback(); err != nil {
 				self.log.Error(err.Error())
@@ -345,12 +346,12 @@ func (self *SqlBackend) EndDeploymentModification(modificationToken string, reso
 
 						deployment.UpdateInfo(false)
 
-						if _, err := tx.Exec(self.sql.UpdateDeployment, nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, resources_, deployment.DeploymentID); err != nil {
+						if _, err := tx.ExecContext(context, self.statements.UpdateDeployment, nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, resources_, deployment.DeploymentID); err != nil {
 							return "", err
 						}
 
 						if deployment.TemplateID != "" {
-							if _, err := tx.Exec(self.sql.InsertTemplateDeployment, deployment.TemplateID, deploymentId); err != nil {
+							if _, err := tx.ExecContext(context, self.statements.InsertTemplateDeployment, deployment.TemplateID, deploymentId); err != nil {
 								if err := tx.Rollback(); err != nil {
 									self.log.Error(err.Error())
 								}
@@ -359,7 +360,7 @@ func (self *SqlBackend) EndDeploymentModification(modificationToken string, reso
 						}
 
 						if deployment.SiteID != "" {
-							if _, err := tx.Exec(self.sql.InsertSiteDeployment, deployment.SiteID, deploymentId); err != nil {
+							if _, err := tx.ExecContext(context, self.statements.InsertSiteDeployment, deployment.SiteID, deploymentId); err != nil {
 								if err := tx.Rollback(); err != nil {
 									self.log.Error(err.Error())
 								}
@@ -408,8 +409,8 @@ func (self *SqlBackend) EndDeploymentModification(modificationToken string, reso
 }
 
 // ([backend.Backend] interface)
-func (self *SqlBackend) CancelDeploymentModification(modificationToken string) error {
-	if result, err := self.sql.PreparedResetDeploymentModification.Exec(modificationToken); err == nil {
+func (self *SQLBackend) CancelDeploymentModification(context contextpkg.Context, modificationToken string) error {
+	if result, err := self.statements.PreparedResetDeploymentModification.ExecContext(context, modificationToken); err == nil {
 		if count, err := result.RowsAffected(); err == nil {
 			if count == 0 {
 				return backend.NewNotFoundErrorf("modification token: %s", modificationToken)
@@ -423,10 +424,10 @@ func (self *SqlBackend) CancelDeploymentModification(modificationToken string) e
 	}
 }
 
-func (self *SqlBackend) hasModificationExpired(modificationTimestamp *int64) bool {
+func (self *SQLBackend) hasModificationExpired(modificationTimestamp *int64) bool {
 	if modificationTimestamp == nil {
 		return true
 	}
 	delta := time.Now().UnixMicro() - *modificationTimestamp
-	return delta > self.modificationWindow
+	return delta > self.maxModificationDuration
 }

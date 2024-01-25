@@ -1,23 +1,23 @@
 package metascheduling
 
 import (
-	"github.com/nephio-experimental/tko/api/client"
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 )
 
 type SchedulerFunc func(schedulingContext *Context) error
 
-func (self *MetaScheduling) RegisterScheduler(gvk util.GVK, scheduler SchedulerFunc) {
-	self.schedulers[gvk] = scheduler
+func (self *MetaScheduling) RegisterScheduler(gvk util.GVK, schedule SchedulerFunc) {
+	self.schedulers[gvk] = schedule
 }
 
 func (self *MetaScheduling) GetScheduler(gvk util.GVK) (SchedulerFunc, bool, error) {
-	if scheduler, ok := self.schedulers[gvk]; ok {
-		return scheduler, true, nil
+	if schedule, ok := self.schedulers[gvk]; ok {
+		return schedule, true, nil
 	} else if plugin, ok, err := self.Client.GetPlugin(client.NewPluginID("schedule", gvk)); err == nil {
 		if ok {
-			if scheduler, err := NewPluginScheduler(plugin); err == nil {
-				return scheduler, true, nil
+			if schedule, err := NewPluginScheduler(plugin); err == nil {
+				return schedule, true, nil
 			} else {
 				return nil, false, err
 			}

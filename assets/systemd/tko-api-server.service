@@ -1,7 +1,0 @@
-[Unit]
-Description=TKO API Server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-ExecStart=%h/go/bin/tko-api-server start --journald --backend=$BACKEND --grpc-ip-stack=$GRPC_IP_STACK -v

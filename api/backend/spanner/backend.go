@@ -1,7 +1,7 @@
 package spanner
 
 import (
-	"context"
+	contextpkg "context"
 
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -29,14 +29,14 @@ func NewSpannerBackend(path string, log commonlog.Logger) *SpannerBackend {
 }
 
 // ([Backend] interface)
-func (self *SpannerBackend) Connect() error {
+func (self *SpannerBackend) Connect(context contextpkg.Context) error {
 	var err error
-	self.admin, err = database.NewDatabaseAdminClient(context.TODO())
+	self.admin, err = database.NewDatabaseAdminClient(context)
 	if err != nil {
 		return err
 	}
 
-	self.client, err = spanner.NewClient(context.TODO(), self.path)
+	self.client, err = spanner.NewClient(context, self.path)
 	if err != nil {
 		self.admin.Close()
 		self.admin = nil
@@ -47,7 +47,7 @@ func (self *SpannerBackend) Connect() error {
 }
 
 // ([Backend] interface)
-func (self *SpannerBackend) Release() error {
+func (self *SpannerBackend) Release(context contextpkg.Context) error {
 	if self.client != nil {
 		self.client.Close()
 	}

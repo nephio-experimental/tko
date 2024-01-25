@@ -37,7 +37,8 @@ func (self *Context) GetMergeResources(objectReferences []any) (bool, util.Resou
 		for _, resource := range resources {
 			if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 				if shouldPrepare, _ := self.Preparation.ShouldPrepare(resourceIdentifier, resource, nil); shouldPrepare {
-					self.Log.Infof("aborting merge due to uprepared resource: %s", resourceIdentifier)
+					self.Log.Info("aborting merge due to uprepared resource",
+						"resource", resourceIdentifier)
 					return false, nil, nil
 				}
 			}

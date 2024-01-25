@@ -8,7 +8,7 @@ m 'stopping controllers...'
 
 "$HERE/stop-service" tko-meta-scheduler
 "$HERE/stop-service" tko-preparer
-"$HERE/stop-service" tko-api-server
+"$HERE/stop-service" tko-api
 
 if [ "$1" == -c ]; then
 	m 'deleting clusters...'
@@ -22,14 +22,14 @@ m 'building...'
 
 m 'starting controllers...'
 
-"$HERE/start-service" tko-api-server
+"$HERE/start-service" tko-api
 "$HERE/start-service" tko-preparer
 "$HERE/start-service" tko-meta-scheduler
 
 set +e
 while true; do
-	m 'waiting for tko-api-server...'
-	if tko plugin list --quiet; then
+	m 'waiting for tko-api...'
+	if tko template list --quiet; then
 		break
 	fi
 	sleep 1
@@ -38,27 +38,27 @@ set -e
 
 m 'registering plugins...'
 
-tko plugin register validate free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/validate_free5gc_smf.py"
-tko plugin register prepare workload.plugin.nephio.org v1alpha1 Namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=namespace=spec.namespace
-tko plugin register prepare free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/prepare_free5gc_smf.py"
-tko plugin register schedule kind.x-k8s.io v1alpha4 Cluster "$ROOT/examples/plugins/schedule_kind.py"
-tko plugin register schedule gdce.google.com v1alpha1 EdgeCluster "$ROOT/examples/plugins/schedule_gdce.py"
+tko plugin register validate free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/validate_free5gc_smf.py" -v
+tko plugin register prepare workload.plugin.nephio.org v1alpha1 Namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=namespace=spec.namespace -v
+tko plugin register prepare free5gc.plugin.nephio.org v1alpha1 SMF "$ROOT/examples/plugins/prepare_free5gc_smf.py" -v
+tko plugin register schedule kind.x-k8s.io v1alpha4 Cluster "$ROOT/examples/plugins/schedule_kind.py" -v
+tko plugin register schedule gdce.google.com v1alpha1 EdgeCluster "$ROOT/examples/plugins/schedule_gdce.py" -v
 
 m 'registering templates...'
 
-tko template register demo/hello-world:v1 --metadata=type=demo --url="$ROOT/examples/hello-world/" -v
-tko template register nf/free5gc/upf:v1 --metadata=type=nf --url="$ROOT/examples/free5gc-upf/" -v
-tko template register nf/free5gc/smf:v1 --metadata=type=nf --url="$ROOT/examples/free5gc-smf/" -v
-tko template register topology/oran/cu:v1 --metadata=type=topology --url="$ROOT/examples/oran-cu/" -v
-tko template register topology/oran/du:v1 --metadata=type=demo --url="$ROOT/examples/oran-du/krm/" -v
-tko template register site/gdce:v1 --metadata=type=site --url="$ROOT/examples/gdce-site/" -v
+tko template register demo/hello-world:v1.0.0 --metadata=type=demo --url="$ROOT/examples/hello-world/" -v
+tko template register nf/free5gc/upf:v1.0.0 --metadata=type=nf --url="$ROOT/examples/free5gc-upf/" -v
+tko template register nf/free5gc/smf:v1.0.0 --metadata=type=nf --url="$ROOT/examples/free5gc-smf/" -v
+tko template register topology/oran/cu:v1.0.0 --metadata=type=topology --url="$ROOT/examples/oran-cu/" -v
+tko template register topology/oran/du:v1.0.0 --metadata=type=demo --url="$ROOT/examples/oran-du/krm/" -v
+tko template register site/gdce:v1.0.0 --metadata=type=site --url="$ROOT/examples/gdce-site/" -v
 
 m 'registering sites...'
 
 tko site register lab/1 --metadata=type=lab --url="$ROOT/examples/lab-site/" -v
-tko site register india/bangalore/south-100 site/gdce:v1 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
-tko site register india/bangalore/south-101 site/gdce:v1 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
-tko site register usa/chicago/west-5 site/gdce:v1 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
+tko site register india/bangalore/south-100 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+tko site register india/bangalore/south-101 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+tko site register usa/chicago/west-5 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
 
 m 'creating CSAR...'
 
@@ -69,11 +69,11 @@ popd > /dev/null
 
 m 'creating deployments...'
 
-tko deployment create demo/hello-world:v1 --site=lab/1 -v
-tko deployment create topology/oran/cu:v1 -v
-tko deployment create topology/oran/du:v1 -v
+tko deployment create demo/hello-world:v1.0.0 --site=lab/1 -v
+tko deployment create topology/oran/cu:v1.0.0 -v
+tko deployment create topology/oran/du:v1.0.0 -v
 
-# D=$(tko deployment create topology/oran/cu:v1 -v)
+# D=$(tko deployment create topology/oran/cu:v1.0.0 -v)
 # m "deployment name: $D"
 # tko deployment get "$D"
 # M=$(tko deployment mod start "$D" --url="$ROOT/work/deployment/")
