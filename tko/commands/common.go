@@ -55,7 +55,9 @@ func Print(content any) {
 }
 
 func PrintResources(resources tkoutil.Resources) {
-	WriteResources(os.Stdout, resources)
+	if !terminal.Quiet {
+		WriteResources(os.Stdout, resources)
+	}
 }
 
 func Write(writer io.Writer, content any) {

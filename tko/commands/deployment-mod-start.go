@@ -12,7 +12,7 @@ import (
 func init() {
 	deploymentModCommand.AddCommand(deploymentModStartCommand)
 
-	deploymentModStartCommand.Flags().StringVarP(&url, "url", "u", "", "URL for YAML content (can be a local directory or file)")
+	deploymentModStartCommand.Flags().StringVarP(&url, "url", "u", "", "URL for YAML content output (can be a local directory or file)")
 }
 
 var deploymentModStartCommand = &cobra.Command{

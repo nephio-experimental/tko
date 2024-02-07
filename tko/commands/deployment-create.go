@@ -2,21 +2,21 @@ package commands
 
 import (
 	contextpkg "context"
-	"fmt"
 
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
 )
 
+var mergeUrl string
 var siteId string
 var prepared bool
 
 func init() {
 	deploymentCommand.AddCommand(deploymentCreateCommand)
 
-	deploymentCreateCommand.Flags().StringVarP(&url, "url", "u", "", "URL for YAML content (can be a local directory or file)")
-	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use YAML merge content from stdin")
+	deploymentCreateCommand.Flags().StringVarP(&mergeUrl, "merge", "m", "", "URL for mergeable YAML content (can be a local directory or file)")
+	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable YAML content from stdin")
 	deploymentCreateCommand.Flags().StringVar(&parentDeploymentId, "parent", "", "parent deployment ID")
 	deploymentCreateCommand.Flags().StringVarP(&siteId, "site", "s", "", "deployment site ID")
 	deploymentCreateCommand.Flags().BoolVarP(&prepared, "prepared", "r", false, "mark deployment as prepared")
@@ -33,9 +33,9 @@ var deploymentCreateCommand = &cobra.Command{
 
 func CreateDeployment(context contextpkg.Context, parentDeploymentId string, templateId string, siteId string, prepared bool, url string, stdin bool) {
 	var mergeResources tkoutil.Resources
-	if stdin || (url != "") {
+	if stdin || (mergeUrl != "") {
 		var err error
-		mergeResources, err = readResources(context, url, stdin)
+		mergeResources, err = readResources(context, mergeUrl, stdin)
 		util.FailOnError(err)
 	}
 
@@ -43,7 +43,7 @@ func CreateDeployment(context contextpkg.Context, parentDeploymentId string, tem
 	FailOnGRPCError(err)
 	if ok {
 		log.Noticef("created deployment: %s", deploymentId)
-		fmt.Println(deploymentId)
+		Print(deploymentId)
 	} else {
 		util.Fail(reason)
 	}

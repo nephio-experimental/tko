@@ -40,6 +40,7 @@ Documentation
 * [Installation guide](INSTALL.md)
 * [User guide](USAGE.md)
 * [Reference guide](REFERENCE.md)
+* [How preparation works](PREPARATION.md)
 * [TODO](TODO.md)
 
 Architecture Diagram

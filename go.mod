@@ -1,6 +1,6 @@
 module github.com/nephio-experimental/tko
 
-go 1.21
+go 1.22
 
 require (
 	cloud.google.com/go/spanner v1.56.0
