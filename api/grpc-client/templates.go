@@ -32,6 +32,7 @@ func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]s
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("registerTemplate")
 		if response, err := apiClient.RegisterTemplate(context, &api.Template{
 			TemplateId:      templateId,
 			Metadata:        metadata,
@@ -52,6 +53,7 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("getTemplate")
 		if template, err := apiClient.GetTemplate(context, &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
 			if resources, err := util.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
 				return Template{
@@ -80,6 +82,7 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("deleteTemplate")
 		if response, err := apiClient.DeleteTemplate(context, &api.DeleteTemplate{TemplateId: templateId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -95,6 +98,7 @@ func (self *Client) ListTemplates(templateIdPatterns []string, metadataPatterns 
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("listTemplates")
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
 			TemplateIdPatterns: templateIdPatterns,
 			MetadataPatterns:   metadataPatterns,

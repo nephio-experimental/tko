@@ -23,7 +23,7 @@ func (self *SpannerBackend) DeleteDeployment(context contextpkg.Context, deploym
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
+func (self *SpannerBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) ([]backend.DeploymentInfo, error) {
 	return nil, nil
 }
 

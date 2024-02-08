@@ -7,13 +7,13 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func IdMatchesPatterns(id string, patterns []string) bool {
+func IDMatchesPatterns(id string, patterns []string) bool {
 	if id == "" {
 		return false
 	}
 
 	for _, pattern := range patterns {
-		if !IdMatchesPattern(id, pattern) {
+		if !IDMatchesPattern(id, pattern) {
 			return false
 		}
 	}
@@ -59,11 +59,11 @@ func PatternRE(pattern string) string {
 	return re.String()
 }
 
-func IdMatchesPattern(s string, pattern string) bool {
-	return regexp.MustCompile(IdPatternRE(pattern)).Match(util.StringToBytes(s))
+func IDMatchesPattern(s string, pattern string) bool {
+	return regexp.MustCompile(IDPatternRE(pattern)).Match(util.StringToBytes(s))
 }
 
-func IdPatternRE(pattern string) string {
+func IDPatternRE(pattern string) string {
 	var re strings.Builder
 	re.WriteRune('^')
 

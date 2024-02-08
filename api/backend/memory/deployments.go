@@ -87,9 +87,11 @@ func (self *MemoryBackend) deleteDeployment(deploymentId string, deployment *Dep
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
-	filterPrepared := prepared == "true"
-	filterNotPrepared := prepared == "false"
+func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) ([]backend.DeploymentInfo, error) {
+	filterPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == true)
+	filterNotPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == false)
+	filterApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == true)
+	filterNotApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == false)
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
@@ -103,21 +105,28 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, prepared 
 			continue
 		}
 
-		if parentDeploymentId != "" {
-			if parentDeploymentId != deployment.ParentDeploymentID {
+		if filterApproved && !deployment.Approved {
+			continue
+		}
+		if filterNotApproved && deployment.Approved {
+			continue
+		}
+
+		if (listDeployments.ParentDeploymentID != nil) && (*listDeployments.ParentDeploymentID != "") {
+			if *listDeployments.ParentDeploymentID != deployment.ParentDeploymentID {
 				continue
 			}
 		}
 
-		if len(templateIdPatterns) > 0 {
-			if !backend.IdMatchesPatterns(deployment.TemplateID, templateIdPatterns) {
+		if len(listDeployments.TemplateIDPatterns) > 0 {
+			if !backend.IDMatchesPatterns(deployment.TemplateID, listDeployments.TemplateIDPatterns) {
 				continue
 			}
 		}
 
-		if (templateMetadataPatterns != nil) && (len(templateMetadataPatterns) > 0) {
+		if (listDeployments.TemplateMetadataPatterns != nil) && (len(listDeployments.TemplateMetadataPatterns) > 0) {
 			if template, ok := self.templates[deployment.TemplateID]; ok {
-				if !backend.MetadataMatchesPatterns(template.Metadata, templateMetadataPatterns) {
+				if !backend.MetadataMatchesPatterns(template.Metadata, listDeployments.TemplateMetadataPatterns) {
 					continue
 				}
 			} else {
@@ -125,15 +134,15 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, prepared 
 			}
 		}
 
-		if len(siteIdPatterns) > 0 {
-			if !backend.IdMatchesPatterns(deployment.SiteID, siteIdPatterns) {
+		if len(listDeployments.SiteIDPatterns) > 0 {
+			if !backend.IDMatchesPatterns(deployment.SiteID, listDeployments.SiteIDPatterns) {
 				continue
 			}
 		}
 
-		if (siteMetadataPatterns != nil) && (len(siteMetadataPatterns) > 0) {
+		if (listDeployments.SiteMetadataPatterns != nil) && (len(listDeployments.SiteMetadataPatterns) > 0) {
 			if site, ok := self.sites[deployment.SiteID]; ok {
-				if !backend.MetadataMatchesPatterns(site.Metadata, siteMetadataPatterns) {
+				if !backend.MetadataMatchesPatterns(site.Metadata, listDeployments.SiteMetadataPatterns) {
 					continue
 				}
 			} else {
@@ -257,7 +266,7 @@ func (self *MemoryBackend) mergeDeploymentResources(deployment *backend.Deployme
 		resources = util.MergeResources(resources, deployment.Resources)
 
 		// Merge default Deployment resource
-		resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared)})
+		resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared, deployment.Approved)})
 
 		deployment.Resources = resources
 	}

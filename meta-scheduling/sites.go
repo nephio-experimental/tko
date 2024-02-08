@@ -43,7 +43,7 @@ func (self *MetaScheduling) scheduleSite(siteId string, siteResources util.Resou
 					for _, deploymentId := range deploymentIds {
 						if deployment, ok, err := self.Client.GetDeployment(deploymentId); err == nil {
 							if ok {
-								if deployment.Prepared {
+								if deployment.Prepared && deployment.Approved {
 									deployments[deploymentId] = deployment.Resources
 								}
 							}

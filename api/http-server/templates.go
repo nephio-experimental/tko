@@ -4,6 +4,7 @@ import (
 	contextpkg "context"
 	"net/http"
 
+	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/tliron/go-ard"
 	"github.com/tliron/go-transcribe"
 )
@@ -12,7 +13,7 @@ func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Requ
 	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
 	defer cancel()
 
-	if templates, err := self.Backend.ListTemplates(context, nil, nil); err == nil {
+	if templates, err := self.Backend.ListTemplates(context, backend.ListTemplates{}); err == nil {
 		templates_ := make([]ard.StringMap, len(templates))
 		for index, template := range templates {
 			templates_[index] = ard.StringMap{

@@ -22,6 +22,6 @@ func (self *SpannerBackend) DeleteTemplate(context contextpkg.Context, templateI
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
+func (self *SpannerBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) ([]backend.TemplateInfo, error) {
 	return nil, nil
 }

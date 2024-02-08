@@ -53,6 +53,7 @@ type Statements struct {
 	CreateSitesDeployments             string
 	CreateDeployments                  string
 	CreateDeploymentsPreparedIndex     string
+	CreateDeploymentsApprovedIndex     string
 	CreateDeploymentsModificationIndex string
 	CreatePlugins                      string
 
@@ -66,6 +67,7 @@ type Statements struct {
 	DropSitesDeployments             string
 	DropDeployments                  string
 	DropDeploymentsPreparedIndex     string
+	DropDeploymentsApprovedIndex     string
 	DropDeploymentsModificationIndex string
 	DropPlugins                      string
 
@@ -169,6 +171,7 @@ func (self *Statements) CreateTables(context contextpkg.Context) error {
 		self.CreateSitesMetadataIndex,
 		self.CreateDeployments,
 		self.CreateDeploymentsPreparedIndex,
+		self.CreateDeploymentsApprovedIndex,
 		self.CreateDeploymentsModificationIndex,
 		self.CreateTemplatesDeployments,
 		self.CreateSitesDeployments,
@@ -183,6 +186,7 @@ func (self *Statements) DropTables(context contextpkg.Context) error {
 		self.DropPlugins,
 		self.DropDeploymentsModificationIndex,
 		self.DropDeploymentsPreparedIndex,
+		self.DropDeploymentsApprovedIndex,
 		self.DropDeployments,
 		self.DropSitesMetadataIndex,
 		self.DropSitesMetadata,

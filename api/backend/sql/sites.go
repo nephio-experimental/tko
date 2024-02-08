@@ -152,24 +152,24 @@ func (self *SQLBackend) DeleteSite(context contextpkg.Context, siteId string) er
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
+func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) ([]backend.SiteInfo, error) {
 	sql := self.statements.SelectSites
 	var args SqlArgs
 	var where SqlWhere
 	var with SqlWith
 
-	for _, pattern := range siteIdPatterns {
-		pattern = args.Add(backend.IdPatternRE(pattern))
+	for _, pattern := range listSites.SiteIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("(sites.site_id ~ " + pattern + ")")
 	}
 
-	for _, pattern := range templateIdPatterns {
-		pattern = args.Add(backend.IdPatternRE(pattern))
+	for _, pattern := range listSites.TemplateIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("(template_id ~ " + pattern + ")")
 	}
 
-	if metadataPatterns != nil {
-		for key, pattern := range metadataPatterns {
+	if listSites.MetadataPatterns != nil {
+		for key, pattern := range listSites.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("sites", "site_id", "SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")

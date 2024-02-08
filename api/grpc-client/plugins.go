@@ -25,6 +25,7 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("registerPlugin")
 		if response, err := apiClient.RegisterPlugin(context, &api.Plugin{
 			Type:       pluginId.Type,
 			Group:      pluginId.Group,
@@ -55,6 +56,7 @@ func (self *Client) GetPlugin(pluginId PluginID) (PluginInfo, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("getPlugin")
 		if plugin, err := apiClient.GetPlugin(context, &api.GetPlugin{
 			Type:    pluginId.Type,
 			Group:   pluginId.Group,
@@ -82,6 +84,7 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("deletePlugin")
 		if response, err := apiClient.DeletePlugin(context, &api.DeletePlugin{
 			Type:    pluginId.Type,
 			Group:   pluginId.Group,
@@ -102,6 +105,7 @@ func (self *Client) ListPlugins() ([]PluginInfo, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("listPlugins")
 		if client, err := apiClient.ListPlugins(context, new(api.ListPlugins)); err == nil {
 			var plugins []PluginInfo
 			for {

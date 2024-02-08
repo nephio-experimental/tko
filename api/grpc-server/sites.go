@@ -70,7 +70,11 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSitesServer) error {
 	self.Log.Infof("listSites: %s", listSites)
 
-	if siteInfos, err := self.Backend.ListSites(server.Context(), listSites.SiteIdPatterns, listSites.TemplateIdPatterns, listSites.MetadataPatterns); err == nil {
+	if siteInfos, err := self.Backend.ListSites(server.Context(), backend.ListSites{
+		SiteIDPatterns:     listSites.SiteIdPatterns,
+		TemplateIDPatterns: listSites.TemplateIdPatterns,
+		MetadataPatterns:   listSites.MetadataPatterns,
+	}); err == nil {
 		for _, siteInfo := range siteInfos {
 			if err := server.Send(&api.ListSitesResponse{
 				SiteId:        siteInfo.SiteID,

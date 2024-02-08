@@ -69,12 +69,13 @@ into the deployment. New merged resources will just be added. If a resource alre
 exists (identified by GVK+name), then it will be merged in: properties will be added
 or updated. This behavior can be further controlled with the `nephio.org/merge`
 annotation, for example if you want to replace the entire resource and not just
-merge properties. The entire template can be modified during merging.
+merge properties. Additionally, the merged name can be changed the `nephio.org/rename`
+annotation, letting you mix and match when specifying multiple merges.
 
-This scheme is powerful. It means that a topology package can include everything
-it needs to create its child deployments. Not only that, when deploying a
-topology you can further merge resources into it, so the topology itself can
-have "inputs".
+The entire template can be modified during merging. This scheme is powerful. It
+means that a topology package can include everything it needs to create its child
+deployments. Not only that, when deploying a topology you can further merge resources
+into it, so the topology itself can have "inputs".
 
 Indeed, you can merge resources when creating a deployment via the API. This
 includes the `--merge` flag for the `tko deployment create` CLI command.

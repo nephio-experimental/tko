@@ -21,8 +21,10 @@ const (
 	PrepareAnnotationHere     = "Here"
 	PrepareAnnotationPostpone = "Postpone"
 
-	PreparedAnnotation     = "nephio.org/prepared"
-	PreparedAnnotationTrue = "true"
+	PreparedAnnotation = "nephio.org/prepared"
+	ApprovedAnnotation = "nephio.org/approved"
+
+	AnnotationTrue = "true"
 )
 
 func GetMetadataAnnotation(resource Resource) (string, bool) {
@@ -51,7 +53,7 @@ func GetPreparedAnnotation(resource Resource) (string, bool) {
 
 func IsPreparedAnnotation(resource Resource) bool {
 	if prepared, ok := GetPreparedAnnotation(resource); ok {
-		return prepared == PreparedAnnotationTrue
+		return prepared == AnnotationTrue
 	}
 	return false
 }
@@ -59,10 +61,29 @@ func IsPreparedAnnotation(resource Resource) bool {
 func SetPreparedAnnotation(resource Resource, prepared bool) bool {
 	annotation := ard.With(resource).ForceGet("metadata", "annotations", PreparedAnnotation)
 	if prepared {
-		return annotation.Set(PreparedAnnotationTrue)
+		return annotation.Set(AnnotationTrue)
 	} else {
 		return annotation.Delete()
-		// delete(annotations, PrepareAnnotation) // TODO: should we do this?
+	}
+}
+
+func GetApprovedAnnotation(resource Resource) (string, bool) {
+	return ard.With(resource).Get("metadata", "annotations", ApprovedAnnotation).String()
+}
+
+func IsApprovedAnnotation(resource Resource) bool {
+	if approved, ok := GetApprovedAnnotation(resource); ok {
+		return approved == AnnotationTrue
+	}
+	return false
+}
+
+func SetApprovedAnnotation(resource Resource, approved bool) bool {
+	annotation := ard.With(resource).ForceGet("metadata", "annotations", ApprovedAnnotation)
+	if approved {
+		return annotation.Set(AnnotationTrue)
+	} else {
+		return annotation.Delete()
 	}
 }
 

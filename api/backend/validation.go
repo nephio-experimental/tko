@@ -76,8 +76,8 @@ func (self *ValidatingBackend) DeleteTemplate(context contextpkg.Context, templa
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]TemplateInfo, error) {
-	return self.Backend.ListTemplates(context, templateIdPatterns, metadataPatterns)
+func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) ([]TemplateInfo, error) {
+	return self.Backend.ListTemplates(context, listTemplates)
 }
 
 // ([Backend] interface)
@@ -120,8 +120,8 @@ func (self *ValidatingBackend) DeleteSite(context contextpkg.Context, siteId str
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]SiteInfo, error) {
-	return self.Backend.ListSites(context, siteIdPatterns, templateIdPatterns, metadataPatterns)
+func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) ([]SiteInfo, error) {
+	return self.Backend.ListSites(context, listSites)
 }
 
 // ([Backend] interface)
@@ -159,8 +159,8 @@ func (self *ValidatingBackend) DeleteDeployment(context contextpkg.Context, depl
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]DeploymentInfo, error) {
-	return self.Backend.ListDeployments(context, prepared, parentDeploymentId, templateIdPatterns, templateMetadataPatterns, siteIdPatterns, siteMetadataPatterns)
+func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) ([]DeploymentInfo, error) {
+	return self.Backend.ListDeployments(context, listDeployments)
 }
 
 // ([Backend] interface)

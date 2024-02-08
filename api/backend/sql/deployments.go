@@ -21,7 +21,7 @@ func (self *SQLBackend) SetDeployment(context contextpkg.Context, deployment *ba
 				resources = util.MergeResources(resources, deployment.Resources)
 
 				// Merge default Deployment resource
-				resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared)})
+				resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared, deployment.Approved)})
 
 				deployment.Resources = resources
 			} else {
@@ -30,7 +30,7 @@ func (self *SQLBackend) SetDeployment(context contextpkg.Context, deployment *ba
 		}
 
 		if resources, err := self.encodeResources(deployment.Resources); err == nil {
-			if _, err := tx.ExecContext(context, self.statements.InsertDeployment, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, resources); err == nil {
+			if _, err := tx.ExecContext(context, self.statements.InsertDeployment, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources); err == nil {
 				if deployment.TemplateID != "" {
 					if _, err := tx.ExecContext(context, self.statements.InsertTemplateDeployment, deployment.TemplateID, deployment.DeploymentID); err != nil {
 						if err := tx.Rollback(); err != nil {
@@ -81,14 +81,15 @@ func (self *SQLBackend) GetDeployment(context contextpkg.Context, deploymentId s
 
 	if rows.Next() {
 		var parentDeploymentId, templateId, siteId *string
-		var prepared bool
+		var prepared, approved bool
 		var resources []byte
-		if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &prepared, &resources); err == nil {
+		if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &prepared, &approved, &resources); err == nil {
 			if resources_, err := self.decodeResources(resources); err == nil {
 				deployment := backend.Deployment{
 					DeploymentInfo: backend.DeploymentInfo{
 						DeploymentID: deploymentId,
 						Prepared:     prepared,
+						Approved:     approved,
 					},
 					Resources: resources_,
 				}
@@ -132,43 +133,54 @@ func (self *SQLBackend) DeleteDeployment(context contextpkg.Context, deploymentI
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListDeployments(context contextpkg.Context, prepared string, parentDeploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]backend.DeploymentInfo, error) {
+func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) ([]backend.DeploymentInfo, error) {
 	sql := self.statements.SelectDeployments
 	var args SqlArgs
 	var where SqlWhere
 	var with SqlWith
 
-	switch prepared {
-	case "true":
-		where.Add("prepared")
-	case "false":
-		where.Add("(NOT prepared)")
+	if listDeployments.Prepared != nil {
+		switch *listDeployments.Prepared {
+		case true:
+			where.Add("prepared")
+		case false:
+			where.Add("(NOT prepared)")
+		}
 	}
 
-	if parentDeploymentId != "" {
-		where.Add("(parent_deployment_id = " + args.Add(parentDeploymentId) + ")")
+	if listDeployments.Approved != nil {
+		switch *listDeployments.Approved {
+		case true:
+			where.Add("approved")
+		case false:
+			where.Add("(NOT approved)")
+		}
 	}
 
-	for _, pattern := range templateIdPatterns {
-		pattern = args.Add(backend.IdPatternRE(pattern))
+	if (listDeployments.ParentDeploymentID != nil) && (*listDeployments.ParentDeploymentID != "") {
+		where.Add("(parent_deployment_id = " + args.Add(listDeployments.ParentDeploymentID) + ")")
+	}
+
+	for _, pattern := range listDeployments.TemplateIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("(deployments.template_id ~ " + pattern + ")")
 	}
 
-	if templateMetadataPatterns != nil {
-		for key, pattern := range templateMetadataPatterns {
+	if listDeployments.TemplateMetadataPatterns != nil {
+		for key, pattern := range listDeployments.TemplateMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("deployments", "template_id", "SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")
 		}
 	}
 
-	for _, pattern := range siteIdPatterns {
-		pattern = args.Add(backend.IdPatternRE(pattern))
+	for _, pattern := range listDeployments.SiteIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("(deployments.site_id ~ " + pattern + ")")
 	}
 
-	if siteMetadataPatterns != nil {
-		for key, pattern := range siteMetadataPatterns {
+	if listDeployments.SiteMetadataPatterns != nil {
+		for key, pattern := range listDeployments.SiteMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("deployments", "site_id", "SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")
@@ -192,11 +204,12 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, prepared str
 	for rows.Next() {
 		var deploymentId string
 		var parentDeploymentId, templateId, siteId *string
-		var prepared bool
-		if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &prepared); err == nil {
+		var prepared, approved bool
+		if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &prepared, &approved); err == nil {
 			deploymentInfo := backend.DeploymentInfo{
 				DeploymentID: deploymentId,
 				Prepared:     prepared,
+				Approved:     approved,
 			}
 
 			if parentDeploymentId != nil {
@@ -231,10 +244,10 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 
 		if rows.Next() {
 			var parentDeploymentId, templateId, siteId, modificationToken *string
-			var prepared bool
+			var prepared, approved bool
 			var resources []byte
 			var modificationTimestamp *int64
-			if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &prepared, &resources, &modificationToken, &modificationTimestamp); err == nil {
+			if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &prepared, &approved, &resources, &modificationToken, &modificationTimestamp); err == nil {
 				if err := rows.Close(); err != nil {
 					self.log.Error(err.Error())
 				}
@@ -250,6 +263,7 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 							DeploymentInfo: backend.DeploymentInfo{
 								DeploymentID: deploymentId,
 								Prepared:     prepared,
+								Approved:     approved,
 							},
 							Resources: resources_,
 						}
@@ -328,9 +342,9 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 		if rows.Next() {
 			var deploymentId string
 			var parentDeploymentId, templateId, siteId *string
-			var prepared bool
+			var prepared, approved bool
 			var modificationTimestamp *int64
-			if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &prepared, &modificationTimestamp); err == nil {
+			if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &prepared, &approved, &modificationTimestamp); err == nil {
 				if err := rows.Close(); err != nil {
 					self.log.Error(err.Error())
 				}
@@ -340,13 +354,15 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 						deployment := backend.Deployment{
 							DeploymentInfo: backend.DeploymentInfo{
 								DeploymentID: deploymentId,
+								Prepared:     prepared,
+								Approved:     approved,
 							},
 							Resources: resources,
 						}
 
 						deployment.UpdateInfo(false)
 
-						if _, err := tx.ExecContext(context, self.statements.UpdateDeployment, nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, resources_, deployment.DeploymentID); err != nil {
+						if _, err := tx.ExecContext(context, self.statements.UpdateDeployment, nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources_, deployment.DeploymentID); err != nil {
 							return "", err
 						}
 

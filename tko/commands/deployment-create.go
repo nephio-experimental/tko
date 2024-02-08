@@ -11,6 +11,7 @@ import (
 var mergeUrl string
 var siteId string
 var prepared bool
+var approved bool
 
 func init() {
 	deploymentCommand.AddCommand(deploymentCreateCommand)
@@ -19,7 +20,8 @@ func init() {
 	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable YAML content from stdin")
 	deploymentCreateCommand.Flags().StringVar(&parentDeploymentId, "parent", "", "parent deployment ID")
 	deploymentCreateCommand.Flags().StringVarP(&siteId, "site", "s", "", "deployment site ID")
-	deploymentCreateCommand.Flags().BoolVarP(&prepared, "prepared", "r", false, "mark deployment as prepared")
+	deploymentCreateCommand.Flags().BoolVarP(&prepared, "prepared", "", false, "mark deployment as prepared")
+	deploymentCreateCommand.Flags().BoolVarP(&approved, "approved", "", false, "mark deployment as approved")
 }
 
 var deploymentCreateCommand = &cobra.Command{
@@ -39,7 +41,7 @@ func CreateDeployment(context contextpkg.Context, parentDeploymentId string, tem
 		util.FailOnError(err)
 	}
 
-	ok, reason, deploymentId, err := NewClient().CreateDeployment(parentDeploymentId, templateId, siteId, prepared, mergeResources)
+	ok, reason, deploymentId, err := NewClient().CreateDeployment(parentDeploymentId, templateId, siteId, prepared, approved, mergeResources)
 	FailOnGRPCError(err)
 	if ok {
 		log.Noticef("created deployment: %s", deploymentId)

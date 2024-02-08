@@ -16,17 +16,20 @@ type DeploymentInfo struct {
 	TemplateID         string
 	SiteID             string
 	Prepared           bool
+	Approved           bool
 }
 
 func (self *DeploymentInfo) Update(resources util.Resources, reset bool) {
 	if reset {
-		self.Prepared = false
 		self.TemplateID = ""
 		self.SiteID = ""
+		self.Prepared = false
+		self.Approved = false
 	}
 
 	if deployment, ok := util.DeploymentResourceIdentifier.GetResource(resources); ok {
 		self.Prepared = util.IsPreparedAnnotation(deployment)
+		self.Approved = util.IsApprovedAnnotation(deployment)
 		spec := ard.With(deployment).Get("spec")
 		if templateId, ok := spec.Get("templateId").String(); ok {
 			self.TemplateID = templateId
@@ -46,7 +49,7 @@ type Deployment struct {
 	Resources util.Resources
 }
 
-func NewDeployment(templateId string, parentDemploymentId string, siteId string, prepared bool, resources util.Resources) *Deployment {
+func NewDeployment(templateId string, parentDemploymentId string, siteId string, prepared bool, approved bool, resources util.Resources) *Deployment {
 	return &Deployment{
 		DeploymentInfo: DeploymentInfo{
 			DeploymentID:       ksuid.New().String(),
@@ -54,6 +57,7 @@ func NewDeployment(templateId string, parentDemploymentId string, siteId string,
 			TemplateID:         templateId,
 			SiteID:             siteId,
 			Prepared:           prepared,
+			Approved:           approved,
 		},
 		Resources: resources,
 	}
@@ -67,6 +71,7 @@ func (self *Deployment) Clone() *Deployment {
 			TemplateID:         self.TemplateID,
 			SiteID:             self.SiteID,
 			Prepared:           self.Prepared,
+			Approved:           self.Approved,
 		},
 		Resources: cloneResources(self.Resources),
 	}

@@ -89,20 +89,20 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		`,
 
 		InsertDeployment: `
-			INSERT INTO deployments (deployment_id, parent_deployment_id, template_id, site_id, prepared, resources)
-			VALUES ($1, $2, $3, $4, $5, $6)
+			INSERT INTO deployments (deployment_id, parent_deployment_id, template_id, site_id, prepared, approved, resources)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			ON CONFLICT (deployment_id)
 				DO UPDATE SET
-				parent_deployment_id = $2, template_id = $3, site_id = $4, prepared = $5, resources = $6
+				parent_deployment_id = $2, template_id = $3, site_id = $4, prepared = $5, approved = $6, resources = $7
 		`,
 		UpdateDeployment: `
 			UPDATE deployments
-			SET template_id = $1, site_id = $2, prepared = $3, resources = $4, modification_token = NULL, modification_timestamp = 0
-			WHERE deployment_id = $5
+			SET template_id = $1, site_id = $2, prepared = $3, approved = $4, resources = $5, modification_token = NULL, modification_timestamp = 0
+			WHERE deployment_id = $6
 		`,
-		SelectDeployment:                 `SELECT parent_deployment_id, template_id, site_id, prepared, resources FROM deployments WHERE deployment_id = $1`,
-		SelectDeploymentWithModificaiton: `SELECT parent_deployment_id, template_id, site_id, prepared, resources, modification_token, modification_timestamp FROM deployments WHERE deployment_id = $1`,
-		SelectDeploymentByModification:   `SELECT deployment_id, parent_deployment_id, template_id, site_id, prepared, modification_timestamp FROM deployments WHERE modification_token = $1`,
+		SelectDeployment:                 `SELECT parent_deployment_id, template_id, site_id, prepared, approved, resources FROM deployments WHERE deployment_id = $1`,
+		SelectDeploymentWithModificaiton: `SELECT parent_deployment_id, template_id, site_id, prepared, approved, resources, modification_token, modification_timestamp FROM deployments WHERE deployment_id = $1`,
+		SelectDeploymentByModification:   `SELECT deployment_id, parent_deployment_id, template_id, site_id, prepared, approved, modification_timestamp FROM deployments WHERE modification_token = $1`,
 		UpdateDeploymentModification: `
 			UPDATE deployments
 			SET modification_token = $1, modification_timestamp = $2
@@ -115,7 +115,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		`,
 		DeleteDeployment: `DELETE FROM deployments WHERE deployment_id = $1`,
 		SelectDeployments: `
-			SELECT deployment_id, parent_deployment_id, deployments.template_id, deployments.site_id, prepared
+			SELECT deployment_id, parent_deployment_id, deployments.template_id, deployments.site_id, prepared, approved
 			FROM deployments
 		`,
 
@@ -206,6 +206,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				template_id TEXT,
 				site_id TEXT,
 				prepared BOOLEAN,
+				approved BOOLEAN,
 				modification_token TEXT,
 				modification_timestamp BIGINT,
 				CONSTRAINT fk_parent_deployment_id
@@ -220,6 +221,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			)
 		`,
 		CreateDeploymentsPreparedIndex:     `CREATE INDEX IF NOT EXISTS deployments_prepared ON deployments (prepared)`,
+		CreateDeploymentsApprovedIndex:     `CREATE INDEX IF NOT EXISTS deployments_approved ON deployments (approved)`,
 		CreateDeploymentsModificationIndex: `CREATE INDEX IF NOT EXISTS deployments_modification ON deployments (modification_token)`,
 
 		CreatePlugins: `
@@ -245,6 +247,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DropSitesDeployments:             `DROP TABLE IF EXISTS sites_deployments`,
 		DropDeployments:                  `DROP TABLE IF EXISTS deployments`,
 		DropDeploymentsPreparedIndex:     `DROP INDEX IF EXISTS deployments_prepared`,
+		DropDeploymentsApprovedIndex:     `DROP INDEX IF EXISTS deployments_approved`,
 		DropDeploymentsModificationIndex: `DROP INDEX IF EXISTS deployments_modification`,
 		DropPlugins:                      `DROP TABLE IF EXISTS plugins`,
 	}

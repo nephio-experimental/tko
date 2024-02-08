@@ -38,7 +38,7 @@ func GetReferentResources(objectReferences ard.List, resources Resources) (Resou
 	return referentResources, nil
 }
 
-func NewDeploymentResource(templateId string, siteId string, prepared bool) Resource {
+func NewDeploymentResource(templateId string, siteId string, prepared bool, approved bool) Resource {
 	spec := ard.Map{
 		"templateId": templateId,
 	}
@@ -49,6 +49,10 @@ func NewDeploymentResource(templateId string, siteId string, prepared bool) Reso
 
 	if prepared {
 		spec["prepared"] = true
+	}
+
+	if approved {
+		spec["approved"] = true
 	}
 
 	return Resource{

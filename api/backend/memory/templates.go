@@ -59,13 +59,13 @@ func (self *MemoryBackend) DeleteTemplate(context contextpkg.Context, templateId
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
+func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) ([]backend.TemplateInfo, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
 	var templateInfos []backend.TemplateInfo
 	for _, template := range self.templates {
-		if backend.IdMatchesPatterns(template.TemplateID, templateIdPatterns) && backend.MetadataMatchesPatterns(template.Metadata, metadataPatterns) {
+		if backend.IDMatchesPatterns(template.TemplateID, listTemplates.TemplateIDPatterns) && backend.MetadataMatchesPatterns(template.Metadata, listTemplates.MetadataPatterns) {
 			templateInfos = append(templateInfos, template.TemplateInfo)
 		}
 	}

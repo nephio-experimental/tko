@@ -64,19 +64,19 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListSites(context contextpkg.Context, siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.SiteInfo, error) {
+func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) ([]backend.SiteInfo, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
 	var siteInfos []backend.SiteInfo
 	for _, site := range self.sites {
-		if len(templateIdPatterns) > 0 {
-			if !backend.IdMatchesPatterns(site.TemplateID, templateIdPatterns) {
+		if len(listSites.TemplateIDPatterns) > 0 {
+			if !backend.IDMatchesPatterns(site.TemplateID, listSites.TemplateIDPatterns) {
 				continue
 			}
 		}
 
-		if backend.IdMatchesPatterns(site.SiteID, siteIdPatterns) && backend.MetadataMatchesPatterns(site.Metadata, metadataPatterns) {
+		if backend.IDMatchesPatterns(site.SiteID, listSites.SiteIDPatterns) && backend.MetadataMatchesPatterns(site.Metadata, listSites.MetadataPatterns) {
 			siteInfos = append(siteInfos, site.SiteInfo)
 		}
 	}

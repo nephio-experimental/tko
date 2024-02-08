@@ -75,7 +75,7 @@ func PreparePlacement(preparationContext *preparation.Context) (bool, util.Resou
 
 		if prepared {
 			for _, deployment := range deployments {
-				if ok, reason, deploymentId, err := preparationContext.Preparation.Client.CreateDeployment(preparationContext.DeploymentID, deployment.TemplateID, deployment.SiteID, false, deployment.MergeResources); err == nil {
+				if ok, reason, deploymentId, err := preparationContext.Preparation.Client.CreateDeployment(preparationContext.DeploymentID, deployment.TemplateID, deployment.SiteID, false, false, deployment.MergeResources); err == nil {
 					if ok {
 						preparationContext.Log.Infof("created deployment %s (%s) for site %s", deploymentId, deployment.TemplateID, deployment.SiteID)
 						/*AppendStatusDeploymentID(placement, deploymentId)

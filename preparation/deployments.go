@@ -11,7 +11,8 @@ import (
 
 func (self *Preparation) PrepareDeployments() error {
 	//self.Log.Notice("preparing deployments")
-	if deploymentInfos, err := self.Client.ListDeployments("false", "", nil, nil, nil, nil); err == nil {
+	false_ := false
+	if deploymentInfos, err := self.Client.ListDeployments(&false_, nil, nil, nil, nil, nil, nil); err == nil {
 		for _, deploymentInfo := range deploymentInfos {
 			self.PrepareDeployment(deploymentInfo)
 		}
@@ -91,6 +92,12 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 					if !util.SetPreparedAnnotation(deployment, true) {
 						return false, nil, errors.New("malformed Deployment resource")
 					}
+
+					// TODO: always auto approve?
+					if !util.SetApprovedAnnotation(deployment, true) {
+						return false, nil, errors.New("malformed Deployment resource")
+					}
+
 					return true, resources, nil
 				} else {
 					return false, nil, errors.New("missing Deployment resource")

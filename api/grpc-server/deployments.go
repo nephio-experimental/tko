@@ -15,7 +15,7 @@ func (self *Server) CreateDeployment(context contextpkg.Context, createDeploymen
 	self.Log.Infof("createDeployment: %s", createDeployment)
 
 	if mergeResources, err := util.DecodeResources(createDeployment.MergeResourcesFormat, createDeployment.MergeResources); err == nil {
-		deployment := backend.NewDeployment(createDeployment.TemplateId, createDeployment.ParentDeploymentId, createDeployment.SiteId, createDeployment.Prepared, mergeResources)
+		deployment := backend.NewDeployment(createDeployment.TemplateId, createDeployment.ParentDeploymentId, createDeployment.SiteId, createDeployment.Prepared, createDeployment.Approved, mergeResources)
 		if err := self.Backend.SetDeployment(context, deployment); err == nil {
 			return &api.CreateDeploymentResponse{Created: true, DeploymentId: deployment.DeploymentID}, nil
 		} else if backend.IsNotDoneError(err) {
@@ -57,6 +57,7 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 				TemplateId:         deployment.TemplateID,
 				SiteId:             deployment.SiteID,
 				Prepared:           deployment.Prepared,
+				Approved:           deployment.Approved,
 				ResourcesFormat:    resourcesFormat,
 				Resources:          resources,
 			}, nil
@@ -72,7 +73,15 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.API_ListDeploymentsServer) error {
 	self.Log.Infof("listDeployments: %s", listDeployments)
 
-	if deploymentInfos, err := self.Backend.ListDeployments(server.Context(), listDeployments.Prepared, listDeployments.ParentDeploymentId, listDeployments.TemplateIdPatterns, listDeployments.TemplateMetadataPatterns, listDeployments.SiteIdPatterns, listDeployments.SiteMetadataPatterns); err == nil {
+	if deploymentInfos, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
+		Prepared:                 listDeployments.Prepared,
+		Approved:                 listDeployments.Approved,
+		ParentDeploymentID:       listDeployments.ParentDeploymentId,
+		TemplateIDPatterns:       listDeployments.TemplateIdPatterns,
+		TemplateMetadataPatterns: listDeployments.TemplateMetadataPatterns,
+		SiteIDPatterns:           listDeployments.SiteIdPatterns,
+		SiteMetadataPatterns:     listDeployments.SiteMetadataPatterns,
+	}); err == nil {
 		for _, deploymentInfo := range deploymentInfos {
 			if err := server.Send(&api.ListDeploymentsResponse{
 				DeploymentId:       deploymentInfo.DeploymentID,
@@ -80,6 +89,7 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 				TemplateId:         deploymentInfo.TemplateID,
 				SiteId:             deploymentInfo.SiteID,
 				Prepared:           deploymentInfo.Prepared,
+				Approved:           deploymentInfo.Approved,
 			}); err != nil {
 				return err
 			}

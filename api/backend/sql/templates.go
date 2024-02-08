@@ -138,19 +138,19 @@ func (self *SQLBackend) DeleteTemplate(context contextpkg.Context, templateId st
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListTemplates(context contextpkg.Context, templateIdPatterns []string, metadataPatterns map[string]string) ([]backend.TemplateInfo, error) {
+func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) ([]backend.TemplateInfo, error) {
 	sql := self.statements.SelectTemplates
 	var args SqlArgs
 	var where SqlWhere
 	var with SqlWith
 
-	for _, pattern := range templateIdPatterns {
-		pattern = args.Add(backend.IdPatternRE(pattern))
+	for _, pattern := range listTemplates.TemplateIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("(templates.template_id ~ " + pattern + ")")
 	}
 
-	if metadataPatterns != nil {
-		for key, pattern := range metadataPatterns {
+	if listTemplates.MetadataPatterns != nil {
+		for key, pattern := range listTemplates.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("templates", "template_id", "SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")

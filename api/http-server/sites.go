@@ -4,6 +4,7 @@ import (
 	contextpkg "context"
 	"net/http"
 
+	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/tliron/go-ard"
 	"github.com/tliron/go-transcribe"
 )
@@ -12,7 +13,7 @@ func (self *Server) listSites(writer http.ResponseWriter, request *http.Request)
 	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
 	defer cancel()
 
-	if sites, err := self.Backend.ListSites(context, nil, nil, nil); err == nil {
+	if sites, err := self.Backend.ListSites(context, backend.ListSites{}); err == nil {
 		sites_ := make([]ard.StringMap, len(sites))
 		for index, site := range sites {
 			sites_[index] = ard.StringMap{

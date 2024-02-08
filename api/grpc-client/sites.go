@@ -33,6 +33,7 @@ func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata m
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("registerSite")
 		if response, err := apiClient.RegisterSite(context, &api.Site{
 			SiteId:          siteId,
 			TemplateId:      templateId,
@@ -54,6 +55,7 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("getSite")
 		if site, err := apiClient.GetSite(context, &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
 			if resources, err := util.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
 				return Site{
@@ -83,6 +85,7 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("deleteSite")
 		if response, err := apiClient.DeleteSite(context, &api.DeleteSite{SiteId: siteId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -98,6 +101,7 @@ func (self *Client) ListSites(siteIdPatterns []string, templateIdPatterns []stri
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
+		self.log.Info("listSites")
 		if client, err := apiClient.ListSites(context, &api.ListSites{
 			SiteIdPatterns:     siteIdPatterns,
 			TemplateIdPatterns: templateIdPatterns,

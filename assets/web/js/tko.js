@@ -1,10 +1,35 @@
 
 $(document).ready(function () {
 
-  syncTable('deployments', 'api/deployment/list', [['id', 'api/deployment?id=', 'deployments'], ['template', 'api/template?id=', 'templates'], ['parent', 'api/deployment?id=', 'deployments'], ['site', 'api/site?id=', 'sites'], ['prepared']]);
-  syncTable('sites', 'api/site/list', [['id', 'api/site?id=', 'sites'], ['template', 'api/template?id=', 'templates'], ['metadata'], ['deployments', 'api/deployment?id=', 'deployments']]);
-  syncTable('templates', 'api/template/list', [['id', 'api/template?id=', 'templates'], ['metadata'], ['deployments', 'api/deployment?id=', 'deployments']]);
-  syncTable('plugins', 'api/plugin/list', [['type'], ['gvk'], ['executor'], ['arguments'], ['properties']]);
+  syncTable('deployments', 'api/deployment/list', [
+    ['id', 'api/deployment?id=', 'deployments'],
+    ['template', 'api/template?id=', 'templates'],
+    ['parent', 'api/deployment?id=', 'deployments'],
+    ['site', 'api/site?id=', 'sites'],
+    ['prepared'],
+    ['approved']
+  ]);
+
+  syncTable('sites', 'api/site/list', [
+    ['id', 'api/site?id=', 'sites'],
+    ['template', 'api/template?id=', 'templates'],
+    ['metadata'],
+    ['deployments', 'api/deployment?id=', 'deployments']
+  ]);
+
+  syncTable('templates', 'api/template/list', [
+    ['id', 'api/template?id=', 'templates'],
+    ['metadata'],
+    ['deployments', 'api/deployment?id=', 'deployments']
+  ]);
+
+  syncTable('plugins', 'api/plugin/list', [
+    ['type'],
+    ['gvk'],
+    ['executor'],
+    ['arguments'],
+    ['properties']
+  ]);
 
   closeButton('deployments');
   closeButton('sites');
