@@ -26,9 +26,10 @@ Plugins
 -------
 
 Preparation plugins are triggered by the presence of specific preparable GVK. Other
-resources are ignored (it's assumed to be already prepared). Note that this is simply
-an optimization: we could potentially run all plugins, they would simply do nothing if
-they don't find supported resources.
+resources are ignored (they are assumed to be already prepared).
+
+Note that this is simply an optimization! We could potentially run *all* available
+plugins, they would simply do nothing if they don't find supported resources.
 
 Simply registering a preparation plugin for a GVK will automatically mark all resources
 of that type as preparable. Additionally, TKO has built-in preparation for some GVK,
@@ -65,17 +66,17 @@ sites. The "merge" property per template lets us specific KRM in the topology
 package (via ObjectReferences) that should be merged into that template.
 
 Merging is straightforward but flexible. It starts by copying the template as is
-into the deployment. New merged resources will just be added. If a resource already
-exists (identified by GVK+name), then it will be merged in: properties will be added
-or updated. This behavior can be further controlled with the `nephio.org/merge`
-annotation, for example if you want to replace the entire resource and not just
-merge properties. Additionally, the merged name can be changed the `nephio.org/rename`
-annotation, letting you mix and match when specifying multiple merges.
+into the deployment. The entire template can be modified during merging. New merged
+resources will just be added. If a resource already exists (identified by GVK+name),
+then it will be merged in: properties will be added or updated. This behavior can be
+further controlled with the `nephio.org/merge` annotation, for example if you want to
+replace the entire resource and not just merge properties. Additionally, the merged
+name can be changed the `nephio.org/rename` annotation, letting you mix and match when
+specifying multiple merges.
 
-The entire template can be modified during merging. This scheme is powerful. It
-means that a topology package can include everything it needs to create its child
-deployments. Not only that, when deploying a topology you can further merge resources
-into it, so the topology itself can have "inputs".
+This scheme is powerful. It means that a topology package can include everything it
+needs to create its child deployments. Not only that, when deploying a topology you
+can further merge resources into it, so the topology itself can have "inputs".
 
 Indeed, you can merge resources when creating a deployment via the API. This
 includes the `--merge` flag for the `tko deployment create` CLI command.

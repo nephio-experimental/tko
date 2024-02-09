@@ -4,7 +4,7 @@ import (
 	"github.com/tliron/go-ard"
 )
 
-func MergeResources(resources Resources, mergeResources Resources) Resources {
+func MergeResources(resources Resources, mergeResources ...Resource) Resources {
 	for _, mergeResource := range mergeResources {
 		if resourceIdentifier, ok := NewResourceIdentifierForResource(mergeResource); ok {
 			renameAnnotation, _ := GetRenameAnnotation(mergeResource)

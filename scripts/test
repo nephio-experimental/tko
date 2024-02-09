@@ -50,7 +50,7 @@ tko template register demo/hello-world:v1.0.0 --metadata=type=demo --url="$ROOT/
 tko template register nf/free5gc/upf:v1.0.0 --metadata=type=nf --url="$ROOT/examples/free5gc-upf/" -v
 tko template register nf/free5gc/smf:v1.0.0 --metadata=type=nf --url="$ROOT/examples/free5gc-smf/" -v
 tko template register topology/oran/cu:v1.0.0 --metadata=type=topology --url="$ROOT/examples/oran-cu/" -v
-tko template register topology/oran/du:v1.0.0 --metadata=type=demo --url="$ROOT/examples/oran-du/krm/" -v
+tko template register topology/oran/du:v1.0.0 --metadata=type=topology --url="$ROOT/examples/oran-du/krm/" -v
 tko template register site/gdce:v1.0.0 --metadata=type=site --url="$ROOT/examples/gdce-site/" -v
 
 m 'registering sites...'

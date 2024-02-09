@@ -23,6 +23,7 @@ func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Re
 				"site":     deployment.SiteID,
 				"prepared": deployment.Prepared,
 				"approved": deployment.Approved,
+				"metadata": deployment.Metadata,
 			}
 		}
 		sortById(deployments_)

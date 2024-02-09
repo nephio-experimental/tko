@@ -18,14 +18,17 @@ type Deployment struct {
 // ([backend.Backend] interface)
 func (self *MemoryBackend) SetDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
 	deployment = deployment.Clone()
+	if deployment.Metadata == nil {
+		deployment.Metadata = make(map[string]string)
+	}
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
+	self.mergeDeployment(deployment)
 	if err := self.updateDeploymentInfo(deployment, false); err != nil {
 		return err
 	}
-	self.mergeDeploymentResources(deployment)
 
 	self.deployments[deployment.DeploymentID] = &Deployment{Deployment: deployment}
 	if template, ok := self.templates[deployment.TemplateID]; ok {
@@ -118,10 +121,12 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 			}
 		}
 
-		if len(listDeployments.TemplateIDPatterns) > 0 {
-			if !backend.IDMatchesPatterns(deployment.TemplateID, listDeployments.TemplateIDPatterns) {
-				continue
-			}
+		if !backend.MetadataMatchesPatterns(deployment.Metadata, listDeployments.MetadataPatterns) {
+			continue
+		}
+
+		if !backend.IDMatchesPatterns(deployment.TemplateID, listDeployments.TemplateIDPatterns) {
+			continue
 		}
 
 		if (listDeployments.TemplateMetadataPatterns != nil) && (len(listDeployments.TemplateMetadataPatterns) > 0) {
@@ -134,10 +139,8 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 			}
 		}
 
-		if len(listDeployments.SiteIDPatterns) > 0 {
-			if !backend.IDMatchesPatterns(deployment.SiteID, listDeployments.SiteIDPatterns) {
-				continue
-			}
+		if !backend.IDMatchesPatterns(deployment.SiteID, listDeployments.SiteIDPatterns) {
+			continue
 		}
 
 		if (listDeployments.SiteMetadataPatterns != nil) && (len(listDeployments.SiteMetadataPatterns) > 0) {
@@ -258,17 +261,9 @@ func (self *MemoryBackend) updateDeploymentInfo(deployment *backend.Deployment, 
 }
 
 // Call when lock acquired
-func (self *MemoryBackend) mergeDeploymentResources(deployment *backend.Deployment) {
+func (self *MemoryBackend) mergeDeployment(deployment *backend.Deployment) {
 	if template, ok := self.templates[deployment.TemplateID]; ok {
-		resources := util.CopyResources(template.Resources)
-
-		// Merge our resources over template resources
-		resources = util.MergeResources(resources, deployment.Resources)
-
-		// Merge default Deployment resource
-		resources = util.MergeResources(resources, util.Resources{util.NewDeploymentResource(deployment.TemplateID, deployment.SiteID, deployment.Prepared, deployment.Approved)})
-
-		deployment.Resources = resources
+		deployment.MergeTemplate(template)
 	}
 }
 

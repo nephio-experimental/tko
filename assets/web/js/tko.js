@@ -6,6 +6,7 @@ $(document).ready(function () {
     ['template', 'api/template?id=', 'templates'],
     ['parent', 'api/deployment?id=', 'deployments'],
     ['site', 'api/site?id=', 'sites'],
+    ['metadata'],
     ['prepared'],
     ['approved']
   ]);

@@ -14,6 +14,14 @@ type TemplateInfo struct {
 	DeploymentIDs []string
 }
 
+func (self *TemplateInfo) Clone() TemplateInfo {
+	return TemplateInfo{
+		TemplateID:    self.TemplateID,
+		Metadata:      cloneMetadata(self.Metadata),
+		DeploymentIDs: util.StringSetClone(self.DeploymentIDs),
+	}
+}
+
 func (self *TemplateInfo) Update(resources util.Resources) {
 	updateMetadata(self.Metadata, resources)
 }
@@ -43,12 +51,8 @@ func NewTemplateFromBytes(templateId string, metadata map[string]string, resourc
 
 func (self *Template) Clone() *Template {
 	return &Template{
-		TemplateInfo: TemplateInfo{
-			TemplateID:    self.TemplateID,
-			Metadata:      cloneMetadata(self.Metadata),
-			DeploymentIDs: util.StringSetClone(self.DeploymentIDs),
-		},
-		Resources: cloneResources(self.Resources),
+		TemplateInfo: self.TemplateInfo.Clone(),
+		Resources:    cloneResources(self.Resources),
 	}
 }
 

@@ -62,7 +62,7 @@ func (self *Server) start(level2protocol string, address string) error {
 	address = util.JoinIPAddressPort(address, self.Port)
 	if listener, err := net.Listen(level2protocol, address); err == nil {
 		index := len(self.httpServers)
-		self.Log.Notice("starting web server",
+		self.Log.Notice("starting HTTP server",
 			"index", index,
 			"level2protocol", level2protocol,
 			"address", listener.Addr().String())
@@ -75,7 +75,7 @@ func (self *Server) start(level2protocol string, address string) error {
 		go func() {
 			if err := httpServer.Serve(listener); err != nil {
 				if err == http.ErrServerClosed {
-					self.Log.Info("stopped web server",
+					self.Log.Info("stopped HTTP server",
 						"index", index)
 				} else {
 					self.Log.Error(err.Error())
@@ -94,7 +94,7 @@ func (self *Server) Stop() {
 	defer cancel()
 
 	for index, httpServer := range self.httpServers {
-		self.Log.Notice("stopping web server",
+		self.Log.Notice("stopping HTTP server",
 			"index", index)
 		if err := httpServer.Shutdown(context); err != nil {
 			self.Log.Critical(err.Error())

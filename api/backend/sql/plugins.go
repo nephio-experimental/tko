@@ -6,6 +6,7 @@ import (
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/util"
+	"github.com/tliron/commonlog"
 )
 
 // ([backend.Backend] interface)
@@ -29,11 +30,7 @@ func (self *SQLBackend) GetPlugin(context contextpkg.Context, pluginId backend.P
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			self.log.Error(err.Error())
-		}
-	}()
+	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
 	if rows.Next() {
 		var executor string
@@ -84,11 +81,7 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugi
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			self.log.Error(err.Error())
-		}
-	}()
+	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
 	var plugins []backend.Plugin
 	for rows.Next() {

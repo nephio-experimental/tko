@@ -6,6 +6,17 @@ import (
 	"strings"
 )
 
+func CleanSQL(sql string) string {
+	var rows []string
+	for _, row := range strings.Split(sql, "\n") {
+		row = strings.TrimSpace(row)
+		if row != "" {
+			rows = append(rows, row)
+		}
+	}
+	return strings.Join(rows, "\n")
+}
+
 //
 // SqlArgs
 //
@@ -65,18 +76,26 @@ func (self *SqlWith) Apply(sql string) string {
 // Utils
 
 func insertSql(sql string, place string, insert string) string {
-	if place == "" {
+	if insert == "" {
+		return sql
+	} else if place == "" {
 		return sql + "\n" + insert
 	} else {
 		if p := strings.Index(sql, place); p == -1 {
 			return sql + "\n" + insert
+		} else if p == len(sql)-1 {
+			return sql[:p] + insert
 		} else {
-			return sql[:p] + "\n" + insert + "\n" + sql[p:]
+			return sql[:p] + insert + "\n" + sql[p:]
 		}
 	}
 }
 
 func jsonUnmarshallMapEntries(mapJson []byte, map_ map[string]string) error {
+	if len(mapJson) == 0 {
+		return nil
+	}
+
 	var metadata_ [][]string
 	if err := json.Unmarshal(mapJson, &metadata_); err == nil {
 		for _, entry := range metadata_ {

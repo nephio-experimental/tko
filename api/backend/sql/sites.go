@@ -2,9 +2,10 @@ package sql
 
 import (
 	contextpkg "context"
+	"database/sql"
 
 	"github.com/nephio-experimental/tko/api/backend"
-	"github.com/nephio-experimental/tko/util"
+	"github.com/tliron/commonlog"
 )
 
 // ([backend.Backend] interface)
@@ -17,32 +18,19 @@ func (self *SQLBackend) SetSite(context contextpkg.Context, site *backend.Site) 
 	site.Update()
 
 	if tx, err := self.db.BeginTx(context, nil); err == nil {
-		if site.TemplateID != "" {
-			if resources, err := self.getTemplateResources(context, tx, site.TemplateID); err == nil {
-				// Merge our resources over template resources
-				resources = util.MergeResources(resources, site.Resources)
-
-				site.Resources = resources
-			} else {
-				return err
+		if err := self.mergeSite(context, tx, site); err != nil {
+			if err := tx.Rollback(); err != nil {
+				self.log.Error(err.Error())
 			}
+			return err
 		}
 
 		if resources, err := self.encodeResources(site.Resources); err == nil {
-			if _, err := tx.ExecContext(context, self.statements.InsertSite, site.SiteID, nilIfEmptyString(site.TemplateID), resources); err == nil {
-				if len(site.Metadata) > 0 {
-					if insertSiteMetadata, err := tx.PrepareContext(context, self.statements.InsertSiteMetadata); err == nil {
-						for key, value := range site.Metadata {
-							if _, err := insertSiteMetadata.ExecContext(context, site.SiteID, key, value); err != nil {
-								insertSiteMetadata.Close()
-								if err := tx.Rollback(); err != nil {
-									self.log.Error(err.Error())
-								}
-								return err
-							}
-						}
-						insertSiteMetadata.Close()
-					} else {
+			insertSite := tx.StmtContext(context, self.statements.PreparedInsertSite)
+			if _, err := insertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), resources); err == nil {
+				insertSiteMetadata := tx.StmtContext(context, self.statements.PreparedInsertSiteMetadata)
+				for key, value := range site.Metadata {
+					if _, err := insertSiteMetadata.ExecContext(context, site.SiteID, key, value); err != nil {
 						if err := tx.Rollback(); err != nil {
 							self.log.Error(err.Error())
 						}
@@ -50,19 +38,9 @@ func (self *SQLBackend) SetSite(context contextpkg.Context, site *backend.Site) 
 					}
 				}
 
-				if len(site.DeploymentIDs) > 0 {
-					if insertSiteDeployment, err := tx.PrepareContext(context, self.statements.InsertSiteDeployment); err == nil {
-						for _, deploymentId := range site.DeploymentIDs {
-							if _, err := insertSiteDeployment.ExecContext(context, site.SiteID, deploymentId); err != nil {
-								insertSiteDeployment.Close()
-								if err := tx.Rollback(); err != nil {
-									self.log.Error(err.Error())
-								}
-								return err
-							}
-						}
-						insertSiteDeployment.Close()
-					} else {
+				insertSiteDeployment := tx.StmtContext(context, self.statements.PreparedInsertSiteDeployment)
+				for _, deploymentId := range site.DeploymentIDs {
+					if _, err := insertSiteDeployment.ExecContext(context, site.SiteID, deploymentId); err != nil {
 						if err := tx.Rollback(); err != nil {
 							self.log.Error(err.Error())
 						}
@@ -91,11 +69,7 @@ func (self *SQLBackend) GetSite(context contextpkg.Context, siteId string) (*bac
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			self.log.Error(err.Error())
-		}
-	}()
+	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
 	if rows.Next() {
 		var resources []byte
@@ -178,16 +152,13 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 
 	sql = where.Apply(sql)
 	sql = with.Apply(sql)
+	self.log.Debugf("generated SQL: %s", sql)
 
 	rows, err := self.db.QueryContext(context, sql, args.Args...)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			self.log.Error(err.Error())
-		}
-	}()
+	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
 	var siteInfos []backend.SiteInfo
 	for rows.Next() {
@@ -219,4 +190,16 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 	}
 
 	return siteInfos, nil
+}
+
+func (self *SQLBackend) mergeSite(context contextpkg.Context, tx *sql.Tx, site *backend.Site) error {
+	if site.TemplateID != "" {
+		if template, err := self.getTemplateTx(context, tx, site.TemplateID); err == nil {
+			site.MergeTemplate(template)
+		} else {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -14,17 +14,17 @@ import (
 func (self *Server) CreateDeployment(context contextpkg.Context, createDeployment *api.CreateDeployment) (*api.CreateDeploymentResponse, error) {
 	self.Log.Infof("createDeployment: %s", createDeployment)
 
-	if mergeResources, err := util.DecodeResources(createDeployment.MergeResourcesFormat, createDeployment.MergeResources); err == nil {
-		deployment := backend.NewDeployment(createDeployment.TemplateId, createDeployment.ParentDeploymentId, createDeployment.SiteId, createDeployment.Prepared, createDeployment.Approved, mergeResources)
-		if err := self.Backend.SetDeployment(context, deployment); err == nil {
-			return &api.CreateDeploymentResponse{Created: true, DeploymentId: deployment.DeploymentID}, nil
-		} else if backend.IsNotDoneError(err) {
-			return &api.CreateDeploymentResponse{Created: false, NotCreatedReason: err.Error()}, nil
-		} else {
-			return new(api.CreateDeploymentResponse), ToGRPCError(err)
-		}
-	} else {
+	deployment, err := backend.NewDeploymentFromBytes(createDeployment.TemplateId, createDeployment.ParentDeploymentId, createDeployment.SiteId, createDeployment.MergeMetadata, createDeployment.Prepared, createDeployment.Approved, createDeployment.MergeResourcesFormat, createDeployment.MergeResources)
+	if err != nil {
 		return new(api.CreateDeploymentResponse), status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if err := self.Backend.SetDeployment(context, deployment); err == nil {
+		return &api.CreateDeploymentResponse{Created: true, DeploymentId: deployment.DeploymentID}, nil
+	} else if backend.IsNotDoneError(err) {
+		return &api.CreateDeploymentResponse{Created: false, NotCreatedReason: err.Error()}, nil
+	} else {
+		return new(api.CreateDeploymentResponse), ToGRPCError(err)
 	}
 }
 
@@ -74,13 +74,14 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 	self.Log.Infof("listDeployments: %s", listDeployments)
 
 	if deploymentInfos, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
-		Prepared:                 listDeployments.Prepared,
-		Approved:                 listDeployments.Approved,
 		ParentDeploymentID:       listDeployments.ParentDeploymentId,
+		MetadataPatterns:         listDeployments.MetadataPatterns,
 		TemplateIDPatterns:       listDeployments.TemplateIdPatterns,
 		TemplateMetadataPatterns: listDeployments.TemplateMetadataPatterns,
 		SiteIDPatterns:           listDeployments.SiteIdPatterns,
 		SiteMetadataPatterns:     listDeployments.SiteMetadataPatterns,
+		Prepared:                 listDeployments.Prepared,
+		Approved:                 listDeployments.Approved,
 	}); err == nil {
 		for _, deploymentInfo := range deploymentInfos {
 			if err := server.Send(&api.ListDeploymentsResponse{
@@ -88,6 +89,7 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 				ParentDeploymentId: deploymentInfo.ParentDeploymentID,
 				TemplateId:         deploymentInfo.TemplateID,
 				SiteId:             deploymentInfo.SiteID,
+				Metadata:           deploymentInfo.Metadata,
 				Prepared:           deploymentInfo.Prepared,
 				Approved:           deploymentInfo.Approved,
 			}); err != nil {

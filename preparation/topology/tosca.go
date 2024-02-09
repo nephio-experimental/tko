@@ -69,7 +69,7 @@ func PrepareTOSCA(preparationContext *preparation.Context) (bool, util.Resources
 					})
 				}
 
-				resources = util.MergeResources(preparationContext.DeploymentResources, resources)
+				resources = util.MergeResources(preparationContext.DeploymentResources, resources...)
 
 				resources = append(resources, util.Resource{
 					"apiVersion": "topology.nephio.org/v1alpha1",

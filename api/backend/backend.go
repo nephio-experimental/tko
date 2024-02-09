@@ -52,11 +52,12 @@ type ListSites struct {
 }
 
 type ListDeployments struct {
-	Prepared                 *bool
-	Approved                 *bool
 	ParentDeploymentID       *string
 	TemplateIDPatterns       []string
 	TemplateMetadataPatterns map[string]string
 	SiteIDPatterns           []string
 	SiteMetadataPatterns     map[string]string
+	MetadataPatterns         map[string]string
+	Prepared                 *bool
+	Approved                 *bool
 }

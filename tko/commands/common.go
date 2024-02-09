@@ -25,6 +25,7 @@ var templateIdPatterns []string
 var siteIdPatterns []string
 var templateMetadata map[string]string
 var siteMetadata map[string]string
+var deploymentMetadata map[string]string
 var parentDeploymentId string
 
 func NewClient() *clientpkg.Client {

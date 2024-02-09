@@ -12,7 +12,7 @@ import (
 func (self *Preparation) PrepareDeployments() error {
 	//self.Log.Notice("preparing deployments")
 	false_ := false
-	if deploymentInfos, err := self.Client.ListDeployments(&false_, nil, nil, nil, nil, nil, nil); err == nil {
+	if deploymentInfos, err := self.Client.ListDeployments(nil, nil, nil, nil, nil, nil, &false_, nil); err == nil {
 		for _, deploymentInfo := range deploymentInfos {
 			self.PrepareDeployment(deploymentInfo)
 		}

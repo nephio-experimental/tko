@@ -4,8 +4,11 @@ import (
 	contextpkg "context"
 	"database/sql"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/tliron/commonlog"
+	"github.com/tliron/kutil/reflection"
 )
 
 //
@@ -17,7 +20,6 @@ type Statements struct {
 	InsertTemplateMetadata   string
 	InsertTemplateDeployment string
 	SelectTemplate           string
-	SelectTemplateResources  string
 	DeleteTemplate           string
 	SelectTemplates          string
 
@@ -29,9 +31,10 @@ type Statements struct {
 	SelectSites          string
 
 	InsertDeployment                 string
+	InsertDeploymentMetadata         string
 	UpdateDeployment                 string
 	SelectDeployment                 string
-	SelectDeploymentWithModificaiton string
+	SelectDeploymentWithModification string
 	SelectDeploymentByModification   string
 	UpdateDeploymentModification     string
 	ResetDeploymentModification      string
@@ -52,6 +55,8 @@ type Statements struct {
 	CreateSitesMetadataIndex           string
 	CreateSitesDeployments             string
 	CreateDeployments                  string
+	CreateDeploymentsMetadata          string
+	CreateDeploymentsMetadataIndex     string
 	CreateDeploymentsPreparedIndex     string
 	CreateDeploymentsApprovedIndex     string
 	CreateDeploymentsModificationIndex string
@@ -66,22 +71,38 @@ type Statements struct {
 	DropSitesMetadataIndex           string
 	DropSitesDeployments             string
 	DropDeployments                  string
+	DropDeploymentsMetadata          string
+	DropDeploymentsMetadataIndex     string
 	DropDeploymentsPreparedIndex     string
 	DropDeploymentsApprovedIndex     string
 	DropDeploymentsModificationIndex string
 	DropPlugins                      string
 
-	PreparedSelectTemplate              *sql.Stmt
-	PreparedDeleteTemplate              *sql.Stmt
-	PreparedSelectSite                  *sql.Stmt
-	PreparedDeleteSite                  *sql.Stmt
-	PreparedSelectDeployment            *sql.Stmt
-	PreparedDeleteDeployment            *sql.Stmt
-	PreparedResetDeploymentModification *sql.Stmt
-	PreparedInsertPlugin                *sql.Stmt
-	PreparedSelectPlugin                *sql.Stmt
-	PreparedDeletePlugin                *sql.Stmt
-	PreparedSelectPlugins               *sql.Stmt
+	// These statements will be automatically prepared and released
+	// The source SQL field has the same name without the "Prepared" prefix
+	PreparedInsertTemplate                   *sql.Stmt
+	PreparedInsertTemplateMetadata           *sql.Stmt
+	PreparedInsertTemplateDeployment         *sql.Stmt
+	PreparedSelectTemplate                   *sql.Stmt
+	PreparedDeleteTemplate                   *sql.Stmt
+	PreparedInsertSite                       *sql.Stmt
+	PreparedInsertSiteMetadata               *sql.Stmt
+	PreparedInsertSiteDeployment             *sql.Stmt
+	PreparedSelectSite                       *sql.Stmt
+	PreparedDeleteSite                       *sql.Stmt
+	PreparedInsertDeployment                 *sql.Stmt
+	PreparedInsertDeploymentMetadata         *sql.Stmt
+	PreparedUpdateDeployment                 *sql.Stmt
+	PreparedSelectDeployment                 *sql.Stmt
+	PreparedSelectDeploymentWithModification *sql.Stmt
+	PreparedSelectDeploymentByModification   *sql.Stmt
+	PreparedUpdateDeploymentModification     *sql.Stmt
+	PreparedResetDeploymentModification      *sql.Stmt
+	PreparedDeleteDeployment                 *sql.Stmt
+	PreparedInsertPlugin                     *sql.Stmt
+	PreparedSelectPlugin                     *sql.Stmt
+	PreparedDeletePlugin                     *sql.Stmt
+	PreparedSelectPlugins                    *sql.Stmt
 
 	db  *sql.DB
 	log commonlog.Logger
@@ -98,38 +119,11 @@ func NewStatements(driver string, db *sql.DB, log commonlog.Logger) *Statements 
 }
 
 func (self *Statements) Prepare(context contextpkg.Context) error {
-	stmts := []**sql.Stmt{
-		&self.PreparedSelectTemplate,
-		&self.PreparedDeleteTemplate,
-		&self.PreparedSelectSite,
-		&self.PreparedDeleteSite,
-		&self.PreparedSelectDeployment,
-		&self.PreparedDeleteDeployment,
-		&self.PreparedResetDeploymentModification,
-		&self.PreparedInsertPlugin,
-		&self.PreparedSelectPlugin,
-		&self.PreparedDeletePlugin,
-		&self.PreparedSelectPlugins,
-	}
-
-	statements := []string{
-		self.SelectTemplate,
-		self.DeleteTemplate,
-		self.SelectSite,
-		self.DeleteSite,
-		self.SelectDeployment,
-		self.DeleteDeployment,
-		self.ResetDeploymentModification,
-		self.InsertPlugin,
-		self.SelectPlugin,
-		self.DeletePlugin,
-		self.SelectPlugins,
-	}
-
-	for index, stmt := range stmts {
-		var err error
-		if *stmt, err = self.db.PrepareContext(context, statements[index]); err != nil {
-			self.log.Critical(statements[index])
+	for _, preparedStmtField := range preparedStmtFields {
+		self.log.Debugf("preparing statement: %s", preparedStmtField.SourceName)
+		if stmt, err := self.db.PrepareContext(context, preparedStmtField.GetSource(self)); err == nil {
+			preparedStmtField.SetPrepared(self, stmt)
+		} else {
 			return err
 		}
 	}
@@ -138,22 +132,9 @@ func (self *Statements) Prepare(context contextpkg.Context) error {
 }
 
 func (self *Statements) Release() {
-	stmts := []*sql.Stmt{
-		self.PreparedSelectTemplate,
-		self.PreparedDeleteTemplate,
-		self.PreparedSelectSite,
-		self.PreparedDeleteSite,
-		self.PreparedSelectDeployment,
-		self.PreparedDeleteDeployment,
-		self.PreparedResetDeploymentModification,
-		self.PreparedInsertPlugin,
-		self.PreparedSelectPlugin,
-		self.PreparedDeletePlugin,
-		self.PreparedSelectPlugins,
-	}
-
-	for _, stmt := range stmts {
-		if stmt != nil {
+	for _, preparedStmtField := range preparedStmtFields {
+		if stmt := preparedStmtField.GetPrepared(self); stmt != nil {
+			self.log.Debugf("releasing statement: %s", preparedStmtField.SourceName)
 			if err := stmt.Close(); err != nil {
 				self.log.Error(err.Error())
 			}
@@ -170,6 +151,8 @@ func (self *Statements) CreateTables(context contextpkg.Context) error {
 		self.CreateSitesMetadata,
 		self.CreateSitesMetadataIndex,
 		self.CreateDeployments,
+		self.CreateDeploymentsMetadata,
+		self.CreateDeploymentsMetadataIndex,
 		self.CreateDeploymentsPreparedIndex,
 		self.CreateDeploymentsApprovedIndex,
 		self.CreateDeploymentsModificationIndex,
@@ -184,6 +167,8 @@ func (self *Statements) DropTables(context contextpkg.Context) error {
 		self.DropSitesDeployments,
 		self.DropTemplatesDeployments,
 		self.DropPlugins,
+		self.DropDeploymentsMetadataIndex,
+		self.DropDeploymentsMetadata,
 		self.DropDeploymentsModificationIndex,
 		self.DropDeploymentsPreparedIndex,
 		self.DropDeploymentsApprovedIndex,
@@ -214,5 +199,52 @@ func nilIfEmptyString(s string) any {
 		return nil
 	} else {
 		return s
+	}
+}
+
+//
+// PreparedStmtField
+//
+
+type PreparedStmtField struct {
+	SourceName   string
+	PreparedName string
+}
+
+func (self PreparedStmtField) GetSource(statements *Statements) string {
+	statements_ := reflect.ValueOf(statements).Elem()
+	return statements_.FieldByName(self.SourceName).Interface().(string) // will panic if not string
+}
+
+func (self PreparedStmtField) GetPrepared(statements *Statements) *sql.Stmt {
+	statements_ := reflect.ValueOf(statements).Elem()
+	return statements_.FieldByName(self.SourceName).Interface().(*sql.Stmt) // will panic if not *sql.Stmt
+}
+
+func (self PreparedStmtField) SetPrepared(statements *Statements, stmt *sql.Stmt) {
+	statements_ := reflect.ValueOf(statements).Elem()
+	statements_.FieldByName(self.PreparedName).Set(reflect.ValueOf(stmt)) // will panic if not *sql.Stmt
+}
+
+const preparedPrefix = "Prepared"
+
+var preparedStmtFields []PreparedStmtField
+
+func init() {
+	stmtType := reflect.TypeFor[*sql.Stmt]()
+	preparedPrefixLength := len(preparedPrefix)
+	structFields := reflection.GetStructFields(reflect.TypeFor[Statements]())
+	for _, structField := range structFields {
+		if (structField.Type == stmtType) && strings.HasPrefix(structField.Name, preparedPrefix) {
+			sourceName := structField.Name[preparedPrefixLength:]
+			for _, structField_ := range structFields {
+				if structField_.Name == sourceName {
+					preparedStmtFields = append(preparedStmtFields, PreparedStmtField{
+						SourceName:   sourceName,
+						PreparedName: structField.Name,
+					})
+				}
+			}
+		}
 	}
 }

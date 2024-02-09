@@ -8,10 +8,6 @@ import (
 )
 
 func IDMatchesPatterns(id string, patterns []string) bool {
-	if id == "" {
-		return false
-	}
-
 	for _, pattern := range patterns {
 		if !IDMatchesPattern(id, pattern) {
 			return false
@@ -49,7 +45,7 @@ func PatternRE(pattern string) string {
 	for _, rune_ := range pattern {
 		switch rune_ {
 		case '*':
-			re.WriteString(`.+`)
+			re.WriteString(`.*`)
 		default:
 			re.WriteString(regexp.QuoteMeta(string(rune_)))
 		}
@@ -75,10 +71,10 @@ func IDPatternRE(pattern string) string {
 		case '*':
 			if (index < length-1) && (pattern_[index+1] == '*') {
 				// Double asterisk crosses "/" and ":" boundaries
-				re.WriteString(`[0-9A-Za-z_\-\/:]+`)
+				re.WriteString(`[0-9A-Za-z_.\-\/:]*`)
 				index++
 			} else {
-				re.WriteString(`[0-9A-Za-z_\-]+`)
+				re.WriteString(`[0-9A-Za-z_.\-]*`)
 			}
 		default:
 			re.WriteString(regexp.QuoteMeta(string(rune_)))

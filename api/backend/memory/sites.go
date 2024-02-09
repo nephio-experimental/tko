@@ -4,7 +4,6 @@ import (
 	contextpkg "context"
 
 	"github.com/nephio-experimental/tko/api/backend"
-	"github.com/nephio-experimental/tko/util"
 )
 
 // ([backend.Backend] interface)
@@ -18,8 +17,6 @@ func (self *MemoryBackend) SetSite(context contextpkg.Context, site *backend.Sit
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
-
-	// TODO: merge template resources
 
 	if site.TemplateID != "" {
 		if _, ok := self.templates[site.TemplateID]; !ok {
@@ -70,15 +67,19 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backe
 
 	var siteInfos []backend.SiteInfo
 	for _, site := range self.sites {
-		if len(listSites.TemplateIDPatterns) > 0 {
-			if !backend.IDMatchesPatterns(site.TemplateID, listSites.TemplateIDPatterns) {
-				continue
-			}
+		if !backend.IDMatchesPatterns(site.TemplateID, listSites.TemplateIDPatterns) {
+			continue
 		}
 
-		if backend.IDMatchesPatterns(site.SiteID, listSites.SiteIDPatterns) && backend.MetadataMatchesPatterns(site.Metadata, listSites.MetadataPatterns) {
-			siteInfos = append(siteInfos, site.SiteInfo)
+		if !backend.IDMatchesPatterns(site.SiteID, listSites.SiteIDPatterns) {
+			continue
 		}
+
+		if !backend.MetadataMatchesPatterns(site.Metadata, listSites.MetadataPatterns) {
+			continue
+		}
+
+		siteInfos = append(siteInfos, site.SiteInfo)
 	}
 
 	return siteInfos, nil
@@ -89,11 +90,6 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backe
 // Call when lock acquired
 func (self *MemoryBackend) mergeSiteResources(site *backend.Site) {
 	if template, ok := self.templates[site.TemplateID]; ok {
-		resources := util.CopyResources(template.Resources)
-
-		// Merge our resources over template resources
-		resources = util.MergeResources(resources, site.Resources)
-
-		site.Resources = resources
+		site.MergeTemplate(template)
 	}
 }

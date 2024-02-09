@@ -11,12 +11,13 @@ import (
 )
 
 type DeploymentInfo struct {
-	DeploymentID       string `json:"deploymentId" yaml:"deploymentId"`
-	ParentDeploymentID string `json:"parentDeploymentId,omitempty" yaml:"parentDeploymentId,omitempty"`
-	TemplateID         string `json:"templateId" yaml:"templateId"`
-	SiteID             string `json:"siteId,omitempty" yaml:"siteId,omitempty"`
-	Prepared           bool   `json:"prepared" yaml:"prepared"`
-	Approved           bool   `json:"approved" yaml:"approved"`
+	DeploymentID       string            `json:"deploymentId" yaml:"deploymentId"`
+	ParentDeploymentID string            `json:"parentDeploymentId,omitempty" yaml:"parentDeploymentId,omitempty"`
+	TemplateID         string            `json:"templateId" yaml:"templateId"`
+	SiteID             string            `json:"siteId,omitempty" yaml:"siteId,omitempty"`
+	Metadata           map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Prepared           bool              `json:"prepared" yaml:"prepared"`
+	Approved           bool              `json:"approved" yaml:"approved"`
 }
 
 type Deployment struct {
@@ -24,15 +25,15 @@ type Deployment struct {
 	Resources util.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) CreateDeployment(parentDeploymentId string, templateId string, siteId string, prepared bool, approved bool, mergeResources util.Resources) (bool, string, string, error) {
+func (self *Client) CreateDeployment(parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, mergeResources util.Resources) (bool, string, string, error) {
 	if mergeResources_, err := self.encodeResources(mergeResources); err == nil {
-		return self.CreateDeploymentRaw(parentDeploymentId, templateId, siteId, prepared, approved, self.ResourcesFormat, mergeResources_)
+		return self.CreateDeploymentRaw(parentDeploymentId, templateId, siteId, mergeMetadata, prepared, approved, self.ResourcesFormat, mergeResources_)
 	} else {
 		return false, "", "", err
 	}
 }
 
-func (self *Client) CreateDeploymentRaw(parentDeploymentId string, templateId string, siteId string, prepared bool, approved bool, mergeResourcesFormat string, mergeResources []byte) (bool, string, string, error) {
+func (self *Client) CreateDeploymentRaw(parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, mergeResourcesFormat string, mergeResources []byte) (bool, string, string, error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
@@ -42,6 +43,7 @@ func (self *Client) CreateDeploymentRaw(parentDeploymentId string, templateId st
 			ParentDeploymentId:   parentDeploymentId,
 			TemplateId:           templateId,
 			SiteId:               siteId,
+			MergeMetadata:        mergeMetadata,
 			Prepared:             prepared,
 			Approved:             approved,
 			MergeResourcesFormat: mergeResourcesFormat,
@@ -69,6 +71,7 @@ func (self *Client) GetDeployment(deploymentId string) (Deployment, bool, error)
 						DeploymentID: deployment.DeploymentId,
 						TemplateID:   deployment.TemplateId,
 						SiteID:       deployment.SiteId,
+						Metadata:     deployment.Metadata,
 						Prepared:     deployment.Prepared,
 						Approved:     deployment.Approved,
 					},
@@ -103,20 +106,21 @@ func (self *Client) DeleteDeployment(deploymentId string) (bool, string, error) 
 	}
 }
 
-func (self *Client) ListDeployments(prepared *bool, approved *bool, parentDeploymentId *string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string) ([]DeploymentInfo, error) {
+func (self *Client) ListDeployments(parentDeploymentId *string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string, prepared *bool, approved *bool) ([]DeploymentInfo, error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
 		self.log.Info("listDeployments")
 		if client, err := apiClient.ListDeployments(context, &api.ListDeployments{
-			Prepared:                 prepared,
-			Approved:                 approved,
 			ParentDeploymentId:       parentDeploymentId,
 			TemplateIdPatterns:       templateIdPatterns,
 			TemplateMetadataPatterns: templateMetadataPatterns,
 			SiteIdPatterns:           siteIdPatterns,
 			SiteMetadataPatterns:     siteMetadataPatterns,
+			MetadataPatterns:         metadataPatterns,
+			Prepared:                 prepared,
+			Approved:                 approved,
 		}); err == nil {
 			var deploymentInfos []DeploymentInfo
 			for {
@@ -126,6 +130,7 @@ func (self *Client) ListDeployments(prepared *bool, approved *bool, parentDeploy
 						ParentDeploymentID: response.ParentDeploymentId,
 						TemplateID:         response.TemplateId,
 						SiteID:             response.SiteId,
+						Metadata:           response.Metadata,
 						Prepared:           response.Prepared,
 						Approved:           response.Approved,
 					})

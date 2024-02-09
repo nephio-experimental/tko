@@ -6,6 +6,10 @@ import (
 )
 
 func cloneMetadata(metadata map[string]string) map[string]string {
+	if metadata == nil {
+		return nil
+	}
+
 	metadata_ := make(map[string]string)
 	for key, value := range metadata {
 		metadata_[key] = value

@@ -109,20 +109,22 @@ message Deployment {
     string parentDeploymentId = 2;
     string templateId = 3;
     string siteId = 4;
-    bool prepared = 5;
-    bool approved = 6;
-    string resourcesFormat = 7;
-    bytes resources = 8; // TODO: stream
+    map<string, string> metadata = 5;
+    bool prepared = 6;
+    bool approved = 7;
+    string resourcesFormat = 8;
+    bytes resources = 9; // TODO: stream
 }
 
 message CreateDeployment {
     string parentDeploymentId = 1;
     string templateId = 2;
     string siteId = 3;
-    bool prepared = 4;
-    bool approved = 5;
-    string mergeResourcesFormat = 6;
-    bytes mergeResources = 7; // TODO: stream
+    map<string, string> mergeMetadata = 4;
+    bool prepared = 5;
+    bool approved = 6;
+    string mergeResourcesFormat = 7;
+    bytes mergeResources = 8; // TODO: stream
 }
 
 message DeleteDeployment {
@@ -141,13 +143,14 @@ message GetDeployment {
 }
 
 message ListDeployments {
-    optional bool prepared = 1;
-    optional bool approved = 2;
-    optional string parentDeploymentId = 3;
-    repeated string templateIdPatterns = 4;
-    map<string, string> templateMetadataPatterns = 5;
-    repeated string siteIdPatterns = 6;
-    map<string, string> siteMetadataPatterns = 7;
+    optional string parentDeploymentId = 1;
+    map<string, string> metadataPatterns = 2;
+    repeated string templateIdPatterns = 3;
+    map<string, string> templateMetadataPatterns = 4;
+    repeated string siteIdPatterns = 5;
+    map<string, string> siteMetadataPatterns = 6;
+    optional bool prepared = 7;
+    optional bool approved = 8;
 }
 
 message ListDeploymentsResponse {
@@ -155,8 +158,9 @@ message ListDeploymentsResponse {
     string parentDeploymentId = 2;
     string templateId = 3;
     string siteId = 4;
-    bool prepared = 5;
-    bool approved = 6;
+    map<string, string> metadata = 5;
+    bool prepared = 6;
+    bool approved = 7;
 }
 
 message StartDeploymentModification {

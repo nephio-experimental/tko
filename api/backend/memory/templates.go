@@ -65,9 +65,15 @@ func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplat
 
 	var templateInfos []backend.TemplateInfo
 	for _, template := range self.templates {
-		if backend.IDMatchesPatterns(template.TemplateID, listTemplates.TemplateIDPatterns) && backend.MetadataMatchesPatterns(template.Metadata, listTemplates.MetadataPatterns) {
-			templateInfos = append(templateInfos, template.TemplateInfo)
+		if !backend.IDMatchesPatterns(template.TemplateID, listTemplates.TemplateIDPatterns) {
+			continue
 		}
+
+		if !backend.MetadataMatchesPatterns(template.Metadata, listTemplates.MetadataPatterns) {
+			continue
+		}
+
+		templateInfos = append(templateInfos, template.TemplateInfo)
 	}
 
 	return templateInfos, nil
