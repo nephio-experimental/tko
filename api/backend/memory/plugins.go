@@ -48,7 +48,7 @@ func (self *MemoryBackend) DeletePlugin(context contextpkg.Context, pluginId bac
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugin, error) {
+func (self *MemoryBackend) ListPlugins(context contextpkg.Context) (backend.PluginStream, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -59,5 +59,5 @@ func (self *MemoryBackend) ListPlugins(context contextpkg.Context) ([]backend.Pl
 		index++
 	}
 
-	return plugins, nil
+	return backend.NewPluginSliceStream(plugins), nil
 }

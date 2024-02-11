@@ -61,18 +61,22 @@ func (self *Server) GetPlugin(context contextpkg.Context, getPlugin *api.GetPlug
 func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_ListPluginsServer) error {
 	self.Log.Infof("listPlugins: %s", listPlugins)
 
-	if plugins, err := self.Backend.ListPlugins(server.Context()); err == nil {
-		for _, plugin := range plugins {
-			if err := server.Send(&api.ListPluginsResponse{
-				Type:       plugin.Type,
-				Group:      plugin.Group,
-				Version:    plugin.Version,
-				Kind:       plugin.Kind,
-				Executor:   plugin.Executor,
-				Arguments:  plugin.Arguments,
-				Properties: plugin.Properties,
-			}); err != nil {
-				return err
+	if pluginStream, err := self.Backend.ListPlugins(server.Context()); err == nil {
+		for {
+			if plugin, ok := pluginStream.Next(); ok {
+				if err := server.Send(&api.ListPluginsResponse{
+					Type:       plugin.Type,
+					Group:      plugin.Group,
+					Version:    plugin.Version,
+					Kind:       plugin.Kind,
+					Executor:   plugin.Executor,
+					Arguments:  plugin.Arguments,
+					Properties: plugin.Properties,
+				}); err != nil {
+					return err
+				}
+			} else {
+				break
 			}
 		}
 	} else {

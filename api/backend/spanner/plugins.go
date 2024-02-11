@@ -22,6 +22,6 @@ func (self *SpannerBackend) DeletePlugin(context contextpkg.Context, pluginId ba
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugin, error) {
+func (self *SpannerBackend) ListPlugins(context contextpkg.Context) (backend.PluginStream, error) {
 	return nil, nil
 }

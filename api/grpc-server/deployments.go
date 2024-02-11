@@ -73,7 +73,7 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.API_ListDeploymentsServer) error {
 	self.Log.Infof("listDeployments: %s", listDeployments)
 
-	if deploymentInfos, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
+	if deploymentInfoStream, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
 		ParentDeploymentID:       listDeployments.ParentDeploymentId,
 		MetadataPatterns:         listDeployments.MetadataPatterns,
 		TemplateIDPatterns:       listDeployments.TemplateIdPatterns,
@@ -83,17 +83,21 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 		Prepared:                 listDeployments.Prepared,
 		Approved:                 listDeployments.Approved,
 	}); err == nil {
-		for _, deploymentInfo := range deploymentInfos {
-			if err := server.Send(&api.ListDeploymentsResponse{
-				DeploymentId:       deploymentInfo.DeploymentID,
-				ParentDeploymentId: deploymentInfo.ParentDeploymentID,
-				TemplateId:         deploymentInfo.TemplateID,
-				SiteId:             deploymentInfo.SiteID,
-				Metadata:           deploymentInfo.Metadata,
-				Prepared:           deploymentInfo.Prepared,
-				Approved:           deploymentInfo.Approved,
-			}); err != nil {
-				return err
+		for {
+			if deploymentInfo, ok := deploymentInfoStream.Next(); ok {
+				if err := server.Send(&api.ListDeploymentsResponse{
+					DeploymentId:       deploymentInfo.DeploymentID,
+					ParentDeploymentId: deploymentInfo.ParentDeploymentID,
+					TemplateId:         deploymentInfo.TemplateID,
+					SiteId:             deploymentInfo.SiteID,
+					Metadata:           deploymentInfo.Metadata,
+					Prepared:           deploymentInfo.Prepared,
+					Approved:           deploymentInfo.Approved,
+				}); err != nil {
+					return err
+				}
+			} else {
+				break
 			}
 		}
 	} else {

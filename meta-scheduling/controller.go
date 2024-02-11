@@ -19,12 +19,12 @@ type Controller struct {
 	log commonlog.Logger
 }
 
-func NewController(metaScheduling *MetaScheduling, log commonlog.Logger) *Controller {
+func NewController(metaScheduling *MetaScheduling, interval time.Duration, log commonlog.Logger) *Controller {
 	self := Controller{
 		MetaScheduling: metaScheduling,
 		log:            log,
 	}
-	self.Controller = util.NewController(self.run, 3*time.Second, log)
+	self.Controller = util.NewController(self.run, interval, log)
 	return &self
 }
 

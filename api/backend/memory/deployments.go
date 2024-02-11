@@ -90,7 +90,7 @@ func (self *MemoryBackend) deleteDeployment(deploymentId string, deployment *Dep
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) ([]backend.DeploymentInfo, error) {
+func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.DeploymentInfoStream, error) {
 	filterPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == true)
 	filterNotPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == false)
 	filterApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == true)
@@ -156,7 +156,7 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 		deploymentInfos = append(deploymentInfos, deployment.DeploymentInfo)
 	}
 
-	return deploymentInfos, nil
+	return backend.NewDeploymentInfoSliceStream(deploymentInfos), nil
 }
 
 // ([backend.Backend] interface)
@@ -243,7 +243,7 @@ func (self *MemoryBackend) CancelDeploymentModification(context contextpkg.Conte
 
 // Call when lock acquired
 func (self *MemoryBackend) updateDeploymentInfo(deployment *backend.Deployment, reset bool) error {
-	deployment.UpdateInfo(reset)
+	deployment.Update(reset)
 	if deployment.ParentDeploymentID != "" {
 		if _, ok := self.deployments[deployment.ParentDeploymentID]; !ok {
 			return backend.NewBadArgumentErrorf("unknown parent deployment: %s", deployment.ParentDeploymentID)

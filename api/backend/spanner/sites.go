@@ -22,6 +22,6 @@ func (self *SpannerBackend) DeleteSite(context contextpkg.Context, siteId string
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) ([]backend.SiteInfo, error) {
+func (self *SpannerBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (backend.SiteInfoStream, error) {
 	return nil, nil
 }

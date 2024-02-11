@@ -61,7 +61,7 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) ([]backend.SiteInfo, error) {
+func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (backend.SiteInfoStream, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -82,7 +82,7 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backe
 		siteInfos = append(siteInfos, site.SiteInfo)
 	}
 
-	return siteInfos, nil
+	return backend.NewSiteInfoSliceStream(siteInfos), nil
 }
 
 // Utils

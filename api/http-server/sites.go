@@ -13,14 +13,18 @@ func (self *Server) listSites(writer http.ResponseWriter, request *http.Request)
 	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
 	defer cancel()
 
-	if sites, err := self.Backend.ListSites(context, backend.ListSites{}); err == nil {
-		sites_ := make([]ard.StringMap, len(sites))
-		for index, site := range sites {
-			sites_[index] = ard.StringMap{
-				"id":          site.SiteID,
-				"template":    site.TemplateID,
-				"metadata":    site.Metadata,
-				"deployments": site.DeploymentIDs,
+	if siteInfoStream, err := self.Backend.ListSites(context, backend.ListSites{}); err == nil {
+		var sites_ []ard.StringMap
+		for {
+			if siteInfo, ok := siteInfoStream.Next(); ok {
+				sites_ = append(sites_, ard.StringMap{
+					"id":          siteInfo.SiteID,
+					"template":    siteInfo.TemplateID,
+					"metadata":    siteInfo.Metadata,
+					"deployments": siteInfo.DeploymentIDs,
+				})
+			} else {
+				break
 			}
 		}
 		sortById(sites_)

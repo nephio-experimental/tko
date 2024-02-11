@@ -76,7 +76,7 @@ func (self *SQLBackend) DeletePlugin(context contextpkg.Context, pluginId backen
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugin, error) {
+func (self *SQLBackend) ListPlugins(context contextpkg.Context) (backend.PluginStream, error) {
 	rows, err := self.statements.PreparedSelectPlugins.QueryContext(context)
 	if err != nil {
 		return nil, err
@@ -115,5 +115,5 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context) ([]backend.Plugi
 		}
 	}
 
-	return plugins, nil
+	return backend.NewPluginSliceStream(plugins), nil
 }

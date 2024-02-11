@@ -19,12 +19,12 @@ type Controller struct {
 	log commonlog.Logger
 }
 
-func NewController(preparation *Preparation, log commonlog.Logger) *Controller {
+func NewController(preparation *Preparation, interval time.Duration, log commonlog.Logger) *Controller {
 	self := Controller{
 		Preparation: preparation,
 		log:         log,
 	}
-	self.Controller = util.NewController(self.run, 3*time.Second, log)
+	self.Controller = util.NewController(self.run, interval, log)
 	return &self
 }
 

@@ -72,6 +72,34 @@ func (self *DeploymentInfo) NewDeploymentResource() util.Resource {
 }
 
 //
+// DeploymentInfoSliceStream
+//
+
+type DeploymentInfoSliceStream struct {
+	deploymentInfos []DeploymentInfo
+	length          int
+	index           int
+}
+
+func NewDeploymentInfoSliceStream(deploymentInfos []DeploymentInfo) *DeploymentInfoSliceStream {
+	return &DeploymentInfoSliceStream{
+		deploymentInfos: deploymentInfos,
+		length:          len(deploymentInfos),
+	}
+}
+
+// ([DeploymentInfoStream] interface)
+func (self *DeploymentInfoSliceStream) Next() (DeploymentInfo, bool) {
+	if self.index < self.length {
+		deploymentInfo := self.deploymentInfos[self.index]
+		self.index++
+		return deploymentInfo, true
+	} else {
+		return DeploymentInfo{}, false
+	}
+}
+
+//
 // Deployment
 //
 
@@ -125,7 +153,7 @@ func (self *Deployment) EncodeResources(format string) ([]byte, error) {
 	return util.EncodeResources(format, self.Resources)
 }
 
-func (self *Deployment) UpdateInfo(reset bool) {
+func (self *Deployment) Update(reset bool) {
 	self.DeploymentInfo.Update(self.Resources, reset)
 }
 

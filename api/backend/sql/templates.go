@@ -78,7 +78,7 @@ func (self *SQLBackend) DeleteTemplate(context contextpkg.Context, templateId st
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) ([]backend.TemplateInfo, error) {
+func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (backend.TemplateInfoStream, error) {
 	sql := self.statements.SelectTemplates
 	var args SqlArgs
 	var where SqlWhere
@@ -131,7 +131,7 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates 
 		}
 	}
 
-	return templateInfos, nil
+	return backend.NewTemplateInfoSliceStream(templateInfos), nil
 }
 
 // Utils

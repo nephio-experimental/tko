@@ -70,19 +70,23 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSitesServer) error {
 	self.Log.Infof("listSites: %s", listSites)
 
-	if siteInfos, err := self.Backend.ListSites(server.Context(), backend.ListSites{
+	if siteInfoStream, err := self.Backend.ListSites(server.Context(), backend.ListSites{
 		SiteIDPatterns:     listSites.SiteIdPatterns,
 		TemplateIDPatterns: listSites.TemplateIdPatterns,
 		MetadataPatterns:   listSites.MetadataPatterns,
 	}); err == nil {
-		for _, siteInfo := range siteInfos {
-			if err := server.Send(&api.ListSitesResponse{
-				SiteId:        siteInfo.SiteID,
-				TemplateId:    siteInfo.TemplateID,
-				Metadata:      siteInfo.Metadata,
-				DeploymentIds: siteInfo.DeploymentIDs,
-			}); err != nil {
-				return err
+		for {
+			if siteInfo, ok := siteInfoStream.Next(); ok {
+				if err := server.Send(&api.ListSitesResponse{
+					SiteId:        siteInfo.SiteID,
+					TemplateId:    siteInfo.TemplateID,
+					Metadata:      siteInfo.Metadata,
+					DeploymentIds: siteInfo.DeploymentIDs,
+				}); err != nil {
+					return err
+				}
+			} else {
+				break
 			}
 		}
 	} else {

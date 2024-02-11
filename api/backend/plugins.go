@@ -39,3 +39,31 @@ func (self *Plugin) Clone() *Plugin {
 		Properties: properties,
 	}
 }
+
+//
+// PluginSliceStream
+//
+
+type PluginSliceStream struct {
+	plugins []Plugin
+	length  int
+	index   int
+}
+
+func NewPluginSliceStream(plugins []Plugin) *PluginSliceStream {
+	return &PluginSliceStream{
+		plugins: plugins,
+		length:  len(plugins),
+	}
+}
+
+// ([PluginStream] interface)
+func (self *PluginSliceStream) Next() (Plugin, bool) {
+	if self.index < self.length {
+		plugin := self.plugins[self.index]
+		self.index++
+		return plugin, true
+	} else {
+		return Plugin{}, false
+	}
+}

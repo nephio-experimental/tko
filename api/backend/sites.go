@@ -41,6 +41,34 @@ func (self *SiteInfo) MergeTemplateInfo(templateInfo *TemplateInfo) {
 }
 
 //
+// SiteInfoSliceStream
+//
+
+type SiteInfoSliceStream struct {
+	siteInfos []SiteInfo
+	length    int
+	index     int
+}
+
+func NewSiteInfoSliceStream(siteInfos []SiteInfo) *SiteInfoSliceStream {
+	return &SiteInfoSliceStream{
+		siteInfos: siteInfos,
+		length:    len(siteInfos),
+	}
+}
+
+// ([SiteInfoStream] interface)
+func (self *SiteInfoSliceStream) Next() (SiteInfo, bool) {
+	if self.index < self.length {
+		siteInfo := self.siteInfos[self.index]
+		self.index++
+		return siteInfo, true
+	} else {
+		return SiteInfo{}, false
+	}
+}
+
+//
 // Site
 //
 

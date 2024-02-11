@@ -16,19 +16,21 @@ import (
 //
 
 type Statements struct {
-	InsertTemplate           string
-	InsertTemplateMetadata   string
-	InsertTemplateDeployment string
-	SelectTemplate           string
-	DeleteTemplate           string
-	SelectTemplates          string
+	InsertTemplate            string
+	InsertTemplateMetadata    string
+	InsertTemplateDeployment  string
+	SelectTemplate            string
+	DeleteTemplate            string
+	DeleteTemplateDeployments string
+	SelectTemplates           string
 
-	InsertSite           string
-	InsertSiteMetadata   string
-	InsertSiteDeployment string
-	SelectSite           string
-	DeleteSite           string
-	SelectSites          string
+	InsertSite            string
+	InsertSiteMetadata    string
+	InsertSiteDeployment  string
+	SelectSite            string
+	DeleteSite            string
+	DeleteSiteDeployments string
+	SelectSites           string
 
 	InsertDeployment                 string
 	InsertDeploymentMetadata         string
@@ -39,6 +41,7 @@ type Statements struct {
 	UpdateDeploymentModification     string
 	ResetDeploymentModification      string
 	DeleteDeployment                 string
+	DeleteDeploymentMetadata         string
 	SelectDeployments                string
 
 	InsertPlugin  string
@@ -85,11 +88,13 @@ type Statements struct {
 	PreparedInsertTemplateDeployment         *sql.Stmt
 	PreparedSelectTemplate                   *sql.Stmt
 	PreparedDeleteTemplate                   *sql.Stmt
+	PreparedDeleteTemplateDeployments        *sql.Stmt
 	PreparedInsertSite                       *sql.Stmt
 	PreparedInsertSiteMetadata               *sql.Stmt
 	PreparedInsertSiteDeployment             *sql.Stmt
 	PreparedSelectSite                       *sql.Stmt
 	PreparedDeleteSite                       *sql.Stmt
+	PreparedDeleteSiteDeployments            *sql.Stmt
 	PreparedInsertDeployment                 *sql.Stmt
 	PreparedInsertDeploymentMetadata         *sql.Stmt
 	PreparedUpdateDeployment                 *sql.Stmt
@@ -99,6 +104,7 @@ type Statements struct {
 	PreparedUpdateDeploymentModification     *sql.Stmt
 	PreparedResetDeploymentModification      *sql.Stmt
 	PreparedDeleteDeployment                 *sql.Stmt
+	PreparedDeleteDeploymentMetadata         *sql.Stmt
 	PreparedInsertPlugin                     *sql.Stmt
 	PreparedSelectPlugin                     *sql.Stmt
 	PreparedDeletePlugin                     *sql.Stmt

@@ -27,6 +27,58 @@ func (self *TemplateInfo) Update(resources util.Resources) {
 }
 
 //
+// TemplateInfoSliceStream
+//
+
+type TemplateInfoSliceStream struct {
+	templateInfos []TemplateInfo
+	length        int
+	index         int
+}
+
+func NewTemplateInfoSliceStream(templateInfos []TemplateInfo) *TemplateInfoSliceStream {
+	return &TemplateInfoSliceStream{
+		templateInfos: templateInfos,
+		length:        len(templateInfos),
+	}
+}
+
+// ([TemplateInfoStream] interface)
+func (self *TemplateInfoSliceStream) Next() (TemplateInfo, bool) {
+	if self.index < self.length {
+		templateInfo := self.templateInfos[self.index]
+		self.index++
+		return templateInfo, true
+	} else {
+		return TemplateInfo{}, false
+	}
+}
+
+//
+// TemplateInfoFeedStream
+//
+
+type TemplateInfoFeedStream struct {
+	channel chan TemplateInfo
+}
+
+func NewTemplateInfoFeedStream(size int) *TemplateInfoFeedStream {
+	return &TemplateInfoFeedStream{
+		channel: make(chan TemplateInfo, size),
+	}
+}
+
+// ([TemplateInfoStream] interface)
+func (self *TemplateInfoFeedStream) Next() (TemplateInfo, bool) {
+	templateInfo, ok := <-self.channel
+	return templateInfo, ok
+}
+
+func (self *TemplateInfoFeedStream) Send(templateInfo TemplateInfo) {
+	self.channel <- templateInfo
+}
+
+//
 // Template
 //
 

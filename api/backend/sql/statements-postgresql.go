@@ -41,7 +41,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			WHERE templates.template_id = $1
 			GROUP BY templates.template_id
 		`),
-		DeleteTemplate: `DELETE FROM templates WHERE template_id = $1`,
+		DeleteTemplate:            `DELETE FROM templates WHERE template_id = $1`,
+		DeleteTemplateDeployments: `DELETE FROM templates_deployments WHERE template_id = $1`,
 		SelectTemplates: CleanSQL(`
 			SELECT templates.template_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM templates
@@ -78,7 +79,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			WHERE sites.site_id = $1
 			GROUP BY sites.site_id
 		`),
-		DeleteSite: `DELETE FROM sites WHERE site_id = $1`,
+		DeleteSite:            `DELETE FROM sites WHERE site_id = $1`,
+		DeleteSiteDeployments: `DELETE FROM sites_deployments WHERE site_id = $1`,
 		SelectSites: CleanSQL(`
 			SELECT sites.site_id, template_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM sites
@@ -135,7 +137,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			SET modification_token = NULL, modification_timestamp = 0
 			WHERE modification_token = $1
 		`),
-		DeleteDeployment: `DELETE FROM deployments WHERE deployment_id = $1`,
+		DeleteDeployment:         `DELETE FROM deployments WHERE deployment_id = $1`,
+		DeleteDeploymentMetadata: `DELETE FROM deployments_metadata WHERE deployment_id = $1`,
 		SelectDeployments: CleanSQL(`
 			SELECT deployments.deployment_id, parent_deployment_id, deployments.template_id, deployments.site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), prepared, approved
 			FROM deployments

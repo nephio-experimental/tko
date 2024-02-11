@@ -126,7 +126,7 @@ func (self *SQLBackend) DeleteSite(context contextpkg.Context, siteId string) er
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) ([]backend.SiteInfo, error) {
+func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (backend.SiteInfoStream, error) {
 	sql := self.statements.SelectSites
 	var args SqlArgs
 	var where SqlWhere
@@ -189,7 +189,7 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 		}
 	}
 
-	return siteInfos, nil
+	return backend.NewSiteInfoSliceStream(siteInfos), nil
 }
 
 func (self *SQLBackend) mergeSite(context contextpkg.Context, tx *sql.Tx, site *backend.Site) error {

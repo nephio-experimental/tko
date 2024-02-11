@@ -59,7 +59,7 @@ func (self *MemoryBackend) DeleteTemplate(context contextpkg.Context, templateId
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) ([]backend.TemplateInfo, error) {
+func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (backend.TemplateInfoStream, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -76,5 +76,5 @@ func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplat
 		templateInfos = append(templateInfos, template.TemplateInfo)
 	}
 
-	return templateInfos, nil
+	return backend.NewTemplateInfoSliceStream(templateInfos), nil
 }

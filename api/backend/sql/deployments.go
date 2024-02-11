@@ -17,7 +17,7 @@ func (self *SQLBackend) SetDeployment(context contextpkg.Context, deployment *ba
 	if deployment.Metadata == nil {
 		deployment.Metadata = make(map[string]string)
 	}
-	deployment.UpdateInfo(false)
+	deployment.Update(false)
 
 	if tx, err := self.db.BeginTx(context, nil); err == nil {
 		if err := self.mergeDeployment(context, tx, deployment); err != nil {
@@ -144,7 +144,7 @@ func (self *SQLBackend) DeleteDeployment(context contextpkg.Context, deploymentI
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) ([]backend.DeploymentInfo, error) {
+func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.DeploymentInfoStream, error) {
 	sql := self.statements.SelectDeployments
 	var args SqlArgs
 	var where SqlWhere
@@ -249,7 +249,7 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		}
 	}
 
-	return deploymentInfos, nil
+	return backend.NewDeploymentInfoSliceStream(deploymentInfos), nil
 }
 
 // ([backend.Backend] interface)
@@ -389,16 +389,45 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 							Resources: resources,
 						}
 
-						deployment.UpdateInfo(false)
+						deployment.Update(false)
 
 						updateDeployment := tx.StmtContext(context, self.statements.PreparedUpdateDeployment)
 						if _, err := updateDeployment.ExecContext(context, nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources_, deployment.DeploymentID); err != nil {
+							if err := tx.Rollback(); err != nil {
+								self.log.Error(err.Error())
+							}
 							return "", err
 						}
 
-						// TODO: update metadata
+						// Update metadata
 
-						// TODO: delete old template and site associations
+						deleteDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedDeleteDeploymentMetadata)
+						if _, err := deleteDeploymentMetadata.ExecContext(context, deploymentId); err != nil {
+							if err := tx.Rollback(); err != nil {
+								self.log.Error(err.Error())
+							}
+							return "", err
+						}
+
+						insertDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedInsertDeploymentMetadata)
+						for key, value := range deployment.Metadata {
+							if _, err := insertDeploymentMetadata.ExecContext(context, deploymentId, key, value); err != nil {
+								if err := tx.Rollback(); err != nil {
+									self.log.Error(err.Error())
+								}
+								return "", err
+							}
+						}
+
+						// Update template association
+
+						deleteTemplateDeployments := tx.StmtContext(context, self.statements.PreparedDeleteTemplateDeployments)
+						if _, err := deleteTemplateDeployments.ExecContext(context, deploymentId); err != nil {
+							if err := tx.Rollback(); err != nil {
+								self.log.Error(err.Error())
+							}
+							return "", err
+						}
 
 						if deployment.TemplateID != "" {
 							insertTemplateDeployment := tx.StmtContext(context, self.statements.PreparedInsertTemplateDeployment)
@@ -408,6 +437,16 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 								}
 								return "", err
 							}
+						}
+
+						// Update site association
+
+						deleteSiteDeployments := tx.StmtContext(context, self.statements.PreparedDeleteSiteDeployments)
+						if _, err := deleteSiteDeployments.ExecContext(context, deploymentId); err != nil {
+							if err := tx.Rollback(); err != nil {
+								self.log.Error(err.Error())
+							}
+							return "", err
 						}
 
 						if deployment.SiteID != "" {

@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"time"
+
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/preparation"
 	"github.com/nephio-experimental/tko/preparation/topology"
@@ -10,6 +12,7 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
+var interval float64
 var grpcIpStackString string
 var grpcIpStack util.IPStack
 var grpcAddress string
@@ -20,6 +23,7 @@ var grpcTimeout float64
 func init() {
 	rootCommand.AddCommand(startCommand)
 
+	startCommand.Flags().Float64Var(&interval, "interval", 3.0, "polling interval in seconds")
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO API Server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO API Server")
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API Server")
@@ -48,7 +52,7 @@ func Serve() {
 	util.FailOnError(err)
 
 	// Controller
-	controller := preparation.NewController(preparation.NewPreparation(client, validation, commonlog.GetLogger("preparation")), commonlog.GetLogger("controller"))
+	controller := preparation.NewController(preparation.NewPreparation(client, validation, commonlog.GetLogger("preparation")), time.Duration(interval*float64(time.Second)), commonlog.GetLogger("controller"))
 
 	// Topology preparation
 	controller.Preparation.RegisterPreparer(topology.PlacementGVK, topology.PreparePlacement)

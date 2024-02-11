@@ -13,14 +13,18 @@ func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Requ
 	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
 	defer cancel()
 
-	if templates, err := self.Backend.ListTemplates(context, backend.ListTemplates{}); err == nil {
-		templates_ := make([]ard.StringMap, len(templates))
-		for index, template := range templates {
-			templates_[index] = ard.StringMap{
-				"id":          template.TemplateID,
-				"template":    template.TemplateID,
-				"metadata":    template.Metadata,
-				"deployments": template.DeploymentIDs,
+	if templateInfoStream, err := self.Backend.ListTemplates(context, backend.ListTemplates{}); err == nil {
+		var templates_ []ard.StringMap
+		for {
+			if templateInfo, ok := templateInfoStream.Next(); ok {
+				templates_ = append(templates_, ard.StringMap{
+					"id":          templateInfo.TemplateID,
+					"template":    templateInfo.TemplateID,
+					"metadata":    templateInfo.Metadata,
+					"deployments": templateInfo.DeploymentIDs,
+				})
+			} else {
+				break
 			}
 		}
 		sortById(templates_)

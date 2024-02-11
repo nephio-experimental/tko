@@ -69,17 +69,21 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.API_ListTemplatesServer) error {
 	self.Log.Infof("listTemplates: %s", listTemplates)
 
-	if templateInfos, err := self.Backend.ListTemplates(server.Context(), backend.ListTemplates{
+	if templateInfoStream, err := self.Backend.ListTemplates(server.Context(), backend.ListTemplates{
 		TemplateIDPatterns: listTemplates.TemplateIdPatterns,
 		MetadataPatterns:   listTemplates.MetadataPatterns,
 	}); err == nil {
-		for _, templateInfo := range templateInfos {
-			if err := server.Send(&api.ListTemplatesResponse{
-				TemplateId:    templateInfo.TemplateID,
-				Metadata:      templateInfo.Metadata,
-				DeploymentIds: templateInfo.DeploymentIDs,
-			}); err != nil {
-				return err
+		for {
+			if templateInfo, ok := templateInfoStream.Next(); ok {
+				if err := server.Send(&api.ListTemplatesResponse{
+					TemplateId:    templateInfo.TemplateID,
+					Metadata:      templateInfo.Metadata,
+					DeploymentIds: templateInfo.DeploymentIDs,
+				}); err != nil {
+					return err
+				}
+			} else {
+				break
 			}
 		}
 	} else {
