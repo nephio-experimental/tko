@@ -78,7 +78,7 @@ func (self *SQLBackend) DeleteTemplate(context contextpkg.Context, templateId st
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (backend.TemplateInfoStream, error) {
+func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (backend.Results[backend.TemplateInfo], error) {
 	sql := self.statements.SelectTemplates
 	var args SqlArgs
 	var where SqlWhere
@@ -105,33 +105,42 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates 
 	if err != nil {
 		return nil, err
 	}
-	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
-	var templateInfos []backend.TemplateInfo
-	for rows.Next() {
-		var templateId string
-		var metadataJson, deploymentIdsJson []byte
-		if err := rows.Scan(&templateId, &metadataJson, &deploymentIdsJson); err == nil {
-			templateInfo := backend.TemplateInfo{
-				TemplateID: templateId,
-				Metadata:   make(map[string]string),
+	stream := backend.NewResultsStream[backend.TemplateInfo]()
+
+	go func() {
+		defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
+
+		for rows.Next() {
+			var templateId string
+			var metadataJson, deploymentIdsJson []byte
+			if err := rows.Scan(&templateId, &metadataJson, &deploymentIdsJson); err == nil {
+				templateInfo := backend.TemplateInfo{
+					TemplateID: templateId,
+					Metadata:   make(map[string]string),
+				}
+
+				if err := jsonUnmarshallMapEntries(metadataJson, templateInfo.Metadata); err != nil {
+					stream.Close(err)
+					return
+				}
+
+				if err := jsonUnmarshallArray(deploymentIdsJson, &templateInfo.DeploymentIDs); err != nil {
+					stream.Close(err)
+					return
+				}
+
+				stream.Send(templateInfo)
+			} else {
+				stream.Close(err)
+				return
 			}
-
-			if err := jsonUnmarshallMapEntries(metadataJson, templateInfo.Metadata); err != nil {
-				return nil, err
-			}
-
-			if err := jsonUnmarshallArray(deploymentIdsJson, &templateInfo.DeploymentIDs); err != nil {
-				return nil, err
-			}
-
-			templateInfos = append(templateInfos, templateInfo)
-		} else {
-			return nil, err
 		}
-	}
 
-	return backend.NewTemplateInfoSliceStream(templateInfos), nil
+		stream.Close(nil)
+	}()
+
+	return stream, nil
 }
 
 // Utils

@@ -1,6 +1,7 @@
 package topology
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 
@@ -19,7 +20,7 @@ type Deployment struct {
 }
 
 // ([preparation.PrepareFunc] signature)
-func PreparePlacement(preparationContext *preparation.Context) (bool, util.Resources, error) {
+func PreparePlacement(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
 	preparationContext.Log.Info("preparing topology.nephio.org Placement",
 		"resource", preparationContext.TargetResourceIdentifer)
 

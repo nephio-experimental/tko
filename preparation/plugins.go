@@ -1,6 +1,7 @@
 package preparation
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 	"strings"
@@ -60,7 +61,7 @@ func NewCommandPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
 
-	return func(preparationContext *Context) (bool, []ard.Map, error) {
+	return func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error) {
 		preparationContext.Log.Info("prepare via command plugin",
 			"resource", preparationContext.TargetResourceIdentifer,
 			"arguments", strings.Join(plugin.Arguments, " "))
@@ -91,7 +92,7 @@ func NewKptPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 
 	image := plugin.Arguments[0]
 
-	return func(preparationContext *Context) (bool, []ard.Map, error) {
+	return func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error) {
 		preparationContext.Log.Info("prepare via kpt plugin",
 			"resource", preparationContext.TargetResourceIdentifer,
 			"image", image,

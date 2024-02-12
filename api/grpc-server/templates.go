@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
@@ -74,7 +75,7 @@ func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.A
 		MetadataPatterns:   listTemplates.MetadataPatterns,
 	}); err == nil {
 		for {
-			if templateInfo, ok := templateInfoStream.Next(); ok {
+			if templateInfo, err := templateInfoStream.Next(); err == nil {
 				if err := server.Send(&api.ListTemplatesResponse{
 					TemplateId:    templateInfo.TemplateID,
 					Metadata:      templateInfo.Metadata,
@@ -82,8 +83,10 @@ func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.A
 				}); err != nil {
 					return err
 				}
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				return ToGRPCError(err)
 			}
 		}
 	} else {

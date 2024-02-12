@@ -1,10 +1,9 @@
 package commands
 
 import (
-	"time"
-
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	metascheduling "github.com/nephio-experimental/tko/meta-scheduling"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
@@ -17,6 +16,7 @@ var grpcAddress string
 var grpcPort uint
 var grpcFormat string
 var grpcTimeout float64
+var schedulerTimeout float64
 
 func init() {
 	rootCommand.AddCommand(startCommand)
@@ -27,6 +27,7 @@ func init() {
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API Server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources for TKO API Server (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
+	startCommand.Flags().Float64Var(&schedulerTimeout, "scheduler-timeout", 30.0, "scheduler timeout in seconds")
 }
 
 var startCommand = &cobra.Command{
@@ -42,11 +43,12 @@ var startCommand = &cobra.Command{
 
 func Serve() {
 	// Client
-	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, grpcTimeout, commonlog.GetLogger("client"))
+	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 	util.FailOnError(err)
 
 	// Controller
-	controller := metascheduling.NewController(metascheduling.NewMetaScheduling(client, commonlog.GetLogger("meta-scheduling")), time.Duration(interval*float64(time.Second)), commonlog.GetLogger("controller"))
+	metaScheduling := metascheduling.NewMetaScheduling(client, tkoutil.SecondsToDuration(schedulerTimeout), commonlog.GetLogger("meta-scheduling"))
+	controller := metascheduling.NewController(metaScheduling, tkoutil.SecondsToDuration(interval), commonlog.GetLogger("controller"))
 
 	controller.Start()
 	util.OnExit(controller.Stop)

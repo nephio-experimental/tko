@@ -1,6 +1,7 @@
 package preparation
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 
@@ -14,7 +15,9 @@ func (self *Preparation) PrepareDeployments() error {
 	false_ := false
 	if deploymentInfos, err := self.Client.ListDeployments(nil, nil, nil, nil, nil, nil, &false_, nil); err == nil {
 		for _, deploymentInfo := range deploymentInfos {
-			self.PrepareDeployment(deploymentInfo)
+			context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+			self.PrepareDeployment(context, deploymentInfo)
+			cancel()
 		}
 		return nil
 	} else {
@@ -22,7 +25,7 @@ func (self *Preparation) PrepareDeployments() error {
 	}
 }
 
-func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo) {
+func (self *Preparation) PrepareDeployment(context contextpkg.Context, deploymentInfo client.DeploymentInfo) {
 	if deploymentInfo.Prepared {
 		return
 	}
@@ -34,7 +37,7 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 		"template", deploymentInfo.TemplateID)
 	if deployment, ok, err := self.Client.GetDeployment(deploymentInfo.DeploymentID); err == nil {
 		if ok {
-			if _, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Resources, log); err != nil {
+			if _, err := self.prepareDeployment(context, deploymentInfo.DeploymentID, deployment.Resources, log); err != nil {
 				log.Error(err.Error())
 			}
 		} else {
@@ -45,7 +48,7 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 	}
 }
 
-func (self *Preparation) prepareDeployment(deploymentId string, deploymentResources util.Resources, log commonlog.Logger) (bool, error) {
+func (self *Preparation) prepareDeployment(context contextpkg.Context, deploymentId string, deploymentResources util.Resources, log commonlog.Logger) (bool, error) {
 	modified := false
 
 	// Are we already fully prepared?
@@ -63,8 +66,8 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 				// Must re-check because deployment may have been modified
 				if resource, ok := resourceIdentifier.GetResource(resources); ok {
 					if _, prepare := self.ShouldPrepare(resourceIdentifier, resource, nil); prepare != nil {
-						context := self.NewContext(deploymentId, resources, resourceIdentifier, log)
-						return prepare(context)
+						preparationContext := self.NewContext(deploymentId, resources, resourceIdentifier, log)
+						return prepare(context, preparationContext)
 					} else {
 						log.Errorf("no preparer",
 							"resourceType", resourceIdentifier.GVK)

@@ -26,7 +26,7 @@ type Client struct {
 	log           commonlog.Logger
 }
 
-func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resourcesFormat string, timeoutSeconds float64, log commonlog.Logger) (*Client, error) {
+func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resourcesFormat string, timeout time.Duration, log commonlog.Logger) (*Client, error) {
 	bind := grpcIpStack.ClientBind(grpcAddress)
 
 	if address, err := util.ToReachableIPAddress(bind.Address); err == nil {
@@ -35,7 +35,7 @@ func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resou
 			GRPCAddress:        address,
 			GRPCPort:           grpcPort,
 			ResourcesFormat:    resourcesFormat,
-			Timeout:            time.Duration(timeoutSeconds * float64(time.Second)),
+			Timeout:            timeout,
 			log:                log,
 		}, nil
 	} else {

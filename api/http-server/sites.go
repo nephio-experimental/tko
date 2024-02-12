@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -14,21 +15,24 @@ func (self *Server) listSites(writer http.ResponseWriter, request *http.Request)
 	defer cancel()
 
 	if siteInfoStream, err := self.Backend.ListSites(context, backend.ListSites{}); err == nil {
-		var sites_ []ard.StringMap
+		var sites []ard.StringMap
 		for {
-			if siteInfo, ok := siteInfoStream.Next(); ok {
-				sites_ = append(sites_, ard.StringMap{
+			if siteInfo, err := siteInfoStream.Next(); err == nil {
+				sites = append(sites, ard.StringMap{
 					"id":          siteInfo.SiteID,
 					"template":    siteInfo.TemplateID,
 					"metadata":    siteInfo.Metadata,
 					"deployments": siteInfo.DeploymentIDs,
 				})
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				writer.WriteHeader(500)
+				return
 			}
 		}
-		sortById(sites_)
-		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(sites_)
+		sortById(sites)
+		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(sites)
 	} else {
 		writer.WriteHeader(500)
 	}

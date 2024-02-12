@@ -1,6 +1,7 @@
 package metascheduling
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 	"strings"
@@ -57,7 +58,7 @@ func NewCommandPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) 
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
 
-	return func(schedulingContext *Context) error {
+	return func(context contextpkg.Context, schedulingContext *Context) error {
 		schedulingContext.Log.Info("schedule via command plugin",
 			"resource", schedulingContext.TargetResourceIdentifer,
 			"arguments", strings.Join(plugin.Arguments, " "))

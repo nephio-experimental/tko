@@ -2,8 +2,13 @@ package backend
 
 import (
 	"github.com/nephio-experimental/tko/util"
+	"github.com/segmentio/ksuid"
 	"github.com/tliron/go-ard"
 )
+
+func NewID() string {
+	return ksuid.New().String()
+}
 
 func cloneMetadata(metadata map[string]string) map[string]string {
 	if metadata == nil {

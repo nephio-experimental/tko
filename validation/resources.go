@@ -1,6 +1,7 @@
 package validation
 
 import (
+	contextpkg "context"
 	"errors"
 
 	"github.com/nephio-experimental/tko/util"
@@ -16,8 +17,10 @@ func (self *Validation) ValidateResources(resources util.Resources, complete boo
 					validate = self.DefaultValidate
 				}
 
-				context := self.NewContext(resources, resourceIdentifier, complete)
-				errs = append(errs, validate(context)...)
+				validationContext := self.NewContext(resources, resourceIdentifier, complete)
+				context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+				errs = append(errs, validate(context, validationContext)...)
+				cancel()
 			} else {
 				errs = append(errs, err)
 			}
@@ -30,7 +33,7 @@ func (self *Validation) ValidateResources(resources util.Resources, complete boo
 }
 
 // ([ValidatorFunc] signature)
-func (self *Validation) DefaultValidate(validationContext *Context) []error {
+func (self *Validation) DefaultValidate(context contextpkg.Context, validationContext *Context) []error {
 	if resource, ok := validationContext.GetResource(); ok {
 		return self.Kubeconform(resource, validationContext.Complete)
 	} else {

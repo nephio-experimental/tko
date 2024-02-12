@@ -15,7 +15,7 @@ import (
 var TOSCAGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareTOSCA(preparationContext *preparation.Context) (bool, util.Resources, error) {
+func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
 	preparationContext.Log.Info("preparing topology.nephio.org TOSCA",
 		"resource", preparationContext.TargetResourceIdentifer)
 

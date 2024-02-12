@@ -126,7 +126,7 @@ func (self *SQLBackend) DeleteSite(context contextpkg.Context, siteId string) er
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (backend.SiteInfoStream, error) {
+func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (backend.Results[backend.SiteInfo], error) {
 	sql := self.statements.SelectSites
 	var args SqlArgs
 	var where SqlWhere
@@ -158,38 +158,47 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 	if err != nil {
 		return nil, err
 	}
-	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
-	var siteInfos []backend.SiteInfo
-	for rows.Next() {
-		var siteId string
-		var templateId *string
-		var metadataJson, deploymentIdsJson []byte
-		if err := rows.Scan(&siteId, &templateId, &metadataJson, &deploymentIdsJson); err == nil {
-			siteInfo := backend.SiteInfo{
-				SiteID:   siteId,
-				Metadata: make(map[string]string),
+	stream := backend.NewResultsStream[backend.SiteInfo]()
+
+	go func() {
+		defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
+
+		for rows.Next() {
+			var siteId string
+			var templateId *string
+			var metadataJson, deploymentIdsJson []byte
+			if err := rows.Scan(&siteId, &templateId, &metadataJson, &deploymentIdsJson); err == nil {
+				siteInfo := backend.SiteInfo{
+					SiteID:   siteId,
+					Metadata: make(map[string]string),
+				}
+
+				if templateId != nil {
+					siteInfo.TemplateID = *templateId
+				}
+
+				if err := jsonUnmarshallMapEntries(metadataJson, siteInfo.Metadata); err != nil {
+					stream.Close(err)
+					return
+				}
+
+				if err := jsonUnmarshallArray(deploymentIdsJson, &siteInfo.DeploymentIDs); err != nil {
+					stream.Close(err)
+					return
+				}
+
+				stream.Send(siteInfo)
+			} else {
+				stream.Close(err)
+				return
 			}
-
-			if templateId != nil {
-				siteInfo.TemplateID = *templateId
-			}
-
-			if err := jsonUnmarshallMapEntries(metadataJson, siteInfo.Metadata); err != nil {
-				return nil, err
-			}
-
-			if err := jsonUnmarshallArray(deploymentIdsJson, &siteInfo.DeploymentIDs); err != nil {
-				return nil, err
-			}
-
-			siteInfos = append(siteInfos, siteInfo)
-		} else {
-			return nil, err
 		}
-	}
 
-	return backend.NewSiteInfoSliceStream(siteInfos), nil
+		stream.Close(nil)
+	}()
+
+	return stream, nil
 }
 
 func (self *SQLBackend) mergeSite(context contextpkg.Context, tx *sql.Tx, site *backend.Site) error {

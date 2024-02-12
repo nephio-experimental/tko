@@ -76,7 +76,7 @@ func (self *ValidatingBackend) DeleteTemplate(context contextpkg.Context, templa
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (TemplateInfoStream, error) {
+func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (Results[TemplateInfo], error) {
 	return self.Backend.ListTemplates(context, listTemplates)
 }
 
@@ -120,7 +120,7 @@ func (self *ValidatingBackend) DeleteSite(context contextpkg.Context, siteId str
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) (SiteInfoStream, error) {
+func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) (Results[SiteInfo], error) {
 	return self.Backend.ListSites(context, listSites)
 }
 
@@ -159,7 +159,7 @@ func (self *ValidatingBackend) DeleteDeployment(context contextpkg.Context, depl
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (DeploymentInfoStream, error) {
+func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (Results[DeploymentInfo], error) {
 	return self.Backend.ListDeployments(context, listDeployments)
 }
 
@@ -255,7 +255,7 @@ func (self *ValidatingBackend) DeletePlugin(context contextpkg.Context, pluginId
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListPlugins(context contextpkg.Context) (PluginStream, error) {
+func (self *ValidatingBackend) ListPlugins(context contextpkg.Context) (Results[Plugin], error) {
 	return self.Backend.ListPlugins(context)
 }
 

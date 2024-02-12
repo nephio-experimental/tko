@@ -1,19 +1,20 @@
 package topology
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 
+	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/preparation"
 	"github.com/nephio-experimental/tko/util"
-	"github.com/segmentio/ksuid"
 	"github.com/tliron/go-ard"
 )
 
 var SiteGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Site")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareSite(preparationContext *preparation.Context) (bool, util.Resources, error) {
+func PrepareSite(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
 	preparationContext.Log.Info("preparing topology.nephio.org Site",
 		"resource", preparationContext.TargetResourceIdentifer)
 
@@ -42,7 +43,7 @@ func PrepareSite(preparationContext *preparation.Context) (bool, util.Resources,
 					return false, nil, nil
 				}
 
-				siteId := "provisioned/" + ksuid.New().String()
+				siteId := "provisioned/" + backend.NewID()
 				if ok, reason, err := preparationContext.Preparation.Client.RegisterSite(siteId, templateId, map[string]string{"type": "provisioned"}, mergeResources); err == nil {
 					if ok {
 						preparationContext.Log.Infof("provisioned new site %s for %s", siteId, preparationContext.TargetResourceIdentifer.Name)

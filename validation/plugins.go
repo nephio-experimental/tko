@@ -1,6 +1,7 @@
 package validation
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 	"strings"
@@ -55,7 +56,7 @@ func NewCommandPluginValidator(plugin client.PluginInfo) (ValidatorFunc, error) 
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
 
-	return func(validationContext *Context) []error {
+	return func(context contextpkg.Context, validationContext *Context) []error {
 		validationContext.Validation.Log.Info("validate via command plugin",
 			"resource", validationContext.TargetResourceIdentifer,
 			"arguments", strings.Join(plugin.Arguments, " "))

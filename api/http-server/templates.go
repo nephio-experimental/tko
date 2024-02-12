@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -14,21 +15,24 @@ func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Requ
 	defer cancel()
 
 	if templateInfoStream, err := self.Backend.ListTemplates(context, backend.ListTemplates{}); err == nil {
-		var templates_ []ard.StringMap
+		var templates []ard.StringMap
 		for {
-			if templateInfo, ok := templateInfoStream.Next(); ok {
-				templates_ = append(templates_, ard.StringMap{
+			if templateInfo, err := templateInfoStream.Next(); err == nil {
+				templates = append(templates, ard.StringMap{
 					"id":          templateInfo.TemplateID,
 					"template":    templateInfo.TemplateID,
 					"metadata":    templateInfo.Metadata,
 					"deployments": templateInfo.DeploymentIDs,
 				})
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				writer.WriteHeader(500)
+				return
 			}
 		}
-		sortById(templates_)
-		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(templates_)
+		sortById(templates)
+		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(templates)
 	} else {
 		writer.WriteHeader(500)
 	}

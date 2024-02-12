@@ -1,13 +1,15 @@
 package preparation
 
 import (
+	contextpkg "context"
+
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/go-ard"
 )
 
-type PreparerFunc func(preparationContext *Context) (bool, []ard.Map, error)
+type PreparerFunc func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error)
 
 func (self *Preparation) RegisterPreparer(gvk util.GVK, prepare PreparerFunc) {
 	self.preparers[gvk] = prepare

@@ -6,7 +6,6 @@ import (
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/util"
-	"github.com/segmentio/ksuid"
 )
 
 type Deployment struct {
@@ -90,7 +89,7 @@ func (self *MemoryBackend) deleteDeployment(deploymentId string, deployment *Dep
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.DeploymentInfoStream, error) {
+func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.Results[backend.DeploymentInfo], error) {
 	filterPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == true)
 	filterNotPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == false)
 	filterApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == true)
@@ -156,7 +155,7 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 		deploymentInfos = append(deploymentInfos, deployment.DeploymentInfo)
 	}
 
-	return backend.NewDeploymentInfoSliceStream(deploymentInfos), nil
+	return backend.NewResultsSlice[backend.DeploymentInfo](deploymentInfos), nil
 }
 
 // ([backend.Backend] interface)
@@ -171,7 +170,7 @@ func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Contex
 		}
 
 		if available {
-			deployment.CurrentModificationToken = ksuid.New().String()
+			deployment.CurrentModificationToken = backend.NewID()
 			deployment.CurrentModificationTimestamp = time.Now().UnixMicro()
 			return deployment.CurrentModificationToken, deployment.Deployment, nil
 		} else {

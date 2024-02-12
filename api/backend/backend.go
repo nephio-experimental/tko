@@ -19,17 +19,17 @@ type Backend interface {
 	SetTemplate(context contextpkg.Context, template *Template) error             // error can be NotDoneError
 	GetTemplate(context contextpkg.Context, templateId string) (*Template, error) // error can be NotFoundError
 	DeleteTemplate(context contextpkg.Context, templateId string) error           // error can be NotDoneError, NotFoundError
-	ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (TemplateInfoStream, error)
+	ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (Results[TemplateInfo], error)
 
 	SetSite(context contextpkg.Context, site *Site) error             // error can be NotDoneError
 	GetSite(context contextpkg.Context, siteId string) (*Site, error) // error can be NotFoundError
 	DeleteSite(context contextpkg.Context, siteId string) error       // error can be NotDoneError, NotFoundError
-	ListSites(context contextpkg.Context, listSites ListSites) (SiteInfoStream, error)
+	ListSites(context contextpkg.Context, listSites ListSites) (Results[SiteInfo], error)
 
 	SetDeployment(context contextpkg.Context, deployment *Deployment) error             // error can be NotDoneError
 	GetDeployment(context contextpkg.Context, deploymentId string) (*Deployment, error) // error can be NotFoundError
 	DeleteDeployment(context contextpkg.Context, deploymentId string) error             // error can be NotDoneError, NotFoundError
-	ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (DeploymentInfoStream, error)
+	ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (Results[DeploymentInfo], error)
 	StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *Deployment, error)                 // error can be NotDoneError, NotFoundError, BusyError
 	EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) // error can be NotDoneError, NotFoundError, TimeoutError
 	CancelDeploymentModification(context contextpkg.Context, modificationToken string) error                                  // error can be NotDoneError, NotFoundError
@@ -37,7 +37,7 @@ type Backend interface {
 	SetPlugin(context contextpkg.Context, plugin *Plugin) error               // error can be NotDoneError
 	GetPlugin(context contextpkg.Context, pluginId PluginID) (*Plugin, error) // error can be NotFoundError
 	DeletePlugin(context contextpkg.Context, pluginId PluginID) error         // error can be NotDoneError, NotFoundError
-	ListPlugins(context contextpkg.Context) (PluginStream, error)
+	ListPlugins(context contextpkg.Context) (Results[Plugin], error)
 }
 
 type ListTemplates struct {
@@ -60,20 +60,4 @@ type ListDeployments struct {
 	MetadataPatterns         map[string]string
 	Prepared                 *bool
 	Approved                 *bool
-}
-
-type TemplateInfoStream interface {
-	Next() (TemplateInfo, bool)
-}
-
-type SiteInfoStream interface {
-	Next() (SiteInfo, bool)
-}
-
-type DeploymentInfoStream interface {
-	Next() (DeploymentInfo, bool)
-}
-
-type PluginStream interface {
-	Next() (Plugin, bool)
 }

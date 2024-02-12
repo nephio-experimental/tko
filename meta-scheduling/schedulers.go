@@ -1,11 +1,13 @@
 package metascheduling
 
 import (
+	contextpkg "context"
+
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 )
 
-type SchedulerFunc func(schedulingContext *Context) error
+type SchedulerFunc func(context contextpkg.Context, schedulingContext *Context) error
 
 func (self *MetaScheduling) RegisterScheduler(gvk util.GVK, schedule SchedulerFunc) {
 	self.schedulers[gvk] = schedule

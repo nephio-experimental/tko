@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 	"net/http"
 
 	"github.com/tliron/go-ard"
@@ -13,10 +14,10 @@ func (self *Server) listPlugins(writer http.ResponseWriter, request *http.Reques
 	defer cancel()
 
 	if pluginStream, err := self.Backend.ListPlugins(context); err == nil {
-		var plugins_ []ard.StringMap
+		var plugins []ard.StringMap
 		for {
-			if plugin, ok := pluginStream.Next(); ok {
-				plugins_ = append(plugins_, ard.StringMap{
+			if plugin, err := pluginStream.Next(); err == nil {
+				plugins = append(plugins, ard.StringMap{
 					"id":         plugin.Type + "|" + plugin.APIVersion() + "|" + plugin.Kind,
 					"type":       plugin.Type,
 					"gvk":        []string{plugin.APIVersion(), plugin.Kind},
@@ -24,12 +25,15 @@ func (self *Server) listPlugins(writer http.ResponseWriter, request *http.Reques
 					"arguments":  plugin.Arguments,
 					"properties": plugin.Properties,
 				})
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				writer.WriteHeader(500)
+				return
 			}
 		}
-		sortById(plugins_)
-		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(plugins_)
+		sortById(plugins)
+		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(plugins)
 	} else {
 		writer.WriteHeader(500)
 	}

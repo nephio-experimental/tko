@@ -1,7 +1,9 @@
 package preparation
 
 import (
-	client "github.com/nephio-experimental/tko/api/grpc-client"
+	"time"
+
+	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/commonlog"
@@ -12,17 +14,19 @@ import (
 //
 
 type Preparation struct {
-	Client     *client.Client
+	Client     *clientpkg.Client
 	Validation *validation.Validation
+	Timeout    time.Duration
 	Log        commonlog.Logger
 
 	preparers map[util.GVK]PreparerFunc
 }
 
-func NewPreparation(client_ *client.Client, validation *validation.Validation, log commonlog.Logger) *Preparation {
+func NewPreparation(client *clientpkg.Client, validation *validation.Validation, timeout time.Duration, log commonlog.Logger) *Preparation {
 	return &Preparation{
-		Client:     client_,
+		Client:     client,
 		Validation: validation,
+		Timeout:    timeout,
 		Log:        log,
 		preparers:  make(map[util.GVK]PreparerFunc),
 	}

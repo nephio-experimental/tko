@@ -29,7 +29,7 @@ var deploymentMetadata map[string]string
 var parentDeploymentId string
 
 func NewClient() *clientpkg.Client {
-	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, grpcTimeout, clientLog)
+	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), clientLog)
 	util.FailOnError(err)
 	return client
 }

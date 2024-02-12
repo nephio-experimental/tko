@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -14,10 +15,10 @@ func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Re
 	defer cancel()
 
 	if deploymentInfoStream, err := self.Backend.ListDeployments(context, backend.ListDeployments{}); err == nil {
-		var deployments_ []ard.StringMap
+		var deployments []ard.StringMap
 		for {
-			if deploymentInfo, ok := deploymentInfoStream.Next(); ok {
-				deployments_ = append(deployments_, ard.StringMap{
+			if deploymentInfo, err := deploymentInfoStream.Next(); err == nil {
+				deployments = append(deployments, ard.StringMap{
 					"id":       deploymentInfo.DeploymentID,
 					"template": deploymentInfo.TemplateID,
 					"parent":   deploymentInfo.ParentDeploymentID,
@@ -26,12 +27,15 @@ func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Re
 					"approved": deploymentInfo.Approved,
 					"metadata": deploymentInfo.Metadata,
 				})
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				writer.WriteHeader(500)
+				return
 			}
 		}
-		sortById(deployments_)
-		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(deployments_)
+		sortById(deployments)
+		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(deployments)
 	} else {
 		writer.WriteHeader(500)
 	}

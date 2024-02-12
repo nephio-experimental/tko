@@ -1,6 +1,8 @@
 package metascheduling
 
 import (
+	contextpkg "context"
+
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
@@ -10,7 +12,9 @@ func (self *MetaScheduling) ScheduleSites() error {
 	//self.Log.Notice("scheduling sites")
 	if siteInfos, err := self.Client.ListSites(nil, nil, nil); err == nil {
 		for _, siteInfo := range siteInfos {
-			self.ScheduleSite(siteInfo)
+			context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+			self.ScheduleSite(context, siteInfo)
+			cancel()
 		}
 		return nil
 	} else {
@@ -18,14 +22,14 @@ func (self *MetaScheduling) ScheduleSites() error {
 	}
 }
 
-func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
+func (self *MetaScheduling) ScheduleSite(context contextpkg.Context, siteInfo client.SiteInfo) {
 	log := commonlog.NewKeyValueLogger(self.Log,
 		"site", siteInfo.SiteID)
 
 	log.Notice("scheduling site")
 	if site, ok, err := self.Client.GetSite(siteInfo.SiteID); err == nil {
 		if ok {
-			self.scheduleSite(siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)
+			self.scheduleSite(context, siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)
 		} else {
 			log.Info("site disappeared")
 		}
@@ -34,7 +38,7 @@ func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 	}
 }
 
-func (self *MetaScheduling) scheduleSite(siteId string, siteResources util.Resources, deploymentIds []string, log commonlog.Logger) {
+func (self *MetaScheduling) scheduleSite(context contextpkg.Context, siteId string, siteResources util.Resources, deploymentIds []string, log commonlog.Logger) {
 	for _, resource := range siteResources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 			if schedule, ok, err := self.GetScheduler(resourceIdentifier.GVK); err == nil {
@@ -51,7 +55,7 @@ func (self *MetaScheduling) scheduleSite(siteId string, siteResources util.Resou
 					}
 
 					schedulingContext := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
-					if err := schedule(schedulingContext); err != nil {
+					if err := schedule(context, schedulingContext); err != nil {
 						log.Error(err.Error())
 					}
 				}

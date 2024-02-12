@@ -17,12 +17,12 @@ func init() {
 	deploymentCommand.AddCommand(deploymentCreateCommand)
 
 	deploymentCreateCommand.Flags().StringToStringVarP(&deploymentMetadata, "mergeable metadata", "m", nil, "metadata")
-	deploymentCreateCommand.Flags().StringVarP(&mergeUrl, "merge", "", "", "URL for mergeable YAML content (can be a local directory or file)")
+	deploymentCreateCommand.Flags().StringVar(&mergeUrl, "merge", "", "URL for mergeable YAML content (can be a local directory or file)")
 	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable YAML content from stdin")
 	deploymentCreateCommand.Flags().StringVar(&parentDeploymentId, "parent", "", "parent deployment ID")
 	deploymentCreateCommand.Flags().StringVarP(&siteId, "site", "s", "", "deployment site ID")
-	deploymentCreateCommand.Flags().BoolVarP(&prepared, "prepared", "", false, "mark deployment as prepared")
-	deploymentCreateCommand.Flags().BoolVarP(&approved, "approved", "", false, "mark deployment as approved")
+	deploymentCreateCommand.Flags().BoolVar(&prepared, "prepared", false, "mark deployment as prepared")
+	deploymentCreateCommand.Flags().BoolVar(&approved, "approved", false, "mark deployment as approved")
 }
 
 var deploymentCreateCommand = &cobra.Command{

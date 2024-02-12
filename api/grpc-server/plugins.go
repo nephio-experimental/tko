@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
@@ -63,7 +64,7 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 
 	if pluginStream, err := self.Backend.ListPlugins(server.Context()); err == nil {
 		for {
-			if plugin, ok := pluginStream.Next(); ok {
+			if plugin, err := pluginStream.Next(); err == nil {
 				if err := server.Send(&api.ListPluginsResponse{
 					Type:       plugin.Type,
 					Group:      plugin.Group,
@@ -75,8 +76,10 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 				}); err != nil {
 					return err
 				}
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				return ToGRPCError(err)
 			}
 		}
 	} else {

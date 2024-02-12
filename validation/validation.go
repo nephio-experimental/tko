@@ -3,8 +3,9 @@ package validation
 import (
 	"os"
 	"path/filepath"
+	"time"
 
-	client "github.com/nephio-experimental/tko/api/grpc-client"
+	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	validatorpkg "github.com/yannh/kubeconform/pkg/validator"
@@ -15,14 +16,15 @@ import (
 //
 
 type Validation struct {
-	Client *client.Client
-	Log    commonlog.Logger
+	Client  *clientpkg.Client
+	Timeout time.Duration
+	Log     commonlog.Logger
 
 	validators  map[util.GVK]ValidatorFunc
 	kubeconform validatorpkg.Validator
 }
 
-func NewValidation(client_ *client.Client, log commonlog.Logger) (*Validation, error) {
+func NewValidation(client *clientpkg.Client, timeout time.Duration, log commonlog.Logger) (*Validation, error) {
 	cache := filepath.Join(os.TempDir(), "tko-validation-cache")
 	if err := os.MkdirAll(cache, 0700); err != nil {
 		return nil, err
@@ -39,7 +41,8 @@ func NewValidation(client_ *client.Client, log commonlog.Logger) (*Validation, e
 	}
 
 	return &Validation{
-		Client:      client_,
+		Client:      client,
+		Timeout:     timeout,
 		Log:         log,
 		validators:  make(map[util.GVK]ValidatorFunc),
 		kubeconform: kubeconform,

@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"io"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
@@ -84,7 +85,7 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 		Approved:                 listDeployments.Approved,
 	}); err == nil {
 		for {
-			if deploymentInfo, ok := deploymentInfoStream.Next(); ok {
+			if deploymentInfo, err := deploymentInfoStream.Next(); err == nil {
 				if err := server.Send(&api.ListDeploymentsResponse{
 					DeploymentId:       deploymentInfo.DeploymentID,
 					ParentDeploymentId: deploymentInfo.ParentDeploymentID,
@@ -96,8 +97,10 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 				}); err != nil {
 					return err
 				}
-			} else {
+			} else if err == io.EOF {
 				break
+			} else {
+				return ToGRPCError(err)
 			}
 		}
 	} else {

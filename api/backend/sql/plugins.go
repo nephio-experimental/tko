@@ -76,44 +76,53 @@ func (self *SQLBackend) DeletePlugin(context contextpkg.Context, pluginId backen
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListPlugins(context contextpkg.Context) (backend.PluginStream, error) {
+func (self *SQLBackend) ListPlugins(context contextpkg.Context) (backend.Results[backend.Plugin], error) {
 	rows, err := self.statements.PreparedSelectPlugins.QueryContext(context)
 	if err != nil {
 		return nil, err
 	}
-	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
-	var plugins []backend.Plugin
-	for rows.Next() {
-		var type_, group, version, kind, executor string
-		var argumentsJson, propertiesJson []byte
-		if err := rows.Scan(&type_, &group, &version, &kind, &executor, &argumentsJson, &propertiesJson); err == nil {
-			plugin := backend.Plugin{
-				PluginID: backend.PluginID{
-					Type: type_,
-					GVK: util.GVK{
-						Group:   group,
-						Version: version,
-						Kind:    kind,
+	stream := backend.NewResultsStream[backend.Plugin]()
+
+	go func() {
+		defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
+
+		for rows.Next() {
+			var type_, group, version, kind, executor string
+			var argumentsJson, propertiesJson []byte
+			if err := rows.Scan(&type_, &group, &version, &kind, &executor, &argumentsJson, &propertiesJson); err == nil {
+				plugin := backend.Plugin{
+					PluginID: backend.PluginID{
+						Type: type_,
+						GVK: util.GVK{
+							Group:   group,
+							Version: version,
+							Kind:    kind,
+						},
 					},
-				},
-				Executor:   executor,
-				Properties: make(map[string]string),
-			}
+					Executor:   executor,
+					Properties: make(map[string]string),
+				}
 
-			if err := jsonUnmarshallArray(argumentsJson, &plugin.Arguments); err != nil {
-				return nil, err
-			}
+				if err := jsonUnmarshallArray(argumentsJson, &plugin.Arguments); err != nil {
+					stream.Close(err)
+					return
+				}
 
-			if err := jsonUnmarshallMap(propertiesJson, plugin.Properties); err != nil {
-				return nil, err
-			}
+				if err := jsonUnmarshallMap(propertiesJson, plugin.Properties); err != nil {
+					stream.Close(err)
+					return
+				}
 
-			plugins = append(plugins, plugin)
-		} else {
-			return nil, err
+				stream.Send(plugin)
+			} else {
+				stream.Close(err)
+				return
+			}
 		}
-	}
 
-	return backend.NewPluginSliceStream(plugins), nil
+		stream.Close(nil)
+	}()
+
+	return stream, nil
 }

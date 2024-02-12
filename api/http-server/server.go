@@ -29,10 +29,10 @@ type Server struct {
 	mux         *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, ipStack util.IPStack, address string, port int, log commonlog.Logger) (*Server, error) {
+func NewServer(backend backend.Backend, backendTimeout time.Duration, ipStack util.IPStack, address string, port int, log commonlog.Logger) (*Server, error) {
 	self := Server{
 		Backend:        backend,
-		BackendTimeout: 5 * time.Second,
+		BackendTimeout: backendTimeout,
 		IPStack:        ipStack,
 		Address:        address,
 		Port:           port,

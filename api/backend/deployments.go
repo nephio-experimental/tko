@@ -2,7 +2,6 @@ package backend
 
 import (
 	"github.com/nephio-experimental/tko/util"
-	"github.com/segmentio/ksuid"
 	"github.com/tliron/go-ard"
 )
 
@@ -72,34 +71,6 @@ func (self *DeploymentInfo) NewDeploymentResource() util.Resource {
 }
 
 //
-// DeploymentInfoSliceStream
-//
-
-type DeploymentInfoSliceStream struct {
-	deploymentInfos []DeploymentInfo
-	length          int
-	index           int
-}
-
-func NewDeploymentInfoSliceStream(deploymentInfos []DeploymentInfo) *DeploymentInfoSliceStream {
-	return &DeploymentInfoSliceStream{
-		deploymentInfos: deploymentInfos,
-		length:          len(deploymentInfos),
-	}
-}
-
-// ([DeploymentInfoStream] interface)
-func (self *DeploymentInfoSliceStream) Next() (DeploymentInfo, bool) {
-	if self.index < self.length {
-		deploymentInfo := self.deploymentInfos[self.index]
-		self.index++
-		return deploymentInfo, true
-	} else {
-		return DeploymentInfo{}, false
-	}
-}
-
-//
 // Deployment
 //
 
@@ -111,7 +82,7 @@ type Deployment struct {
 func NewDeployment(templateId string, parentDemploymentId string, siteId string, metadata map[string]string, prepared bool, approved bool, resources util.Resources) *Deployment {
 	return &Deployment{
 		DeploymentInfo: DeploymentInfo{
-			DeploymentID:       ksuid.New().String(),
+			DeploymentID:       NewID(),
 			ParentDeploymentID: parentDemploymentId,
 			TemplateID:         templateId,
 			SiteID:             siteId,
@@ -127,7 +98,7 @@ func NewDeploymentFromBytes(templateId string, parentDemploymentId string, siteI
 	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
 		return &Deployment{
 			DeploymentInfo: DeploymentInfo{
-				DeploymentID:       ksuid.New().String(),
+				DeploymentID:       NewID(),
 				TemplateID:         templateId,
 				ParentDeploymentID: parentDemploymentId,
 				SiteID:             siteId,
