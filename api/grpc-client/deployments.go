@@ -4,10 +4,10 @@ import (
 	contextpkg "context"
 	"errors"
 	"fmt"
-	"io"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 type DeploymentInfo struct {
@@ -22,10 +22,10 @@ type DeploymentInfo struct {
 
 type Deployment struct {
 	DeploymentInfo
-	Resources util.Resources `json:"resources" yaml:"resources"`
+	Resources tkoutil.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) CreateDeployment(parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, mergeResources util.Resources) (bool, string, string, error) {
+func (self *Client) CreateDeployment(parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, mergeResources tkoutil.Resources) (bool, string, string, error) {
 	if mergeResources_, err := self.encodeResources(mergeResources); err == nil {
 		return self.CreateDeploymentRaw(parentDeploymentId, templateId, siteId, mergeMetadata, prepared, approved, self.ResourcesFormat, mergeResources_)
 	} else {
@@ -65,7 +65,7 @@ func (self *Client) GetDeployment(deploymentId string) (Deployment, bool, error)
 
 		self.log.Info("getDeployment")
 		if deployment, err := apiClient.GetDeployment(context, &api.GetDeployment{DeploymentId: deploymentId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-			if resources, err := util.DecodeResources(deployment.ResourcesFormat, deployment.Resources); err == nil {
+			if resources, err := tkoutil.DecodeResources(deployment.ResourcesFormat, deployment.Resources); err == nil {
 				return Deployment{
 					DeploymentInfo: DeploymentInfo{
 						DeploymentID: deployment.DeploymentId,
@@ -96,7 +96,7 @@ func (self *Client) DeleteDeployment(deploymentId string) (bool, string, error) 
 		defer cancel()
 
 		self.log.Info("deleteDeployment")
-		if response, err := apiClient.DeleteDeployment(context, &api.DeleteDeployment{DeploymentId: deploymentId}); err == nil {
+		if response, err := apiClient.DeleteDeployment(context, &api.DeploymentID{DeploymentId: deploymentId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
 			return false, "", err
@@ -106,42 +106,56 @@ func (self *Client) DeleteDeployment(deploymentId string) (bool, string, error) 
 	}
 }
 
-func (self *Client) ListDeployments(parentDeploymentId *string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string, prepared *bool, approved *bool) ([]DeploymentInfo, error) {
+type ListDeployments struct {
+	ParentDeploymentID       *string
+	TemplateIDPatterns       []string
+	TemplateMetadataPatterns map[string]string
+	SiteIDPatterns           []string
+	SiteMetadataPatterns     map[string]string
+	MetadataPatterns         map[string]string
+	Prepared                 *bool
+	Approved                 *bool
+}
+
+func (self *Client) ListDeployments(listDeployments ListDeployments) (util.Results[DeploymentInfo], error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-		defer cancel()
 
 		self.log.Info("listDeployments")
 		if client, err := apiClient.ListDeployments(context, &api.ListDeployments{
-			ParentDeploymentId:       parentDeploymentId,
-			TemplateIdPatterns:       templateIdPatterns,
-			TemplateMetadataPatterns: templateMetadataPatterns,
-			SiteIdPatterns:           siteIdPatterns,
-			SiteMetadataPatterns:     siteMetadataPatterns,
-			MetadataPatterns:         metadataPatterns,
-			Prepared:                 prepared,
-			Approved:                 approved,
+			ParentDeploymentId:       listDeployments.ParentDeploymentID,
+			TemplateIdPatterns:       listDeployments.TemplateIDPatterns,
+			TemplateMetadataPatterns: listDeployments.TemplateMetadataPatterns,
+			SiteIdPatterns:           listDeployments.SiteIDPatterns,
+			SiteMetadataPatterns:     listDeployments.SiteMetadataPatterns,
+			MetadataPatterns:         listDeployments.MetadataPatterns,
+			Prepared:                 listDeployments.Prepared,
+			Approved:                 listDeployments.Approved,
 		}); err == nil {
-			var deploymentInfos []DeploymentInfo
-			for {
-				if response, err := client.Recv(); err == nil {
-					deploymentInfos = append(deploymentInfos, DeploymentInfo{
-						DeploymentID:       response.DeploymentId,
-						ParentDeploymentID: response.ParentDeploymentId,
-						TemplateID:         response.TemplateId,
-						SiteID:             response.SiteId,
-						Metadata:           response.Metadata,
-						Prepared:           response.Prepared,
-						Approved:           response.Approved,
-					})
-				} else if err == io.EOF {
-					break
-				} else {
-					return nil, err
+			stream := util.NewResultsStream[DeploymentInfo](cancel)
+
+			go func() {
+				for {
+					if response, err := client.Recv(); err == nil {
+						stream.Send(DeploymentInfo{
+							DeploymentID:       response.DeploymentId,
+							ParentDeploymentID: response.ParentDeploymentId,
+							TemplateID:         response.TemplateId,
+							SiteID:             response.SiteId,
+							Metadata:           response.Metadata,
+							Prepared:           response.Prepared,
+							Approved:           response.Approved,
+						})
+					} else {
+						stream.Close(err) // special handling for io.EOF
+						return
+					}
 				}
-			}
-			return deploymentInfos, nil
+			}()
+
+			return stream, nil
 		} else {
+			cancel()
 			return nil, err
 		}
 	} else {
@@ -149,14 +163,14 @@ func (self *Client) ListDeployments(parentDeploymentId *string, templateIdPatter
 	}
 }
 
-func (self *Client) StartDeploymentModification(deploymentId string) (bool, string, string, util.Resources, error) {
+func (self *Client) StartDeploymentModification(deploymentId string) (bool, string, string, tkoutil.Resources, error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
 		self.log.Info("startDeploymentModification")
 		if response, err := apiClient.StartDeploymentModification(context, &api.StartDeploymentModification{DeploymentId: deploymentId}); err == nil {
-			if resources, err := util.DecodeResources(response.ResourcesFormat, response.Resources); err == nil {
+			if resources, err := tkoutil.DecodeResources(response.ResourcesFormat, response.Resources); err == nil {
 				return response.Started, response.NotStartedReason, response.ModificationToken, resources, nil
 			} else {
 				return false, "", "", nil, err
@@ -169,7 +183,7 @@ func (self *Client) StartDeploymentModification(deploymentId string) (bool, stri
 	}
 }
 
-func (self *Client) EndDeploymentModification(modificationToken string, resources util.Resources) (bool, string, string, error) {
+func (self *Client) EndDeploymentModification(modificationToken string, resources tkoutil.Resources) (bool, string, string, error) {
 	if resources_, err := self.encodeResources(resources); err == nil {
 		return self.EndDeploymentModificationRaw(modificationToken, self.ResourcesFormat, resources_)
 	} else {
@@ -213,7 +227,7 @@ func (self *Client) CancelDeploymentModification(modificationToken string) (bool
 	}
 }
 
-type ModifyDeploymentFunc func(resources util.Resources) (bool, util.Resources, error)
+type ModifyDeploymentFunc func(resources tkoutil.Resources) (bool, tkoutil.Resources, error)
 
 func (self *Client) ModifyDeployment(deploymentId string, modify ModifyDeploymentFunc) (bool, error) {
 	if started, reason, modificationToken, resources, err := self.StartDeploymentModification(deploymentId); err == nil {

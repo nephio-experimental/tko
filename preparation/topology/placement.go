@@ -5,22 +5,24 @@ import (
 	"errors"
 	"fmt"
 
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/preparation"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
+	"github.com/tliron/kutil/util"
 )
 
-var PlacementGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Placement")
+var PlacementGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Placement")
 
 type Deployment struct {
 	TemplateID     string
-	MergeResources util.Resources
+	MergeResources tkoutil.Resources
 	SiteID         string
-	Site           util.Resource
+	Site           tkoutil.Resource
 }
 
 // ([preparation.PrepareFunc] signature)
-func PreparePlacement(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
+func PreparePlacement(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Resources, error) {
 	preparationContext.Log.Info("preparing topology.nephio.org Placement",
 		"resource", preparationContext.TargetResourceIdentifer)
 
@@ -60,10 +62,15 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 								for key, value := range metadata {
 									metadataPatterns[key.(string)] = value.(string)
 								}
-								if siteInfos, err := preparationContext.Preparation.Client.ListSites(nil, nil, metadataPatterns); err == nil {
-									for _, siteInfo := range siteInfos {
+								if siteInfos, err := preparationContext.Preparation.Client.ListSites(client.ListSites{MetadataPatterns: metadataPatterns}); err == nil {
+									if err := util.IterateResults(siteInfos, func(siteInfo client.SiteInfo) error {
 										deployments = append(deployments, Deployment{templateId, mergeResources, siteInfo.SiteID, nil})
+										return nil
+									}); err != nil {
+										return false, nil, err
 									}
+								} else {
+									return false, nil, err
 								}
 							}
 						}
@@ -91,7 +98,7 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 				}
 			}
 
-			if !util.SetPreparedAnnotation(placement, true) {
+			if !tkoutil.SetPreparedAnnotation(placement, true) {
 				return false, nil, errors.New("malformed Placement resource")
 			}
 		}
@@ -102,7 +109,7 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 	return false, nil, nil
 }
 
-func AppendStatusDeploymentID(resource util.Resource, deploymentId string) {
+func AppendStatusDeploymentID(resource tkoutil.Resource, deploymentId string) {
 	var status ard.Map
 	var ok bool
 	if status, ok = ard.With(resource).Get("status").Map(); !ok {

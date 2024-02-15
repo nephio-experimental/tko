@@ -6,16 +6,16 @@ import (
 	"github.com/tliron/go-ard"
 )
 
+type Resource = ard.Map
+
+type Resources = []Resource
+
 var DeploymentGVK = NewGVK("deployment.nephio.org", "v1alpha1", "Deployment")
 
 var DeploymentResourceIdentifier = DeploymentGVK.NewResourceIdentifier("deployment")
 
-func CopyResources(resources Resources) Resources {
-	copy := make(Resources, len(resources))
-	for index, resource := range resources {
-		copy[index] = ard.Copy(resource).(Resource)
-	}
-	return copy
+func CloneResources(resources Resources) Resources {
+	return ard.Copy(resources).(Resources)
 }
 
 func GetReferentResources(objectReferences ard.List, resources Resources) (Resources, error) {

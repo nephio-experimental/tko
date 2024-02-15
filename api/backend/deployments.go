@@ -25,21 +25,16 @@ func (self *DeploymentInfo) Clone() DeploymentInfo {
 		ParentDeploymentID: self.ParentDeploymentID,
 		TemplateID:         self.TemplateID,
 		SiteID:             self.SiteID,
-		Metadata:           cloneMetadata(self.Metadata),
+		Metadata:           util.CloneStringMap(self.Metadata),
 		Prepared:           self.Prepared,
 		Approved:           self.Approved,
 	}
 }
 
-func (self *DeploymentInfo) Update(resources util.Resources, reset bool) {
-	if reset {
-		self.TemplateID = ""
-		self.SiteID = ""
-		self.Prepared = false
-		self.Approved = false
+func (self *DeploymentInfo) UpdateFromResources(resources util.Resources, withMetadata bool) {
+	if withMetadata {
+		updateMetadataFromResources(self.Metadata, resources)
 	}
-
-	updateMetadata(self.Metadata, resources)
 
 	if deployment, ok := util.DeploymentResourceIdentifier.GetResource(resources); ok {
 		self.Prepared = util.IsPreparedAnnotation(deployment)
@@ -55,14 +50,16 @@ func (self *DeploymentInfo) Update(resources util.Resources, reset bool) {
 }
 
 func (self *DeploymentInfo) MergeTemplateInfo(templateInfo *TemplateInfo) {
-	// Merge metadata
 	metadata := make(map[string]string)
+
 	for key, value := range templateInfo.Metadata {
 		metadata[key] = value
 	}
+
 	for key, value := range self.Metadata {
 		metadata[key] = value
 	}
+
 	self.Metadata = metadata
 }
 
@@ -113,10 +110,16 @@ func NewDeploymentFromBytes(templateId string, parentDemploymentId string, siteI
 	}
 }
 
-func (self *Deployment) Clone() *Deployment {
-	return &Deployment{
-		DeploymentInfo: self.DeploymentInfo.Clone(),
-		Resources:      cloneResources(self.Resources),
+func (self *Deployment) Clone(withResources bool) *Deployment {
+	if withResources {
+		return &Deployment{
+			DeploymentInfo: self.DeploymentInfo.Clone(),
+			Resources:      util.CloneResources(self.Resources),
+		}
+	} else {
+		return &Deployment{
+			DeploymentInfo: self.DeploymentInfo.Clone(),
+		}
 	}
 }
 
@@ -124,18 +127,15 @@ func (self *Deployment) EncodeResources(format string) ([]byte, error) {
 	return util.EncodeResources(format, self.Resources)
 }
 
-func (self *Deployment) Update(reset bool) {
-	self.DeploymentInfo.Update(self.Resources, reset)
+func (self *Deployment) UpdateFromResources(withMetadata bool) {
+	self.DeploymentInfo.UpdateFromResources(self.Resources, withMetadata)
 }
 
 func (self *Deployment) MergeTemplate(template *Template) {
 	self.MergeTemplateInfo(&template.TemplateInfo)
 
-	// Merge our resources over template resources
-	resources := util.CopyResources(template.Resources)
+	resources := util.CloneResources(template.Resources)
 	resources = util.MergeResources(resources, self.Resources...)
-
-	// Merge default Deployment resource
 	resources = util.MergeResources(resources, self.NewDeploymentResource())
 
 	self.Resources = resources

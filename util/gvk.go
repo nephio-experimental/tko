@@ -65,6 +65,10 @@ func (self GVK) String() string {
 	return "apiVersion: " + self.APIVersion() + ", kind: " + self.Kind
 }
 
+func (self GVK) ShortString() string {
+	return self.APIVersion() + ", " + self.Kind
+}
+
 // Utils
 
 func ParseApiVersion(apiVersion string) (string, string) {

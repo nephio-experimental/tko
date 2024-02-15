@@ -1,7 +1,9 @@
 package commands
 
 import (
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/spf13/cobra"
+	"github.com/tliron/kutil/util"
 )
 
 var preparedFilter string
@@ -29,24 +31,25 @@ var deploymentListCommand = &cobra.Command{
 	},
 }
 
+var trueBool = true
+var falseBool = false
+
 func ListDeployments(parentDemploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string, preparedFilter string, approvedFilter string) {
-	true_ := true
-	false_ := false
 
 	var prepared *bool
 	switch preparedFilter {
 	case "true":
-		prepared = &true_
+		prepared = &trueBool
 	case "false":
-		prepared = &false_
+		prepared = &falseBool
 	}
 
 	var approved *bool
 	switch approvedFilter {
 	case "true":
-		approved = &true_
+		approved = &trueBool
 	case "false":
-		approved = &false_
+		approved = &falseBool
 	}
 
 	var parentDemploymentId_ *string
@@ -54,7 +57,18 @@ func ListDeployments(parentDemploymentId string, templateIdPatterns []string, te
 		parentDemploymentId_ = &parentDemploymentId
 	}
 
-	deploymentInfos, err := NewClient().ListDeployments(parentDemploymentId_, templateIdPatterns, templateMetadataPatterns, siteIdPatterns, siteMetadataPatterns, metadataPatterns, prepared, approved)
+	deploymentInfos, err := NewClient().ListDeployments(client.ListDeployments{
+		ParentDeploymentID:       parentDemploymentId_,
+		TemplateIDPatterns:       templateIdPatterns,
+		TemplateMetadataPatterns: templateMetadataPatterns,
+		SiteIDPatterns:           siteIdPatterns,
+		SiteMetadataPatterns:     siteMetadataPatterns,
+		MetadataPatterns:         metadataPatterns,
+		Prepared:                 prepared,
+		Approved:                 approved,
+	})
 	FailOnGRPCError(err)
-	Print(deploymentInfos)
+	deploymentInfos_, err := util.GatherResults(deploymentInfos)
+	util.FailOnError(err)
+	Print(deploymentInfos_)
 }

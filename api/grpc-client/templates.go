@@ -2,10 +2,10 @@ package client
 
 import (
 	contextpkg "context"
-	"io"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 type TemplateInfo struct {
@@ -16,10 +16,10 @@ type TemplateInfo struct {
 
 type Template struct {
 	TemplateInfo
-	Resources util.Resources `json:"resources" yaml:"resources"`
+	Resources tkoutil.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) RegisterTemplate(templateId string, metadata map[string]string, resources util.Resources) (bool, string, error) {
+func (self *Client) RegisterTemplate(templateId string, metadata map[string]string, resources tkoutil.Resources) (bool, string, error) {
 	if resources_, err := self.encodeResources(resources); err == nil {
 		return self.RegisterTemplateRaw(templateId, metadata, self.ResourcesFormat, resources_)
 	} else {
@@ -55,7 +55,7 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 
 		self.log.Info("getTemplate")
 		if template, err := apiClient.GetTemplate(context, &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-			if resources, err := util.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
+			if resources, err := tkoutil.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
 				return Template{
 					TemplateInfo: TemplateInfo{
 						TemplateID:    template.TemplateId,
@@ -83,7 +83,7 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 		defer cancel()
 
 		self.log.Info("deleteTemplate")
-		if response, err := apiClient.DeleteTemplate(context, &api.DeleteTemplate{TemplateId: templateId}); err == nil {
+		if response, err := apiClient.DeleteTemplate(context, &api.TemplateID{TemplateId: templateId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
 			return false, "", err
@@ -93,32 +93,40 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 	}
 }
 
-func (self *Client) ListTemplates(templateIdPatterns []string, metadataPatterns map[string]string) ([]TemplateInfo, error) {
+type ListTemplates struct {
+	TemplateIDPatterns []string
+	MetadataPatterns   map[string]string
+}
+
+func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-		defer cancel()
 
 		self.log.Info("listTemplates")
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
-			TemplateIdPatterns: templateIdPatterns,
-			MetadataPatterns:   metadataPatterns,
+			TemplateIdPatterns: listTemplates.TemplateIDPatterns,
+			MetadataPatterns:   listTemplates.MetadataPatterns,
 		}); err == nil {
-			var templateInfos []TemplateInfo
-			for {
-				if response, err := client.Recv(); err == nil {
-					templateInfos = append(templateInfos, TemplateInfo{
-						TemplateID:    response.TemplateId,
-						Metadata:      response.Metadata,
-						DeploymentIDs: response.DeploymentIds,
-					})
-				} else if err == io.EOF {
-					break
-				} else {
-					return nil, err
+			stream := util.NewResultsStream[TemplateInfo](cancel)
+
+			go func() {
+				for {
+					if response, err := client.Recv(); err == nil {
+						stream.Send(TemplateInfo{
+							TemplateID:    response.TemplateId,
+							Metadata:      response.Metadata,
+							DeploymentIDs: response.DeploymentIds,
+						})
+					} else {
+						stream.Close(err) // special handling for io.EOF
+						return
+					}
 				}
-			}
-			return templateInfos, nil
+			}()
+
+			return stream, nil
 		} else {
+			cancel()
 			return nil, err
 		}
 	} else {

@@ -14,16 +14,23 @@ type TemplateInfo struct {
 	DeploymentIDs []string
 }
 
-func (self *TemplateInfo) Clone() TemplateInfo {
-	return TemplateInfo{
-		TemplateID:    self.TemplateID,
-		Metadata:      cloneMetadata(self.Metadata),
-		DeploymentIDs: util.StringSetClone(self.DeploymentIDs),
+func (self *TemplateInfo) Clone(withDeployments bool) TemplateInfo {
+	if withDeployments {
+		return TemplateInfo{
+			TemplateID:    self.TemplateID,
+			Metadata:      util.CloneStringMap(self.Metadata),
+			DeploymentIDs: util.CloneStringSet(self.DeploymentIDs),
+		}
+	} else {
+		return TemplateInfo{
+			TemplateID: self.TemplateID,
+			Metadata:   util.CloneStringMap(self.Metadata),
+		}
 	}
 }
 
-func (self *TemplateInfo) Update(resources util.Resources) {
-	updateMetadata(self.Metadata, resources)
+func (self *TemplateInfo) UpdateFromResources(resources util.Resources) {
+	updateMetadataFromResources(self.Metadata, resources)
 }
 
 //
@@ -49,15 +56,15 @@ func NewTemplateFromBytes(templateId string, metadata map[string]string, resourc
 	}
 }
 
-func (self *Template) Clone() *Template {
+func (self *Template) Clone(withDeployments bool) *Template {
 	return &Template{
-		TemplateInfo: self.TemplateInfo.Clone(),
-		Resources:    cloneResources(self.Resources),
+		TemplateInfo: self.TemplateInfo.Clone(withDeployments),
+		Resources:    util.CloneResources(self.Resources),
 	}
 }
 
-func (self *Template) Update() {
-	self.TemplateInfo.Update(self.Resources)
+func (self *Template) UpdateFromResources() {
+	self.TemplateInfo.UpdateFromResources(self.Resources)
 }
 
 func (self *Template) EncodeResources(format string) ([]byte, error) {
@@ -66,12 +73,12 @@ func (self *Template) EncodeResources(format string) ([]byte, error) {
 
 func (self *Template) AddDeployment(deploymentId string) bool {
 	var ok bool
-	self.DeploymentIDs, ok = util.StringSetAdd(self.DeploymentIDs, deploymentId)
+	self.DeploymentIDs, ok = util.AddToStringSet(self.DeploymentIDs, deploymentId)
 	return ok
 }
 
 func (self *Template) RemoveDeployment(deploymentId string) bool {
 	var ok bool
-	self.DeploymentIDs, ok = util.StringSetRemove(self.DeploymentIDs, deploymentId)
+	self.DeploymentIDs, ok = util.RemoveFromStringSet(self.DeploymentIDs, deploymentId)
 	return ok
 }

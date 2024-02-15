@@ -45,23 +45,23 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
 	RegisterTemplate(ctx context.Context, in *Template, opts ...grpc.CallOption) (*RegisterResponse, error)
-	DeleteTemplate(ctx context.Context, in *DeleteTemplate, opts ...grpc.CallOption) (*DeleteResponse, error)
+	DeleteTemplate(ctx context.Context, in *TemplateID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetTemplate(ctx context.Context, in *GetTemplate, opts ...grpc.CallOption) (*Template, error)
 	ListTemplates(ctx context.Context, in *ListTemplates, opts ...grpc.CallOption) (API_ListTemplatesClient, error)
 	RegisterSite(ctx context.Context, in *Site, opts ...grpc.CallOption) (*RegisterResponse, error)
-	DeleteSite(ctx context.Context, in *DeleteSite, opts ...grpc.CallOption) (*DeleteResponse, error)
+	DeleteSite(ctx context.Context, in *SiteID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetSite(ctx context.Context, in *GetSite, opts ...grpc.CallOption) (*Site, error)
 	ListSites(ctx context.Context, in *ListSites, opts ...grpc.CallOption) (API_ListSitesClient, error)
 	CreateDeployment(ctx context.Context, in *CreateDeployment, opts ...grpc.CallOption) (*CreateDeploymentResponse, error)
-	DeleteDeployment(ctx context.Context, in *DeleteDeployment, opts ...grpc.CallOption) (*DeleteResponse, error)
+	DeleteDeployment(ctx context.Context, in *DeploymentID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetDeployment(ctx context.Context, in *GetDeployment, opts ...grpc.CallOption) (*Deployment, error)
 	ListDeployments(ctx context.Context, in *ListDeployments, opts ...grpc.CallOption) (API_ListDeploymentsClient, error)
 	StartDeploymentModification(ctx context.Context, in *StartDeploymentModification, opts ...grpc.CallOption) (*StartDeploymentModificationResponse, error)
 	EndDeploymentModification(ctx context.Context, in *EndDeploymentModification, opts ...grpc.CallOption) (*EndDeploymentModificationResponse, error)
 	CancelDeploymentModification(ctx context.Context, in *CancelDeploymentModification, opts ...grpc.CallOption) (*CancelDeploymentModificationResponse, error)
 	RegisterPlugin(ctx context.Context, in *Plugin, opts ...grpc.CallOption) (*RegisterResponse, error)
-	DeletePlugin(ctx context.Context, in *DeletePlugin, opts ...grpc.CallOption) (*DeleteResponse, error)
-	GetPlugin(ctx context.Context, in *GetPlugin, opts ...grpc.CallOption) (*Plugin, error)
+	DeletePlugin(ctx context.Context, in *PluginID, opts ...grpc.CallOption) (*DeleteResponse, error)
+	GetPlugin(ctx context.Context, in *PluginID, opts ...grpc.CallOption) (*Plugin, error)
 	ListPlugins(ctx context.Context, in *ListPlugins, opts ...grpc.CallOption) (API_ListPluginsClient, error)
 }
 
@@ -82,7 +82,7 @@ func (c *aPIClient) RegisterTemplate(ctx context.Context, in *Template, opts ...
 	return out, nil
 }
 
-func (c *aPIClient) DeleteTemplate(ctx context.Context, in *DeleteTemplate, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *aPIClient) DeleteTemplate(ctx context.Context, in *TemplateID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, API_DeleteTemplate_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *aPIClient) ListTemplates(ctx context.Context, in *ListTemplates, opts .
 }
 
 type API_ListTemplatesClient interface {
-	Recv() (*ListTemplatesResponse, error)
+	Recv() (*ListedTemplate, error)
 	grpc.ClientStream
 }
 
@@ -124,8 +124,8 @@ type aPIListTemplatesClient struct {
 	grpc.ClientStream
 }
 
-func (x *aPIListTemplatesClient) Recv() (*ListTemplatesResponse, error) {
-	m := new(ListTemplatesResponse)
+func (x *aPIListTemplatesClient) Recv() (*ListedTemplate, error) {
+	m := new(ListedTemplate)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (c *aPIClient) RegisterSite(ctx context.Context, in *Site, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *aPIClient) DeleteSite(ctx context.Context, in *DeleteSite, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *aPIClient) DeleteSite(ctx context.Context, in *SiteID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, API_DeleteSite_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -175,7 +175,7 @@ func (c *aPIClient) ListSites(ctx context.Context, in *ListSites, opts ...grpc.C
 }
 
 type API_ListSitesClient interface {
-	Recv() (*ListSitesResponse, error)
+	Recv() (*ListedSite, error)
 	grpc.ClientStream
 }
 
@@ -183,8 +183,8 @@ type aPIListSitesClient struct {
 	grpc.ClientStream
 }
 
-func (x *aPIListSitesClient) Recv() (*ListSitesResponse, error) {
-	m := new(ListSitesResponse)
+func (x *aPIListSitesClient) Recv() (*ListedSite, error) {
+	m := new(ListedSite)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (c *aPIClient) CreateDeployment(ctx context.Context, in *CreateDeployment, 
 	return out, nil
 }
 
-func (c *aPIClient) DeleteDeployment(ctx context.Context, in *DeleteDeployment, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *aPIClient) DeleteDeployment(ctx context.Context, in *DeploymentID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, API_DeleteDeployment_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -234,7 +234,7 @@ func (c *aPIClient) ListDeployments(ctx context.Context, in *ListDeployments, op
 }
 
 type API_ListDeploymentsClient interface {
-	Recv() (*ListDeploymentsResponse, error)
+	Recv() (*ListedDeployment, error)
 	grpc.ClientStream
 }
 
@@ -242,8 +242,8 @@ type aPIListDeploymentsClient struct {
 	grpc.ClientStream
 }
 
-func (x *aPIListDeploymentsClient) Recv() (*ListDeploymentsResponse, error) {
-	m := new(ListDeploymentsResponse)
+func (x *aPIListDeploymentsClient) Recv() (*ListedDeployment, error) {
+	m := new(ListedDeployment)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (c *aPIClient) RegisterPlugin(ctx context.Context, in *Plugin, opts ...grpc
 	return out, nil
 }
 
-func (c *aPIClient) DeletePlugin(ctx context.Context, in *DeletePlugin, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *aPIClient) DeletePlugin(ctx context.Context, in *PluginID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, API_DeletePlugin_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -295,7 +295,7 @@ func (c *aPIClient) DeletePlugin(ctx context.Context, in *DeletePlugin, opts ...
 	return out, nil
 }
 
-func (c *aPIClient) GetPlugin(ctx context.Context, in *GetPlugin, opts ...grpc.CallOption) (*Plugin, error) {
+func (c *aPIClient) GetPlugin(ctx context.Context, in *PluginID, opts ...grpc.CallOption) (*Plugin, error) {
 	out := new(Plugin)
 	err := c.cc.Invoke(ctx, API_GetPlugin_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -320,7 +320,7 @@ func (c *aPIClient) ListPlugins(ctx context.Context, in *ListPlugins, opts ...gr
 }
 
 type API_ListPluginsClient interface {
-	Recv() (*ListPluginsResponse, error)
+	Recv() (*Plugin, error)
 	grpc.ClientStream
 }
 
@@ -328,8 +328,8 @@ type aPIListPluginsClient struct {
 	grpc.ClientStream
 }
 
-func (x *aPIListPluginsClient) Recv() (*ListPluginsResponse, error) {
-	m := new(ListPluginsResponse)
+func (x *aPIListPluginsClient) Recv() (*Plugin, error) {
+	m := new(Plugin)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -341,23 +341,23 @@ func (x *aPIListPluginsClient) Recv() (*ListPluginsResponse, error) {
 // for forward compatibility
 type APIServer interface {
 	RegisterTemplate(context.Context, *Template) (*RegisterResponse, error)
-	DeleteTemplate(context.Context, *DeleteTemplate) (*DeleteResponse, error)
+	DeleteTemplate(context.Context, *TemplateID) (*DeleteResponse, error)
 	GetTemplate(context.Context, *GetTemplate) (*Template, error)
 	ListTemplates(*ListTemplates, API_ListTemplatesServer) error
 	RegisterSite(context.Context, *Site) (*RegisterResponse, error)
-	DeleteSite(context.Context, *DeleteSite) (*DeleteResponse, error)
+	DeleteSite(context.Context, *SiteID) (*DeleteResponse, error)
 	GetSite(context.Context, *GetSite) (*Site, error)
 	ListSites(*ListSites, API_ListSitesServer) error
 	CreateDeployment(context.Context, *CreateDeployment) (*CreateDeploymentResponse, error)
-	DeleteDeployment(context.Context, *DeleteDeployment) (*DeleteResponse, error)
+	DeleteDeployment(context.Context, *DeploymentID) (*DeleteResponse, error)
 	GetDeployment(context.Context, *GetDeployment) (*Deployment, error)
 	ListDeployments(*ListDeployments, API_ListDeploymentsServer) error
 	StartDeploymentModification(context.Context, *StartDeploymentModification) (*StartDeploymentModificationResponse, error)
 	EndDeploymentModification(context.Context, *EndDeploymentModification) (*EndDeploymentModificationResponse, error)
 	CancelDeploymentModification(context.Context, *CancelDeploymentModification) (*CancelDeploymentModificationResponse, error)
 	RegisterPlugin(context.Context, *Plugin) (*RegisterResponse, error)
-	DeletePlugin(context.Context, *DeletePlugin) (*DeleteResponse, error)
-	GetPlugin(context.Context, *GetPlugin) (*Plugin, error)
+	DeletePlugin(context.Context, *PluginID) (*DeleteResponse, error)
+	GetPlugin(context.Context, *PluginID) (*Plugin, error)
 	ListPlugins(*ListPlugins, API_ListPluginsServer) error
 	mustEmbedUnimplementedAPIServer()
 }
@@ -369,7 +369,7 @@ type UnimplementedAPIServer struct {
 func (UnimplementedAPIServer) RegisterTemplate(context.Context, *Template) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterTemplate not implemented")
 }
-func (UnimplementedAPIServer) DeleteTemplate(context.Context, *DeleteTemplate) (*DeleteResponse, error) {
+func (UnimplementedAPIServer) DeleteTemplate(context.Context, *TemplateID) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTemplate not implemented")
 }
 func (UnimplementedAPIServer) GetTemplate(context.Context, *GetTemplate) (*Template, error) {
@@ -381,7 +381,7 @@ func (UnimplementedAPIServer) ListTemplates(*ListTemplates, API_ListTemplatesSer
 func (UnimplementedAPIServer) RegisterSite(context.Context, *Site) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterSite not implemented")
 }
-func (UnimplementedAPIServer) DeleteSite(context.Context, *DeleteSite) (*DeleteResponse, error) {
+func (UnimplementedAPIServer) DeleteSite(context.Context, *SiteID) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSite not implemented")
 }
 func (UnimplementedAPIServer) GetSite(context.Context, *GetSite) (*Site, error) {
@@ -393,7 +393,7 @@ func (UnimplementedAPIServer) ListSites(*ListSites, API_ListSitesServer) error {
 func (UnimplementedAPIServer) CreateDeployment(context.Context, *CreateDeployment) (*CreateDeploymentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDeployment not implemented")
 }
-func (UnimplementedAPIServer) DeleteDeployment(context.Context, *DeleteDeployment) (*DeleteResponse, error) {
+func (UnimplementedAPIServer) DeleteDeployment(context.Context, *DeploymentID) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployment not implemented")
 }
 func (UnimplementedAPIServer) GetDeployment(context.Context, *GetDeployment) (*Deployment, error) {
@@ -414,10 +414,10 @@ func (UnimplementedAPIServer) CancelDeploymentModification(context.Context, *Can
 func (UnimplementedAPIServer) RegisterPlugin(context.Context, *Plugin) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterPlugin not implemented")
 }
-func (UnimplementedAPIServer) DeletePlugin(context.Context, *DeletePlugin) (*DeleteResponse, error) {
+func (UnimplementedAPIServer) DeletePlugin(context.Context, *PluginID) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePlugin not implemented")
 }
-func (UnimplementedAPIServer) GetPlugin(context.Context, *GetPlugin) (*Plugin, error) {
+func (UnimplementedAPIServer) GetPlugin(context.Context, *PluginID) (*Plugin, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPlugin not implemented")
 }
 func (UnimplementedAPIServer) ListPlugins(*ListPlugins, API_ListPluginsServer) error {
@@ -455,7 +455,7 @@ func _API_RegisterTemplate_Handler(srv interface{}, ctx context.Context, dec fun
 }
 
 func _API_DeleteTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteTemplate)
+	in := new(TemplateID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -467,7 +467,7 @@ func _API_DeleteTemplate_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: API_DeleteTemplate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).DeleteTemplate(ctx, req.(*DeleteTemplate))
+		return srv.(APIServer).DeleteTemplate(ctx, req.(*TemplateID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -499,7 +499,7 @@ func _API_ListTemplates_Handler(srv interface{}, stream grpc.ServerStream) error
 }
 
 type API_ListTemplatesServer interface {
-	Send(*ListTemplatesResponse) error
+	Send(*ListedTemplate) error
 	grpc.ServerStream
 }
 
@@ -507,7 +507,7 @@ type aPIListTemplatesServer struct {
 	grpc.ServerStream
 }
 
-func (x *aPIListTemplatesServer) Send(m *ListTemplatesResponse) error {
+func (x *aPIListTemplatesServer) Send(m *ListedTemplate) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -530,7 +530,7 @@ func _API_RegisterSite_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _API_DeleteSite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteSite)
+	in := new(SiteID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -542,7 +542,7 @@ func _API_DeleteSite_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: API_DeleteSite_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).DeleteSite(ctx, req.(*DeleteSite))
+		return srv.(APIServer).DeleteSite(ctx, req.(*SiteID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -574,7 +574,7 @@ func _API_ListSites_Handler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 type API_ListSitesServer interface {
-	Send(*ListSitesResponse) error
+	Send(*ListedSite) error
 	grpc.ServerStream
 }
 
@@ -582,7 +582,7 @@ type aPIListSitesServer struct {
 	grpc.ServerStream
 }
 
-func (x *aPIListSitesServer) Send(m *ListSitesResponse) error {
+func (x *aPIListSitesServer) Send(m *ListedSite) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -605,7 +605,7 @@ func _API_CreateDeployment_Handler(srv interface{}, ctx context.Context, dec fun
 }
 
 func _API_DeleteDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteDeployment)
+	in := new(DeploymentID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -617,7 +617,7 @@ func _API_DeleteDeployment_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: API_DeleteDeployment_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).DeleteDeployment(ctx, req.(*DeleteDeployment))
+		return srv.(APIServer).DeleteDeployment(ctx, req.(*DeploymentID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -649,7 +649,7 @@ func _API_ListDeployments_Handler(srv interface{}, stream grpc.ServerStream) err
 }
 
 type API_ListDeploymentsServer interface {
-	Send(*ListDeploymentsResponse) error
+	Send(*ListedDeployment) error
 	grpc.ServerStream
 }
 
@@ -657,7 +657,7 @@ type aPIListDeploymentsServer struct {
 	grpc.ServerStream
 }
 
-func (x *aPIListDeploymentsServer) Send(m *ListDeploymentsResponse) error {
+func (x *aPIListDeploymentsServer) Send(m *ListedDeployment) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -734,7 +734,7 @@ func _API_RegisterPlugin_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _API_DeletePlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeletePlugin)
+	in := new(PluginID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -746,13 +746,13 @@ func _API_DeletePlugin_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: API_DeletePlugin_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).DeletePlugin(ctx, req.(*DeletePlugin))
+		return srv.(APIServer).DeletePlugin(ctx, req.(*PluginID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _API_GetPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPlugin)
+	in := new(PluginID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -764,7 +764,7 @@ func _API_GetPlugin_Handler(srv interface{}, ctx context.Context, dec func(inter
 		FullMethod: API_GetPlugin_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).GetPlugin(ctx, req.(*GetPlugin))
+		return srv.(APIServer).GetPlugin(ctx, req.(*PluginID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -778,7 +778,7 @@ func _API_ListPlugins_Handler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 type API_ListPluginsServer interface {
-	Send(*ListPluginsResponse) error
+	Send(*Plugin) error
 	grpc.ServerStream
 }
 
@@ -786,7 +786,7 @@ type aPIListPluginsServer struct {
 	grpc.ServerStream
 }
 
-func (x *aPIListPluginsServer) Send(m *ListPluginsResponse) error {
+func (x *aPIListPluginsServer) Send(m *Plugin) error {
 	return x.ServerStream.SendMsg(m)
 }
 

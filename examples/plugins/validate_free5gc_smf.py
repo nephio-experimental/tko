@@ -12,6 +12,9 @@ def validate(complete):
   # free5gc.plugin.nephio.org/v1alpha1, SMF
   smf = tko.get_target_resource()
   if smf is not None:
+    if tko.GVK(resource=smf) != tko.GVK('free5gc.plugin.nephio.org', 'v1alpha1', 'SMF'):
+      return
+
     tko.validate_value('resource', smf, complete, {
       'type': dict,
       'schema': {

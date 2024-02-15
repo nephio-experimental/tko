@@ -4,16 +4,11 @@ import (
 	contextpkg "context"
 
 	"github.com/nephio-experimental/tko/api/backend"
+	"github.com/tliron/kutil/util"
 )
 
 // ([backend.Backend] interface)
 func (self *MemoryBackend) SetPlugin(context contextpkg.Context, plugin *backend.Plugin) error {
-	plugin = plugin.Clone()
-
-	if plugin.Properties == nil {
-		plugin.Properties = make(map[string]string)
-	}
-
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -48,16 +43,43 @@ func (self *MemoryBackend) DeletePlugin(context contextpkg.Context, pluginId bac
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListPlugins(context contextpkg.Context) (backend.Results[backend.Plugin], error) {
+func (self *MemoryBackend) ListPlugins(context contextpkg.Context, listPlugins backend.ListPlugins) (util.Results[backend.Plugin], error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	plugins := make([]backend.Plugin, len(self.plugins))
-	index := 0
+	var plugins []backend.Plugin
 	for _, plugin := range self.plugins {
-		plugins[index] = *plugin
-		index++
+		if (listPlugins.Type != nil) && (*listPlugins.Type != "") {
+			if *listPlugins.Type != plugin.Type {
+				continue
+			}
+		}
+
+		if (listPlugins.Executor != nil) && (*listPlugins.Executor != "") {
+			if *listPlugins.Executor != plugin.Executor {
+				continue
+			}
+		}
+
+		if !backend.IDMatchesPatterns(plugin.Name, listPlugins.NamePatterns) {
+			continue
+		}
+
+		if listPlugins.Trigger != nil {
+			var found bool
+			for _, trigger := range plugin.Triggers {
+				if listPlugins.Trigger.Equals(trigger) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		plugins = append(plugins, *plugin)
 	}
 
-	return backend.NewResultsSlice[backend.Plugin](plugins), nil
+	return util.NewResultsSlice[backend.Plugin](plugins), nil
 }

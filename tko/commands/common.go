@@ -3,6 +3,7 @@ package commands
 import (
 	"io"
 	"os"
+	"strings"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -27,6 +28,7 @@ var templateMetadata map[string]string
 var siteMetadata map[string]string
 var deploymentMetadata map[string]string
 var parentDeploymentId string
+var executor string
 
 func NewClient() *clientpkg.Client {
 	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), clientLog)
@@ -80,4 +82,17 @@ func Transcriber(writer io.Writer) *transcribe.Transcriber {
 		ForTerminal: pretty,
 		Strict:      strict,
 	}
+}
+
+func ParseTrigger(trigger string) *tkoutil.GVK {
+	if trigger != "" {
+		if s := strings.Split(trigger, ","); len(s) == 3 {
+			gvk := tkoutil.NewGVK(s[0], s[1], s[2])
+			return &gvk
+		} else {
+			util.Failf("invalid \"--trigger\": %s", trigger)
+		}
+	}
+
+	return nil
 }

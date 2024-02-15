@@ -4,11 +4,12 @@ import (
 	contextpkg "context"
 
 	"github.com/nephio-experimental/tko/api/backend"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) SetDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
+func (self *SpannerBackend) CreateDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
 	return nil
 }
 
@@ -23,7 +24,7 @@ func (self *SpannerBackend) DeleteDeployment(context contextpkg.Context, deploym
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.Results[backend.DeploymentInfo], error) {
+func (self *SpannerBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (util.Results[backend.DeploymentInfo], error) {
 	return nil, nil
 }
 
@@ -33,7 +34,7 @@ func (self *SpannerBackend) StartDeploymentModification(context contextpkg.Conte
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
+func (self *SpannerBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
 	return "", nil
 }
 

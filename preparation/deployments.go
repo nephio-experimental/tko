@@ -6,26 +6,25 @@ import (
 	"fmt"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
+	"github.com/tliron/kutil/util"
 )
 
 func (self *Preparation) PrepareDeployments() error {
 	//self.Log.Notice("preparing deployments")
 	false_ := false
-	if deploymentInfos, err := self.Client.ListDeployments(nil, nil, nil, nil, nil, nil, &false_, nil); err == nil {
-		for _, deploymentInfo := range deploymentInfos {
-			context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-			self.PrepareDeployment(context, deploymentInfo)
-			cancel()
-		}
-		return nil
+	if deploymentInfos, err := self.Client.ListDeployments(client.ListDeployments{Prepared: &false_}); err == nil {
+		return util.IterateResults(deploymentInfos, func(deploymentInfo client.DeploymentInfo) error {
+			self.PrepareDeployment(deploymentInfo)
+			return nil
+		})
 	} else {
 		return err
 	}
 }
 
-func (self *Preparation) PrepareDeployment(context contextpkg.Context, deploymentInfo client.DeploymentInfo) {
+func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo) {
 	if deploymentInfo.Prepared {
 		return
 	}
@@ -37,7 +36,7 @@ func (self *Preparation) PrepareDeployment(context contextpkg.Context, deploymen
 		"template", deploymentInfo.TemplateID)
 	if deployment, ok, err := self.Client.GetDeployment(deploymentInfo.DeploymentID); err == nil {
 		if ok {
-			if _, err := self.prepareDeployment(context, deploymentInfo.DeploymentID, deployment.Resources, log); err != nil {
+			if _, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Resources, log); err != nil {
 				log.Error(err.Error())
 			}
 		} else {
@@ -48,35 +47,51 @@ func (self *Preparation) PrepareDeployment(context contextpkg.Context, deploymen
 	}
 }
 
-func (self *Preparation) prepareDeployment(context contextpkg.Context, deploymentId string, deploymentResources util.Resources, log commonlog.Logger) (bool, error) {
-	modified := false
+func (self *Preparation) prepareDeployment(deploymentId string, deploymentResources tkoutil.Resources, log commonlog.Logger) (bool, error) {
+	deploymentModified := false
 
 	// Are we already fully prepared?
-	if deployment, ok := util.DeploymentResourceIdentifier.GetResource(deploymentResources); ok {
-		if util.IsPreparedAnnotation(deployment) {
+	if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(deploymentResources); ok {
+		if tkoutil.IsPreparedAnnotation(deployment) {
 			log.Info("already prepared")
 			return false, nil
 		}
 	}
 
-	todo := self.GetTODO(deploymentResources, log)
+	preparableResources := self.GetPreparableResources(deploymentResources, log)
 	for {
-		if resourceIdentifier, ok := todo.Pop(); ok {
-			if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources util.Resources) (bool, util.Resources, error) {
-				// Must re-check because deployment may have been modified
+		if resourceIdentifier, ok := preparableResources.Pop(); ok {
+			if resourcesModified, err := self.Client.ModifyDeployment(deploymentId, func(resources tkoutil.Resources) (bool, tkoutil.Resources, error) {
+				var resourceModified bool
 				if resource, ok := resourceIdentifier.GetResource(resources); ok {
-					if _, prepare := self.ShouldPrepare(resourceIdentifier, resource, nil); prepare != nil {
-						preparationContext := self.NewContext(deploymentId, resources, resourceIdentifier, log)
-						return prepare(context, preparationContext)
-					} else {
-						log.Errorf("no preparer",
-							"resourceType", resourceIdentifier.GVK)
+					// Must re-check because deployment may have been modified since calling GetPreparableResources
+					if shouldPrepare, preparers := self.ShouldPrepare(resourceIdentifier, resource, nil); shouldPrepare {
+						for _, prepare := range preparers {
+							preparationContext := self.NewContext(deploymentId, resources, resourceIdentifier, log)
+							var preparerModified bool
+							var err error
+							context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+							if preparerModified, resources, err = prepare(context, preparationContext); err == nil {
+								if preparerModified {
+									resourceModified = true
+								}
+							} else {
+								cancel()
+								return false, nil, err
+							}
+							cancel()
+						}
 					}
 				}
-				return false, nil, nil
+
+				if resourceModified {
+					return true, resources, nil
+				} else {
+					return false, nil, nil
+				}
 			}); err == nil {
-				if modified_ {
-					modified = true
+				if resourcesModified {
+					deploymentModified = true
 				}
 			} else {
 				return false, err
@@ -86,18 +101,19 @@ func (self *Preparation) prepareDeployment(context contextpkg.Context, deploymen
 		}
 	}
 
-	// Are we fully prepared?
-	if modified_, err := self.Client.ModifyDeployment(deploymentId, func(resources util.Resources) (bool, util.Resources, error) {
+	// If we're fully prepared then update annotations
+	if resourcesModified, err := self.Client.ModifyDeployment(deploymentId, func(resources tkoutil.Resources) (bool, tkoutil.Resources, error) {
 		if self.IsFullyPrepared(resources) {
 			log.Info("fully prepared")
 			if err := self.Validation.ValidateResources(resources, true); err == nil {
-				if deployment, ok := util.DeploymentResourceIdentifier.GetResource(resources); ok {
-					if !util.SetPreparedAnnotation(deployment, true) {
+				if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(resources); ok {
+					if !tkoutil.SetPreparedAnnotation(deployment, true) {
 						return false, nil, errors.New("malformed Deployment resource")
 					}
 
 					// TODO: always auto approve?
-					if !util.SetApprovedAnnotation(deployment, true) {
+
+					if !tkoutil.SetApprovedAnnotation(deployment, true) {
 						return false, nil, errors.New("malformed Deployment resource")
 					}
 
@@ -112,43 +128,12 @@ func (self *Preparation) prepareDeployment(context contextpkg.Context, deploymen
 			return false, nil, nil
 		}
 	}); err == nil {
-		if modified_ {
-			modified = true
+		if resourcesModified {
+			deploymentModified = true
 		}
 	} else {
 		return false, err
 	}
 
-	return modified, nil
-}
-
-func (self *Preparation) GetTODO(resources util.Resources, log commonlog.Logger) *util.ResourceIdentifiers {
-	var todo util.ResourceIdentifiers
-	for _, resource := range resources {
-		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
-			if shouldPrepare, _ := self.ShouldPrepare(resourceIdentifier, resource, log); shouldPrepare {
-				todo.Push(resourceIdentifier)
-			}
-		}
-	}
-	return &todo
-}
-
-func (self *Preparation) IsFullyPrepared(resources util.Resources) bool {
-	prepared := true
-	for _, resource := range resources {
-		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
-			if resourceIdentifier == util.DeploymentResourceIdentifier {
-				continue
-			}
-
-			if shouldPrepare, _ := self.ShouldPrepare(resourceIdentifier, resource, nil); shouldPrepare {
-				if !util.IsPreparedAnnotation(resource) {
-					prepared = false
-					break
-				}
-			}
-		}
-	}
-	return prepared
+	return deploymentModified, nil
 }

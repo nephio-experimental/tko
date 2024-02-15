@@ -21,7 +21,7 @@ class APIStub(object):
                 )
         self.deleteTemplate = channel.unary_unary(
                 '/tko.API/deleteTemplate',
-                request_serializer=tko_dot_tko__pb2.DeleteTemplate.SerializeToString,
+                request_serializer=tko_dot_tko__pb2.TemplateID.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
                 )
         self.getTemplate = channel.unary_unary(
@@ -32,7 +32,7 @@ class APIStub(object):
         self.listTemplates = channel.unary_stream(
                 '/tko.API/listTemplates',
                 request_serializer=tko_dot_tko__pb2.ListTemplates.SerializeToString,
-                response_deserializer=tko_dot_tko__pb2.ListTemplatesResponse.FromString,
+                response_deserializer=tko_dot_tko__pb2.ListedTemplate.FromString,
                 )
         self.registerSite = channel.unary_unary(
                 '/tko.API/registerSite',
@@ -41,7 +41,7 @@ class APIStub(object):
                 )
         self.deleteSite = channel.unary_unary(
                 '/tko.API/deleteSite',
-                request_serializer=tko_dot_tko__pb2.DeleteSite.SerializeToString,
+                request_serializer=tko_dot_tko__pb2.SiteID.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
                 )
         self.getSite = channel.unary_unary(
@@ -52,7 +52,7 @@ class APIStub(object):
         self.listSites = channel.unary_stream(
                 '/tko.API/listSites',
                 request_serializer=tko_dot_tko__pb2.ListSites.SerializeToString,
-                response_deserializer=tko_dot_tko__pb2.ListSitesResponse.FromString,
+                response_deserializer=tko_dot_tko__pb2.ListedSite.FromString,
                 )
         self.createDeployment = channel.unary_unary(
                 '/tko.API/createDeployment',
@@ -61,7 +61,7 @@ class APIStub(object):
                 )
         self.deleteDeployment = channel.unary_unary(
                 '/tko.API/deleteDeployment',
-                request_serializer=tko_dot_tko__pb2.DeleteDeployment.SerializeToString,
+                request_serializer=tko_dot_tko__pb2.DeploymentID.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
                 )
         self.getDeployment = channel.unary_unary(
@@ -72,7 +72,7 @@ class APIStub(object):
         self.listDeployments = channel.unary_stream(
                 '/tko.API/listDeployments',
                 request_serializer=tko_dot_tko__pb2.ListDeployments.SerializeToString,
-                response_deserializer=tko_dot_tko__pb2.ListDeploymentsResponse.FromString,
+                response_deserializer=tko_dot_tko__pb2.ListedDeployment.FromString,
                 )
         self.startDeploymentModification = channel.unary_unary(
                 '/tko.API/startDeploymentModification',
@@ -96,18 +96,18 @@ class APIStub(object):
                 )
         self.deletePlugin = channel.unary_unary(
                 '/tko.API/deletePlugin',
-                request_serializer=tko_dot_tko__pb2.DeletePlugin.SerializeToString,
+                request_serializer=tko_dot_tko__pb2.PluginID.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
                 )
         self.getPlugin = channel.unary_unary(
                 '/tko.API/getPlugin',
-                request_serializer=tko_dot_tko__pb2.GetPlugin.SerializeToString,
+                request_serializer=tko_dot_tko__pb2.PluginID.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.Plugin.FromString,
                 )
         self.listPlugins = channel.unary_stream(
                 '/tko.API/listPlugins',
                 request_serializer=tko_dot_tko__pb2.ListPlugins.SerializeToString,
-                response_deserializer=tko_dot_tko__pb2.ListPluginsResponse.FromString,
+                response_deserializer=tko_dot_tko__pb2.Plugin.FromString,
                 )
 
 
@@ -238,7 +238,7 @@ def add_APIServicer_to_server(servicer, server):
             ),
             'deleteTemplate': grpc.unary_unary_rpc_method_handler(
                     servicer.deleteTemplate,
-                    request_deserializer=tko_dot_tko__pb2.DeleteTemplate.FromString,
+                    request_deserializer=tko_dot_tko__pb2.TemplateID.FromString,
                     response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
             ),
             'getTemplate': grpc.unary_unary_rpc_method_handler(
@@ -249,7 +249,7 @@ def add_APIServicer_to_server(servicer, server):
             'listTemplates': grpc.unary_stream_rpc_method_handler(
                     servicer.listTemplates,
                     request_deserializer=tko_dot_tko__pb2.ListTemplates.FromString,
-                    response_serializer=tko_dot_tko__pb2.ListTemplatesResponse.SerializeToString,
+                    response_serializer=tko_dot_tko__pb2.ListedTemplate.SerializeToString,
             ),
             'registerSite': grpc.unary_unary_rpc_method_handler(
                     servicer.registerSite,
@@ -258,7 +258,7 @@ def add_APIServicer_to_server(servicer, server):
             ),
             'deleteSite': grpc.unary_unary_rpc_method_handler(
                     servicer.deleteSite,
-                    request_deserializer=tko_dot_tko__pb2.DeleteSite.FromString,
+                    request_deserializer=tko_dot_tko__pb2.SiteID.FromString,
                     response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
             ),
             'getSite': grpc.unary_unary_rpc_method_handler(
@@ -269,7 +269,7 @@ def add_APIServicer_to_server(servicer, server):
             'listSites': grpc.unary_stream_rpc_method_handler(
                     servicer.listSites,
                     request_deserializer=tko_dot_tko__pb2.ListSites.FromString,
-                    response_serializer=tko_dot_tko__pb2.ListSitesResponse.SerializeToString,
+                    response_serializer=tko_dot_tko__pb2.ListedSite.SerializeToString,
             ),
             'createDeployment': grpc.unary_unary_rpc_method_handler(
                     servicer.createDeployment,
@@ -278,7 +278,7 @@ def add_APIServicer_to_server(servicer, server):
             ),
             'deleteDeployment': grpc.unary_unary_rpc_method_handler(
                     servicer.deleteDeployment,
-                    request_deserializer=tko_dot_tko__pb2.DeleteDeployment.FromString,
+                    request_deserializer=tko_dot_tko__pb2.DeploymentID.FromString,
                     response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
             ),
             'getDeployment': grpc.unary_unary_rpc_method_handler(
@@ -289,7 +289,7 @@ def add_APIServicer_to_server(servicer, server):
             'listDeployments': grpc.unary_stream_rpc_method_handler(
                     servicer.listDeployments,
                     request_deserializer=tko_dot_tko__pb2.ListDeployments.FromString,
-                    response_serializer=tko_dot_tko__pb2.ListDeploymentsResponse.SerializeToString,
+                    response_serializer=tko_dot_tko__pb2.ListedDeployment.SerializeToString,
             ),
             'startDeploymentModification': grpc.unary_unary_rpc_method_handler(
                     servicer.startDeploymentModification,
@@ -313,18 +313,18 @@ def add_APIServicer_to_server(servicer, server):
             ),
             'deletePlugin': grpc.unary_unary_rpc_method_handler(
                     servicer.deletePlugin,
-                    request_deserializer=tko_dot_tko__pb2.DeletePlugin.FromString,
+                    request_deserializer=tko_dot_tko__pb2.PluginID.FromString,
                     response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
             ),
             'getPlugin': grpc.unary_unary_rpc_method_handler(
                     servicer.getPlugin,
-                    request_deserializer=tko_dot_tko__pb2.GetPlugin.FromString,
+                    request_deserializer=tko_dot_tko__pb2.PluginID.FromString,
                     response_serializer=tko_dot_tko__pb2.Plugin.SerializeToString,
             ),
             'listPlugins': grpc.unary_stream_rpc_method_handler(
                     servicer.listPlugins,
                     request_deserializer=tko_dot_tko__pb2.ListPlugins.FromString,
-                    response_serializer=tko_dot_tko__pb2.ListPluginsResponse.SerializeToString,
+                    response_serializer=tko_dot_tko__pb2.Plugin.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -365,7 +365,7 @@ class API(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/tko.API/deleteTemplate',
-            tko_dot_tko__pb2.DeleteTemplate.SerializeToString,
+            tko_dot_tko__pb2.TemplateID.SerializeToString,
             tko_dot_tko__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -400,7 +400,7 @@ class API(object):
             metadata=None):
         return grpc.experimental.unary_stream(request, target, '/tko.API/listTemplates',
             tko_dot_tko__pb2.ListTemplates.SerializeToString,
-            tko_dot_tko__pb2.ListTemplatesResponse.FromString,
+            tko_dot_tko__pb2.ListedTemplate.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -433,7 +433,7 @@ class API(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/tko.API/deleteSite',
-            tko_dot_tko__pb2.DeleteSite.SerializeToString,
+            tko_dot_tko__pb2.SiteID.SerializeToString,
             tko_dot_tko__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -468,7 +468,7 @@ class API(object):
             metadata=None):
         return grpc.experimental.unary_stream(request, target, '/tko.API/listSites',
             tko_dot_tko__pb2.ListSites.SerializeToString,
-            tko_dot_tko__pb2.ListSitesResponse.FromString,
+            tko_dot_tko__pb2.ListedSite.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -501,7 +501,7 @@ class API(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/tko.API/deleteDeployment',
-            tko_dot_tko__pb2.DeleteDeployment.SerializeToString,
+            tko_dot_tko__pb2.DeploymentID.SerializeToString,
             tko_dot_tko__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -536,7 +536,7 @@ class API(object):
             metadata=None):
         return grpc.experimental.unary_stream(request, target, '/tko.API/listDeployments',
             tko_dot_tko__pb2.ListDeployments.SerializeToString,
-            tko_dot_tko__pb2.ListDeploymentsResponse.FromString,
+            tko_dot_tko__pb2.ListedDeployment.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -620,7 +620,7 @@ class API(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/tko.API/deletePlugin',
-            tko_dot_tko__pb2.DeletePlugin.SerializeToString,
+            tko_dot_tko__pb2.PluginID.SerializeToString,
             tko_dot_tko__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -637,7 +637,7 @@ class API(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/tko.API/getPlugin',
-            tko_dot_tko__pb2.GetPlugin.SerializeToString,
+            tko_dot_tko__pb2.PluginID.SerializeToString,
             tko_dot_tko__pb2.Plugin.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -655,6 +655,6 @@ class API(object):
             metadata=None):
         return grpc.experimental.unary_stream(request, target, '/tko.API/listPlugins',
             tko_dot_tko__pb2.ListPlugins.SerializeToString,
-            tko_dot_tko__pb2.ListPluginsResponse.FromString,
+            tko_dot_tko__pb2.Plugin.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

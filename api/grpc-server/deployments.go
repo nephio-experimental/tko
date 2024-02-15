@@ -2,11 +2,11 @@ package server
 
 import (
 	contextpkg "context"
-	"io"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,7 +20,7 @@ func (self *Server) CreateDeployment(context contextpkg.Context, createDeploymen
 		return new(api.CreateDeploymentResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if err := self.Backend.SetDeployment(context, deployment); err == nil {
+	if err := self.Backend.CreateDeployment(context, deployment); err == nil {
 		return &api.CreateDeploymentResponse{Created: true, DeploymentId: deployment.DeploymentID}, nil
 	} else if backend.IsNotDoneError(err) {
 		return &api.CreateDeploymentResponse{Created: false, NotCreatedReason: err.Error()}, nil
@@ -30,10 +30,10 @@ func (self *Server) CreateDeployment(context contextpkg.Context, createDeploymen
 }
 
 // ([api.APIServer] interface)
-func (self *Server) DeleteDeployment(context contextpkg.Context, deleteDeployment *api.DeleteDeployment) (*api.DeleteResponse, error) {
-	self.Log.Infof("deleteDeployment: %s", deleteDeployment)
+func (self *Server) DeleteDeployment(context contextpkg.Context, deploymentId *api.DeploymentID) (*api.DeleteResponse, error) {
+	self.Log.Infof("deleteDeployment: %s", deploymentId)
 
-	if err := self.Backend.DeleteDeployment(context, deleteDeployment.DeploymentId); err == nil {
+	if err := self.Backend.DeleteDeployment(context, deploymentId.DeploymentId); err == nil {
 		return &api.DeleteResponse{Deleted: true}, nil
 	} else if backend.IsNotDoneError(err) {
 		return &api.DeleteResponse{Deleted: false, NotDeletedReason: err.Error()}, nil
@@ -74,7 +74,7 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.API_ListDeploymentsServer) error {
 	self.Log.Infof("listDeployments: %s", listDeployments)
 
-	if deploymentInfoStream, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
+	if deploymentInfoResults, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
 		ParentDeploymentID:       listDeployments.ParentDeploymentId,
 		MetadataPatterns:         listDeployments.MetadataPatterns,
 		TemplateIDPatterns:       listDeployments.TemplateIdPatterns,
@@ -84,24 +84,18 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 		Prepared:                 listDeployments.Prepared,
 		Approved:                 listDeployments.Approved,
 	}); err == nil {
-		for {
-			if deploymentInfo, err := deploymentInfoStream.Next(); err == nil {
-				if err := server.Send(&api.ListDeploymentsResponse{
-					DeploymentId:       deploymentInfo.DeploymentID,
-					ParentDeploymentId: deploymentInfo.ParentDeploymentID,
-					TemplateId:         deploymentInfo.TemplateID,
-					SiteId:             deploymentInfo.SiteID,
-					Metadata:           deploymentInfo.Metadata,
-					Prepared:           deploymentInfo.Prepared,
-					Approved:           deploymentInfo.Approved,
-				}); err != nil {
-					return err
-				}
-			} else if err == io.EOF {
-				break
-			} else {
-				return ToGRPCError(err)
-			}
+		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
+			return server.Send(&api.ListedDeployment{
+				DeploymentId:       deploymentInfo.DeploymentID,
+				ParentDeploymentId: deploymentInfo.ParentDeploymentID,
+				TemplateId:         deploymentInfo.TemplateID,
+				SiteId:             deploymentInfo.SiteID,
+				Metadata:           deploymentInfo.Metadata,
+				Prepared:           deploymentInfo.Prepared,
+				Approved:           deploymentInfo.Approved,
+			})
+		}); err != nil {
+			return ToGRPCError(err)
 		}
 	} else {
 		return ToGRPCError(err)
@@ -140,7 +134,7 @@ func (self *Server) StartDeploymentModification(context contextpkg.Context, star
 func (self *Server) EndDeploymentModification(context contextpkg.Context, endDeploymentModification *api.EndDeploymentModification) (*api.EndDeploymentModificationResponse, error) {
 	self.Log.Infof("endDeploymentModification: %s", endDeploymentModification)
 
-	resources, err := util.DecodeResources(endDeploymentModification.ResourcesFormat, endDeploymentModification.Resources)
+	resources, err := tkoutil.DecodeResources(endDeploymentModification.ResourcesFormat, endDeploymentModification.Resources)
 	if err != nil {
 		return new(api.EndDeploymentModificationResponse), status.Error(codes.InvalidArgument, err.Error())
 	}

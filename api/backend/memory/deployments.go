@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/nephio-experimental/tko/api/backend"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 type Deployment struct {
@@ -15,29 +16,48 @@ type Deployment struct {
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) SetDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
-	deployment = deployment.Clone()
-	if deployment.Metadata == nil {
-		deployment.Metadata = make(map[string]string)
-	}
-
+func (self *MemoryBackend) CreateDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	self.mergeDeployment(deployment)
-	if err := self.updateDeploymentInfo(deployment, false); err != nil {
-		return err
+	// Validate parent deployment
+	if deployment.ParentDeploymentID != "" {
+		if _, ok := self.deployments[deployment.ParentDeploymentID]; !ok {
+			return backend.NewBadArgumentErrorf("unknown parent deployment: %s", deployment.ParentDeploymentID)
+		}
+	}
+
+	// Validate template
+	var template *backend.Template
+	if deployment.TemplateID != "" {
+		var ok bool
+		if template, ok = self.templates[deployment.TemplateID]; !ok {
+			return backend.NewBadArgumentErrorf("unknown template: %s", deployment.TemplateID)
+		}
+	}
+
+	// Validate site
+	var site *backend.Site
+	if deployment.SiteID != "" {
+		var ok bool
+		if site, ok = self.sites[deployment.SiteID]; !ok {
+			return backend.NewBadArgumentErrorf("unknown site: %s", deployment.SiteID)
+		}
+	}
+
+	// Merge and associate with template
+	if template != nil {
+		deployment.MergeTemplate(template)
+		deployment.UpdateFromResources(true)
+		template.AddDeployment(deployment.DeploymentID)
+	}
+
+	// Associate with site
+	if site != nil {
+		site.AddDeployment(deployment.DeploymentID)
 	}
 
 	self.deployments[deployment.DeploymentID] = &Deployment{Deployment: deployment}
-	if template, ok := self.templates[deployment.TemplateID]; ok {
-		template.AddDeployment(deployment.DeploymentID)
-	}
-	if deployment.SiteID != "" {
-		if site, ok := self.sites[deployment.SiteID]; ok {
-			site.AddDeployment(deployment.DeploymentID)
-		}
-	}
 
 	return nil
 }
@@ -48,7 +68,7 @@ func (self *MemoryBackend) GetDeployment(context contextpkg.Context, deploymentI
 	defer self.lock.Unlock()
 
 	if deployment, ok := self.deployments[deploymentId]; ok {
-		return deployment.Deployment.Clone(), nil
+		return deployment.Deployment.Clone(true), nil
 	} else {
 		return nil, backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 	}
@@ -60,36 +80,41 @@ func (self *MemoryBackend) DeleteDeployment(context contextpkg.Context, deployme
 	defer self.lock.Unlock()
 
 	if deployment, ok := self.deployments[deploymentId]; ok {
-		self.deleteDeployment(deploymentId, deployment)
+		delete(self.deployments, deploymentId)
+
+		// Remove association from template
+		if deployment.TemplateID != "" {
+			if template, ok := self.templates[deployment.TemplateID]; ok {
+				template.RemoveDeployment(deploymentId)
+			} else {
+				self.log.Warningf("missing template: %s", deployment.TemplateID)
+			}
+		}
+
+		// Remove association from site
+		if deployment.SiteID != "" {
+			if site, ok := self.sites[deployment.SiteID]; ok {
+				site.RemoveDeployment(deploymentId)
+			} else {
+				self.log.Warningf("missing site: %s", deployment.SiteID)
+			}
+		}
+
+		// Remove child deployment associations
+		for _, childDeployment := range self.deployments {
+			if childDeployment.ParentDeploymentID == deploymentId {
+				childDeployment.ParentDeploymentID = ""
+			}
+		}
+
 		return nil
 	} else {
 		return backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 	}
 }
 
-func (self *MemoryBackend) deleteDeployment(deploymentId string, deployment *Deployment) {
-	delete(self.deployments, deploymentId)
-
-	if template, ok := self.templates[deployment.TemplateID]; ok {
-		template.RemoveDeployment(deploymentId)
-	}
-
-	if deployment.SiteID != "" {
-		if site, ok := self.sites[deployment.SiteID]; ok {
-			site.RemoveDeployment(deploymentId)
-		}
-	}
-
-	// Delete child deployments
-	for deploymentId_, deployment_ := range self.deployments {
-		if deployment_.ParentDeploymentID == deploymentId {
-			self.deleteDeployment(deploymentId_, deployment_)
-		}
-	}
-}
-
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.Results[backend.DeploymentInfo], error) {
+func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (util.Results[backend.DeploymentInfo], error) {
 	filterPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == true)
 	filterNotPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == false)
 	filterApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == true)
@@ -155,7 +180,7 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 		deploymentInfos = append(deploymentInfos, deployment.DeploymentInfo)
 	}
 
-	return backend.NewResultsSlice[backend.DeploymentInfo](deploymentInfos), nil
+	return util.NewResultsSlice[backend.DeploymentInfo](deploymentInfos), nil
 }
 
 // ([backend.Backend] interface)
@@ -165,6 +190,7 @@ func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Contex
 
 	if deployment, ok := self.deployments[deploymentId]; ok {
 		available := deployment.CurrentModificationToken == ""
+
 		if !available {
 			available = self.hasModificationExpired(deployment)
 		}
@@ -173,44 +199,85 @@ func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Contex
 			deployment.CurrentModificationToken = backend.NewID()
 			deployment.CurrentModificationTimestamp = time.Now().UnixMicro()
 			return deployment.CurrentModificationToken, deployment.Deployment, nil
-		} else {
-			// TODO: introduce a try-again loop
-			return "", nil, backend.NewBusyErrorf("deployment: %s", deploymentId)
 		}
+
+		return "", nil, backend.NewBusyErrorf("deployment: %s", deploymentId)
 	} else {
 		return "", nil, backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 	}
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
+func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	for _, deployment := range self.deployments {
+	for deploymentId, deployment := range self.deployments {
 		if deployment.CurrentModificationToken == modificationToken {
 			if !self.hasModificationExpired(deployment) {
-				// TODO: clone?
+				deployment = &Deployment{Deployment: deployment.Clone(false)}
+
+				originalTemplateId := deployment.TemplateID
+				originalSiteId := deployment.SiteID
 				deployment.Resources = resources
 
-				if err := self.updateDeploymentInfo(deployment.Deployment, true); err != nil {
-					// TODO: undo changes
-					return "", err
+				deployment.UpdateFromResources(false)
+
+				// Validate template
+
+				var template *backend.Template
+				if deployment.TemplateID != "" {
+					var ok bool
+					if template, ok = self.templates[deployment.TemplateID]; !ok {
+						return "", backend.NewBadArgumentErrorf("unknown template: %s", deployment.TemplateID)
+					}
 				}
 
-				deployment.CurrentModificationToken = ""
-				deployment.CurrentModificationTimestamp = 0
+				// Validate site
 
-				if template, ok := self.templates[deployment.TemplateID]; ok {
-					template.AddDeployment(deployment.DeploymentID)
-				}
+				var site *backend.Site
 				if deployment.SiteID != "" {
-					if site, ok := self.sites[deployment.SiteID]; ok {
+					var ok bool
+					if site, ok = self.sites[deployment.SiteID]; !ok {
+						return "", backend.NewBadArgumentErrorf("unknown site: %s", deployment.SiteID)
+					}
+				}
+
+				// Update template assocation
+
+				if deployment.TemplateID != originalTemplateId {
+					if originalTemplateId != "" {
+						if template, ok := self.templates[originalTemplateId]; ok {
+							template.RemoveDeployment(originalTemplateId)
+						} else {
+							self.log.Warningf("missing template: %s", originalTemplateId)
+						}
+					}
+
+					if template != nil {
+						template.AddDeployment(deployment.DeploymentID)
+					}
+				}
+
+				// Update site association
+
+				if deployment.SiteID != originalSiteId {
+					if originalSiteId != "" {
+						if site, ok := self.sites[originalSiteId]; ok {
+							site.RemoveDeployment(originalSiteId)
+						} else {
+							self.log.Warningf("missing site: %s", originalSiteId)
+						}
+					}
+
+					if site != nil {
 						site.AddDeployment(deployment.DeploymentID)
 					}
 				}
 
-				return deployment.DeploymentID, nil
+				self.deployments[deploymentId] = deployment
+
+				return deploymentId, nil
 			} else {
 				deployment.CurrentModificationToken = ""
 				deployment.CurrentModificationTimestamp = 0
@@ -239,32 +306,6 @@ func (self *MemoryBackend) CancelDeploymentModification(context contextpkg.Conte
 }
 
 // Utils
-
-// Call when lock acquired
-func (self *MemoryBackend) updateDeploymentInfo(deployment *backend.Deployment, reset bool) error {
-	deployment.Update(reset)
-	if deployment.ParentDeploymentID != "" {
-		if _, ok := self.deployments[deployment.ParentDeploymentID]; !ok {
-			return backend.NewBadArgumentErrorf("unknown parent deployment: %s", deployment.ParentDeploymentID)
-		}
-	}
-	if deployment.SiteID != "" {
-		if _, ok := self.sites[deployment.SiteID]; !ok {
-			return backend.NewBadArgumentErrorf("unknown site: %s", deployment.SiteID)
-		}
-	}
-	if _, ok := self.templates[deployment.TemplateID]; !ok {
-		return backend.NewBadArgumentErrorf("unknown template: %s", deployment.TemplateID)
-	}
-	return nil
-}
-
-// Call when lock acquired
-func (self *MemoryBackend) mergeDeployment(deployment *backend.Deployment) {
-	if template, ok := self.templates[deployment.TemplateID]; ok {
-		deployment.MergeTemplate(template)
-	}
-}
 
 func (self *MemoryBackend) hasModificationExpired(deployment *Deployment) bool {
 	delta := time.Now().UnixMicro() - deployment.CurrentModificationTimestamp

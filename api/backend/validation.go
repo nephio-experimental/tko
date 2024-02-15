@@ -2,10 +2,11 @@ package backend
 
 import (
 	contextpkg "context"
-	"strings"
+	"regexp"
 
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/nephio-experimental/tko/validation"
+	"github.com/tliron/kutil/util"
 )
 
 //
@@ -44,6 +45,7 @@ func (self *ValidatingBackend) SetTemplate(context contextpkg.Context, template 
 	if !IsValidID(template.TemplateID) {
 		return NewBadArgumentError("invalid templateId")
 	}
+
 	if err := self.Validation.ValidateResources(template.Resources, false); err != nil {
 		return WrapBadArgumentError(err)
 	}
@@ -76,7 +78,7 @@ func (self *ValidatingBackend) DeleteTemplate(context contextpkg.Context, templa
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (Results[TemplateInfo], error) {
+func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
 	return self.Backend.ListTemplates(context, listTemplates)
 }
 
@@ -88,6 +90,7 @@ func (self *ValidatingBackend) SetSite(context contextpkg.Context, site *Site) e
 	if !IsValidID(site.SiteID) {
 		return NewBadArgumentError("invalid siteId")
 	}
+
 	if err := self.Validation.ValidateResources(site.Resources, true); err != nil {
 		return WrapBadArgumentError(err)
 	}
@@ -120,24 +123,29 @@ func (self *ValidatingBackend) DeleteSite(context contextpkg.Context, siteId str
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) (Results[SiteInfo], error) {
+func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) (util.Results[SiteInfo], error) {
 	return self.Backend.ListSites(context, listSites)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) SetDeployment(context contextpkg.Context, deployment *Deployment) error {
+func (self *ValidatingBackend) CreateDeployment(context contextpkg.Context, deployment *Deployment) error {
 	if deployment.DeploymentID == "" {
 		return NewBadArgumentError("deploymentId is empty")
 	}
+
 	if (deployment.TemplateID != "") && !IsValidID(deployment.TemplateID) {
 		return NewBadArgumentError("invalid templateId")
+	}
+
+	if (deployment.SiteID != "") && !IsValidID(deployment.SiteID) {
+		return NewBadArgumentError("invalid siteId")
 	}
 
 	if err := self.Validation.ValidateResources(deployment.Resources, false); err != nil {
 		return WrapBadArgumentError(err)
 	}
 
-	return self.Backend.SetDeployment(context, deployment)
+	return self.Backend.CreateDeployment(context, deployment)
 }
 
 // ([Backend] interface)
@@ -159,7 +167,7 @@ func (self *ValidatingBackend) DeleteDeployment(context contextpkg.Context, depl
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (Results[DeploymentInfo], error) {
+func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (util.Results[DeploymentInfo], error) {
 	return self.Backend.ListDeployments(context, listDeployments)
 }
 
@@ -173,7 +181,7 @@ func (self *ValidatingBackend) StartDeploymentModification(context contextpkg.Co
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
+func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
 	if modificationToken == "" {
 		return "", NewBadArgumentError("modificationToken is empty")
 	}
@@ -196,21 +204,29 @@ func (self *ValidatingBackend) CancelDeploymentModification(context contextpkg.C
 
 // ([Backend] interface)
 func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *Plugin) error {
-	switch plugin.Type {
-	case "validate", "prepare", "schedule":
-	default:
-		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"schedule\"")
+	if !tkoutil.IsValidPluginType(plugin.Type, false) {
+		return NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, plugin.Type)
 	}
 
-	// Note: plugin.Group can be empty (for default group)
-	if plugin.Version == "" {
-		return NewBadArgumentError("version is empty")
+	if plugin.Name == "" {
+		return NewBadArgumentError("name is empty")
 	}
-	if plugin.Kind == "" {
-		return NewBadArgumentError("kind is empty")
+	if !IsValidID(plugin.Name) {
+		return NewBadArgumentError("invalid name")
 	}
+
 	if plugin.Executor == "" {
 		return NewBadArgumentError("executor is empty")
+	}
+
+	for _, trigger := range plugin.Triggers {
+		// Note: plugin.Group can be empty (for default group)
+		if trigger.Version == "" {
+			return NewBadArgumentError("vtrigger ersion is empty")
+		}
+		if trigger.Kind == "" {
+			return NewBadArgumentError("trigger kind is empty")
+		}
 	}
 
 	return self.Backend.SetPlugin(context, plugin)
@@ -218,18 +234,15 @@ func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *Plu
 
 // ([Backend] interface)
 func (self *ValidatingBackend) GetPlugin(context contextpkg.Context, pluginId PluginID) (*Plugin, error) {
-	switch pluginId.Type {
-	case "validate", "prepare", "schedule":
-	default:
-		return nil, NewBadArgumentError("type must be \"validate\", \"prepare\", or \"schedule\"")
+	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
+		return nil, NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
 	}
 
-	// Note: plugin.Group can be empty (for default group)
-	if pluginId.Version == "" {
-		return nil, NewBadArgumentError("version is empty")
+	if pluginId.Name == "" {
+		return nil, NewBadArgumentError("name is empty")
 	}
-	if pluginId.Kind == "" {
-		return nil, NewBadArgumentError("kind is empty")
+	if !IsValidID(pluginId.Name) {
+		return nil, NewBadArgumentError("invalid name")
 	}
 
 	return self.Backend.GetPlugin(context, pluginId)
@@ -237,30 +250,45 @@ func (self *ValidatingBackend) GetPlugin(context contextpkg.Context, pluginId Pl
 
 // ([Backend] interface)
 func (self *ValidatingBackend) DeletePlugin(context contextpkg.Context, pluginId PluginID) error {
-	switch pluginId.Type {
-	case "validate", "prepare", "schedule":
-	default:
-		return NewBadArgumentError("type must be \"validate\", \"prepare\", or \"schedule\"")
+	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
+		return NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
 	}
 
-	// Note: plugin.Group can be empty (for default group)
-	if pluginId.Version == "" {
-		return NewBadArgumentError("version is empty")
+	if pluginId.Name == "" {
+		return NewBadArgumentError("name is empty")
 	}
-	if pluginId.Kind == "" {
-		return NewBadArgumentError("kind is empty")
+	if !IsValidID(pluginId.Name) {
+		return NewBadArgumentError("invalid name")
 	}
 
 	return self.Backend.DeletePlugin(context, pluginId)
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListPlugins(context contextpkg.Context) (Results[Plugin], error) {
-	return self.Backend.ListPlugins(context)
+func (self *ValidatingBackend) ListPlugins(context contextpkg.Context, listPlugins ListPlugins) (util.Results[Plugin], error) {
+	if listPlugins.Type != nil {
+		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
+			return nil, NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, *listPlugins.Type)
+		}
+	}
+
+	if listPlugins.Trigger != nil {
+		// Note: plugin.Group can be empty (for default group)
+		if listPlugins.Trigger.Version == "" {
+			return nil, NewBadArgumentError("trigger version is empty")
+		}
+		if listPlugins.Trigger.Kind == "" {
+			return nil, NewBadArgumentError("trigger kind is empty")
+		}
+	}
+
+	return self.Backend.ListPlugins(context, listPlugins)
 }
 
 // Utils
 
+var validIdRe = regexp.MustCompile(`^[0-9A-Za-z_.\-\/:]+$`)
+
 func IsValidID(id string) bool {
-	return !strings.Contains(id, "*")
+	return validIdRe.MatchString(id)
 }

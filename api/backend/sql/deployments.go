@@ -6,72 +6,50 @@ import (
 	"time"
 
 	"github.com/nephio-experimental/tko/api/backend"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
+	"github.com/tliron/kutil/util"
 )
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) SetDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
-	deployment = deployment.Clone()
-	if deployment.Metadata == nil {
-		deployment.Metadata = make(map[string]string)
-	}
-	deployment.Update(false)
-
+func (self *SQLBackend) CreateDeployment(context contextpkg.Context, deployment *backend.Deployment) error {
 	if tx, err := self.db.BeginTx(context, nil); err == nil {
-		if err := self.mergeDeployment(context, tx, deployment); err != nil {
-			if err := tx.Rollback(); err != nil {
-				self.log.Error(err.Error())
-			}
+		if err := self.mergeDeploymentTemplate(context, tx, deployment); err != nil {
+			self.rollback(tx)
 			return err
 		}
 
-		if resources, err := self.encodeResources(deployment.Resources); err == nil {
-			insertDeployment := tx.StmtContext(context, self.statements.PreparedInsertDeployment)
-			if _, err := insertDeployment.ExecContext(context, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources); err == nil {
-				insertDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedInsertDeploymentMetadata)
-				for key, value := range deployment.Metadata {
-					if _, err := insertDeploymentMetadata.ExecContext(context, deployment.DeploymentID, key, value); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
-						return err
-					}
-				}
+		deployment.UpdateFromResources(true)
 
-				if deployment.TemplateID != "" {
-					insertTemplateDeployment := tx.StmtContext(context, self.statements.PreparedInsertTemplateDeployment)
-					if _, err := insertTemplateDeployment.ExecContext(context, deployment.TemplateID, deployment.DeploymentID); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
-						return err
-					}
-				}
-
-				if deployment.SiteID != "" {
-					insertSiteDeployment := tx.StmtContext(context, self.statements.PreparedInsertSiteDeployment)
-					if _, err := insertSiteDeployment.ExecContext(context, deployment.SiteID, deployment.DeploymentID); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
-						return err
-					}
-				}
-
-				return tx.Commit()
-			} else {
-				if err := tx.Rollback(); err != nil {
-					self.log.Error(err.Error())
-				}
-				return err
-			}
-		} else {
-			if err := tx.Rollback(); err != nil {
-				self.log.Error(err.Error())
-			}
+		var resources []byte
+		var err error
+		if resources, err = self.encodeResources(deployment.Resources); err != nil {
+			self.rollback(tx)
 			return err
 		}
+
+		insertDeployment := tx.StmtContext(context, self.statements.PreparedInsertDeployment)
+		if _, err := insertDeployment.ExecContext(context, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources); err != nil {
+			self.rollback(tx)
+			return err
+		}
+
+		if err := self.upsertDeploymentMetadata(context, tx, deployment); err != nil {
+			self.rollback(tx)
+			return err
+		}
+
+		if err := self.upsertTemplateDeployment(context, tx, deployment); err != nil {
+			self.rollback(tx)
+			return err
+		}
+
+		if err := self.upsertSiteDeployment(context, tx, deployment); err != nil {
+			self.rollback(tx)
+			return err
+		}
+
+		return tx.Commit()
 	} else {
 		return err
 	}
@@ -88,46 +66,20 @@ func (self *SQLBackend) GetDeployment(context contextpkg.Context, deploymentId s
 	if rows.Next() {
 		var parentDeploymentId, templateId, siteId *string
 		var prepared, approved bool
-		var metadataJson, resourcesBytes []byte
-		if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &resourcesBytes); err == nil {
-			if resources, err := self.decodeResources(resourcesBytes); err == nil {
-				deployment := backend.Deployment{
-					DeploymentInfo: backend.DeploymentInfo{
-						DeploymentID: deploymentId,
-						Metadata:     make(map[string]string),
-						Prepared:     prepared,
-						Approved:     approved,
-					},
-					Resources: resources,
-				}
-
-				if parentDeploymentId != nil {
-					deployment.ParentDeploymentID = *parentDeploymentId
-				}
-				if templateId != nil {
-					deployment.TemplateID = *templateId
-				}
-				if siteId != nil {
-					deployment.SiteID = *siteId
-				}
-				if err := jsonUnmarshallMapEntries(metadataJson, deployment.Metadata); err != nil {
-					return nil, err
-				}
-
-				return &deployment, nil
-			} else {
-				return nil, err
-			}
+		var metadataJson, resources []byte
+		if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &resources); err == nil {
+			return self.newDeployment(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved, resources)
 		} else {
 			return nil, err
 		}
-	} else {
-		return nil, backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 	}
+
+	return nil, backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 }
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) DeleteDeployment(context contextpkg.Context, deploymentId string) error {
+	// Will cascade delete deployments_metadata, templates_deployments, sites_deployments
 	if result, err := self.statements.PreparedDeleteDeployment.ExecContext(context, deploymentId); err == nil {
 		if count, err := result.RowsAffected(); err == nil {
 			if count == 0 {
@@ -143,47 +95,50 @@ func (self *SQLBackend) DeleteDeployment(context contextpkg.Context, deploymentI
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (backend.Results[backend.DeploymentInfo], error) {
+func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (util.Results[backend.DeploymentInfo], error) {
 	sql := self.statements.SelectDeployments
-	var args SqlArgs
-	var where SqlWhere
 	var with SqlWith
+	var where SqlWhere
+	var args SqlArgs
 
 	if (listDeployments.ParentDeploymentID != nil) && (*listDeployments.ParentDeploymentID != "") {
-		where.Add("(parent_deployment_id = " + args.Add(listDeployments.ParentDeploymentID) + ")")
+		where.Add("parent_deployment_id = " + args.Add(listDeployments.ParentDeploymentID))
 	}
 
 	if listDeployments.MetadataPatterns != nil {
 		for key, pattern := range listDeployments.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("deployments", "deployment_id", "SELECT deployment_id FROM deployments_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")
+			with.Add("SELECT deployment_id FROM deployments_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
+				"deployments", "deployment_id")
 		}
 	}
 
 	for _, pattern := range listDeployments.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("(deployments.template_id ~ " + pattern + ")")
+		where.Add("deployments.template_id ~ " + pattern)
 	}
 
 	if listDeployments.TemplateMetadataPatterns != nil {
 		for key, pattern := range listDeployments.TemplateMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("deployments", "template_id", "SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")
+			with.Add("SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
+				"deployments", "template_id")
 		}
 	}
 
 	for _, pattern := range listDeployments.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("(deployments.site_id ~ " + pattern + ")")
+		where.Add("deployments.site_id ~ " + pattern)
 	}
 
 	if listDeployments.SiteMetadataPatterns != nil {
 		for key, pattern := range listDeployments.SiteMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("deployments", "site_id", "SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")")
+			with.Add("SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
+				"deployments", "site_id")
 		}
 	}
 
@@ -192,7 +147,7 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		case true:
 			where.Add("prepared")
 		case false:
-			where.Add("(NOT prepared)")
+			where.Add("NOT prepared")
 		}
 	}
 
@@ -201,20 +156,22 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		case true:
 			where.Add("approved")
 		case false:
-			where.Add("(NOT approved)")
+			where.Add("NOT approved")
 		}
 	}
 
-	sql = where.Apply(sql)
 	sql = with.Apply(sql)
-	self.log.Infof("generated SQL: %s", sql)
+	sql = where.Apply(sql)
+	self.log.Infof("generated SQL:\n%s", sql)
 
 	rows, err := self.db.QueryContext(context, sql, args.Args...)
 	if err != nil {
 		return nil, err
 	}
 
-	stream := backend.NewResultsStream[backend.DeploymentInfo]()
+	stream := util.NewResultsStream[backend.DeploymentInfo](func() {
+		self.closeRows(rows)
+	})
 
 	go func() {
 		defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
@@ -225,28 +182,12 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 			var metadataJson []byte
 			var prepared, approved bool
 			if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved); err == nil {
-				deploymentInfo := backend.DeploymentInfo{
-					DeploymentID: deploymentId,
-					Metadata:     make(map[string]string),
-					Prepared:     prepared,
-					Approved:     approved,
-				}
-
-				if parentDeploymentId != nil {
-					deploymentInfo.ParentDeploymentID = *parentDeploymentId
-				}
-				if templateId != nil {
-					deploymentInfo.TemplateID = *templateId
-				}
-				if siteId != nil {
-					deploymentInfo.SiteID = *siteId
-				}
-				if err := jsonUnmarshallMapEntries(metadataJson, deploymentInfo.Metadata); err != nil {
+				if deploymentInfo, err := self.newDeploymentInfo(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved); err == nil {
+					stream.Send(deploymentInfo)
+				} else {
 					stream.Close(err)
 					return
 				}
-
-				stream.Send(deploymentInfo)
 			} else {
 				stream.Close(err)
 				return
@@ -265,9 +206,7 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 		selectDeploymentWithModification := tx.StmtContext(context, self.statements.PreparedSelectDeploymentWithModification)
 		rows, err := selectDeploymentWithModification.QueryContext(context, deploymentId)
 		if err != nil {
-			if err := tx.Rollback(); err != nil {
-				self.log.Error(err.Error())
-			}
+			self.rollback(tx)
 			return "", nil, err
 		}
 
@@ -277,83 +216,45 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 			var metadataJson, resources []byte
 			var modificationTimestamp *int64
 			if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &resources, &modificationToken, &modificationTimestamp); err == nil {
-				if err := rows.Close(); err != nil {
-					self.log.Error(err.Error())
-				}
+				self.closeRows(rows)
 
 				available := (modificationToken == nil) || (*modificationToken == "")
 				if !available {
 					available = self.hasModificationExpired(modificationTimestamp)
 				}
+
 				if !available {
-					if err := tx.Rollback(); err != nil {
-						self.log.Error(err.Error())
-					}
+					self.rollback(tx)
 					return "", nil, backend.NewBusyErrorf("deployment: %s", deploymentId)
 				}
 
-				if resources_, err := self.decodeResources(resources); err == nil {
-					deployment := backend.Deployment{
-						DeploymentInfo: backend.DeploymentInfo{
-							DeploymentID: deploymentId,
-							Metadata:     make(map[string]string),
-							Prepared:     prepared,
-							Approved:     approved,
-						},
-						Resources: resources_,
-					}
-
-					if parentDeploymentId != nil {
-						deployment.ParentDeploymentID = *parentDeploymentId
-					}
-					if templateId != nil {
-						deployment.TemplateID = *templateId
-					}
-					if siteId != nil {
-						deployment.SiteID = *siteId
-					}
-					if err := jsonUnmarshallMapEntries(metadataJson, deployment.Metadata); err != nil {
-						return "", nil, err
-					}
-
+				if deployment, err := self.newDeployment(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved, resources); err == nil {
 					modificationToken_ := backend.NewID()
 					modificationTimestamp_ := time.Now().UnixMicro()
 
 					updateDeploymentModification := tx.StmtContext(context, self.statements.PreparedUpdateDeploymentModification)
 					if _, err := updateDeploymentModification.ExecContext(context, modificationToken_, modificationTimestamp_, deploymentId); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
+						self.rollback(tx)
 						return "", nil, err
 					}
 
 					if err := tx.Commit(); err == nil {
-						return modificationToken_, &deployment, nil
+						return modificationToken_, deployment, nil
 					} else {
 						return "", nil, err
 					}
 				} else {
-					if err := tx.Rollback(); err != nil {
-						self.log.Error(err.Error())
-					}
+					self.rollback(tx)
 					return "", nil, err
 				}
 			} else {
-				if err := rows.Close(); err != nil {
-					self.log.Error(err.Error())
-				}
-				if err := tx.Rollback(); err != nil {
-					self.log.Error(err.Error())
-				}
+				self.closeRows(rows)
+				self.rollback(tx)
 				return "", nil, err
 			}
 		} else {
-			if err := rows.Close(); err != nil {
-				self.log.Error(err.Error())
-			}
-			if err := tx.Rollback(); err != nil {
-				self.log.Error(err.Error())
-			}
+			self.closeRows(rows)
+			self.rollback(tx)
 			return "", nil, backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 		}
 	} else {
@@ -362,142 +263,114 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) {
+func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
 	if tx, err := self.db.BeginTx(context, nil); err == nil {
 		selectDeploymentByModification := tx.StmtContext(context, self.statements.PreparedSelectDeploymentByModification)
 		rows, err := selectDeploymentByModification.QueryContext(context, modificationToken)
 		if err != nil {
-			if err := tx.Rollback(); err != nil {
-				self.log.Error(err.Error())
-			}
+			self.rollback(tx)
 			return "", err
 		}
 
 		if rows.Next() {
 			var deploymentId string
-			var parentDeploymentId, templateId, siteId *string
+			var templateId, siteId *string
+			var metadataJson []byte
 			var prepared, approved bool
 			var modificationTimestamp *int64
-			if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &prepared, &approved, &modificationTimestamp); err == nil {
-				if err := rows.Close(); err != nil {
-					self.log.Error(err.Error())
-				}
+			if err := rows.Scan(&deploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &modificationTimestamp); err == nil {
+				self.closeRows(rows)
 
 				if self.hasModificationExpired(modificationTimestamp) {
-					if err := tx.Rollback(); err != nil {
-						self.log.Error(err.Error())
-					}
+					self.rollback(tx)
 					return "", backend.NewNotFoundErrorf("modification token: %s", modificationToken)
 				}
 
-				if resources_, err := self.encodeResources(resources); err == nil {
-					deployment := backend.Deployment{
-						DeploymentInfo: backend.DeploymentInfo{
-							DeploymentID: deploymentId,
-							Metadata:     make(map[string]string),
-							Prepared:     prepared,
-							Approved:     approved,
-						},
-						Resources: resources,
-					}
+				var deploymentInfo backend.DeploymentInfo
+				if deploymentInfo, err = self.newDeploymentInfo(deploymentId, nil, templateId, siteId, metadataJson, prepared, approved); err != nil {
+					self.rollback(tx)
+					return "", err
+				}
 
-					deployment.Update(false)
+				deployment := backend.Deployment{
+					DeploymentInfo: deploymentInfo,
+					Resources:      resources,
+				}
 
-					updateDeployment := tx.StmtContext(context, self.statements.PreparedUpdateDeployment)
-					if _, err := updateDeployment.ExecContext(context, nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources_, deployment.DeploymentID); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
+				originalTemplateId := deploymentInfo.TemplateID
+				originalSiteId := deploymentInfo.SiteID
+				originalMetadata := tkoutil.CloneStringMap(deployment.Metadata)
+				deployment.UpdateFromResources(false)
+
+				var resources []byte
+				var err error
+				if resources, err = self.encodeResources(deployment.Resources); err != nil {
+					self.rollback(tx)
+					return "", err
+				}
+
+				updateDeployment := tx.StmtContext(context, self.statements.PreparedUpdateDeployment)
+				if _, err := updateDeployment.ExecContext(context, deployment.DeploymentID, deployment.Prepared, deployment.Approved, resources); err != nil {
+					self.rollback(tx)
+					return "", err
+				}
+
+				// Update metadata
+
+				if !tkoutil.StringMapEquals(originalMetadata, deployment.Metadata) {
+					if err := self.updateDeploymentMetadata(context, tx, &deployment); err != nil {
+						self.rollback(tx)
 						return "", err
 					}
+				}
 
-					// Update metadata
+				// Update template association
 
-					deleteDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedDeleteDeploymentMetadata)
-					if _, err := deleteDeploymentMetadata.ExecContext(context, deploymentId); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
-						return "", err
-					}
-
-					insertDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedInsertDeploymentMetadata)
-					for key, value := range deployment.Metadata {
-						if _, err := insertDeploymentMetadata.ExecContext(context, deploymentId, key, value); err != nil {
-							if err := tx.Rollback(); err != nil {
-								self.log.Error(err.Error())
-							}
-							return "", err
-						}
-					}
-
-					// Update template association
-
-					deleteTemplateDeployments := tx.StmtContext(context, self.statements.PreparedDeleteTemplateDeployments)
-					if _, err := deleteTemplateDeployments.ExecContext(context, deploymentId); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
-						return "", err
-					}
-
+				if deployment.TemplateID != originalTemplateId {
 					if deployment.TemplateID != "" {
-						insertTemplateDeployment := tx.StmtContext(context, self.statements.PreparedInsertTemplateDeployment)
-						if _, err := insertTemplateDeployment.ExecContext(context, deployment.TemplateID, deploymentId); err != nil {
-							if err := tx.Rollback(); err != nil {
-								self.log.Error(err.Error())
-							}
+						if err := self.upsertTemplateDeployment(context, tx, &deployment); err != nil {
+							self.rollback(tx)
 							return "", err
 						}
-					}
-
-					// Update site association
-
-					deleteSiteDeployments := tx.StmtContext(context, self.statements.PreparedDeleteSiteDeployments)
-					if _, err := deleteSiteDeployments.ExecContext(context, deploymentId); err != nil {
-						if err := tx.Rollback(); err != nil {
-							self.log.Error(err.Error())
-						}
-						return "", err
-					}
-
-					if deployment.SiteID != "" {
-						insertSiteDeployment := tx.StmtContext(context, self.statements.PreparedInsertSiteDeployment)
-						if _, err := insertSiteDeployment.ExecContext(context, deployment.SiteID, deploymentId); err != nil {
-							if err := tx.Rollback(); err != nil {
-								self.log.Error(err.Error())
-							}
-							return "", err
-						}
-					}
-
-					if err := tx.Commit(); err == nil {
-						return deploymentId, nil
 					} else {
-						return "", err
+						deleteTemplateDeployment := tx.StmtContext(context, self.statements.PreparedDeleteTemplateDeployment)
+						if _, err := deleteTemplateDeployment.ExecContext(context, deployment.DeploymentID); err != nil {
+							self.rollback(tx)
+							return "", err
+						}
 					}
+				}
+
+				// Update site association
+
+				if deployment.SiteID != originalSiteId {
+					if deployment.SiteID != "" {
+						if err := self.upsertSiteDeployment(context, tx, &deployment); err != nil {
+							self.rollback(tx)
+							return "", err
+						}
+					} else {
+						deleteSiteDeployment := tx.StmtContext(context, self.statements.PreparedDeleteSiteDeployment)
+						if _, err := deleteSiteDeployment.ExecContext(context, deployment.DeploymentID); err != nil {
+							self.rollback(tx)
+							return "", err
+						}
+					}
+				}
+
+				if err := tx.Commit(); err == nil {
+					return deploymentId, nil
 				} else {
-					if err := tx.Rollback(); err != nil {
-						self.log.Error(err.Error())
-					}
 					return "", err
 				}
 			} else {
-				if err := rows.Close(); err != nil {
-					self.log.Error(err.Error())
-				}
-				if err := tx.Rollback(); err != nil {
-					self.log.Error(err.Error())
-				}
+				self.closeRows(rows)
+				self.rollback(tx)
 				return "", err
 			}
 		} else {
-			if err := rows.Close(); err != nil {
-				self.log.Error(err.Error())
-			}
-			if err := tx.Rollback(); err != nil {
-				self.log.Error(err.Error())
-			}
+			self.closeRows(rows)
+			self.rollback(tx)
 			return "", backend.NewNotFoundErrorf("modification token: %s", modificationToken)
 		}
 	} else {
@@ -521,15 +394,49 @@ func (self *SQLBackend) CancelDeploymentModification(context contextpkg.Context,
 	}
 }
 
-func (self *SQLBackend) hasModificationExpired(modificationTimestamp *int64) bool {
-	if modificationTimestamp == nil {
-		return true
+// Utils
+
+func (self *SQLBackend) newDeploymentInfo(deploymentId string, parentDeploymentId *string, templateId *string, siteId *string, metadataJson []byte, prepared bool, approved bool) (backend.DeploymentInfo, error) {
+	deploymentInfo := backend.DeploymentInfo{
+		DeploymentID: deploymentId,
+		Metadata:     make(map[string]string),
+		Prepared:     prepared,
+		Approved:     approved,
 	}
-	delta := time.Now().UnixMicro() - *modificationTimestamp
-	return delta > self.maxModificationDuration
+
+	if parentDeploymentId != nil {
+		deploymentInfo.ParentDeploymentID = *parentDeploymentId
+	}
+
+	if templateId != nil {
+		deploymentInfo.TemplateID = *templateId
+	}
+
+	if siteId != nil {
+		deploymentInfo.SiteID = *siteId
+	}
+
+	if err := jsonUnmarshallStringMapEntries(metadataJson, deploymentInfo.Metadata); err != nil {
+		return backend.DeploymentInfo{}, err
+	}
+
+	return deploymentInfo, nil
 }
 
-func (self *SQLBackend) mergeDeployment(context contextpkg.Context, tx *sql.Tx, deployment *backend.Deployment) error {
+func (self *SQLBackend) newDeployment(deploymentId string, parentDeploymentId *string, templateId *string, siteId *string, metadataJson []byte, prepared bool, approved bool, resources []byte) (*backend.Deployment, error) {
+	if deploymentInfo, err := self.newDeploymentInfo(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved); err == nil {
+		deployment := backend.Deployment{DeploymentInfo: deploymentInfo}
+		if deployment.Resources, err = self.decodeResources(resources); err == nil {
+			return &deployment, nil
+		} else {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+}
+
+func (self *SQLBackend) mergeDeploymentTemplate(context contextpkg.Context, tx *sql.Tx, deployment *backend.Deployment) error {
 	if deployment.TemplateID != "" {
 		if template, err := self.getTemplateTx(context, tx, deployment.TemplateID); err == nil {
 			deployment.MergeTemplate(template)
@@ -539,4 +446,56 @@ func (self *SQLBackend) mergeDeployment(context contextpkg.Context, tx *sql.Tx, 
 	}
 
 	return nil
+}
+
+func (self *SQLBackend) updateDeploymentMetadata(context contextpkg.Context, tx *sql.Tx, deployment *backend.Deployment) error {
+	deleteDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedDeleteDeploymentMetadata)
+	if _, err := deleteDeploymentMetadata.ExecContext(context, deployment.DeploymentID); err != nil {
+		return err
+	}
+
+	return self.upsertDeploymentMetadata(context, tx, deployment)
+}
+
+func (self *SQLBackend) upsertDeploymentMetadata(context contextpkg.Context, tx *sql.Tx, deployment *backend.Deployment) error {
+	upsertDeploymentMetadata := tx.StmtContext(context, self.statements.PreparedUpsertDeploymentMetadata)
+	for key, value := range deployment.Metadata {
+		if _, err := upsertDeploymentMetadata.ExecContext(context, deployment.DeploymentID, key, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (self *SQLBackend) upsertTemplateDeployment(context contextpkg.Context, tx *sql.Tx, deployment *backend.Deployment) error {
+	if deployment.TemplateID != "" {
+		upsertTemplateDeployment := tx.StmtContext(context, self.statements.PreparedUpsertTemplateDeployment)
+		if _, err := upsertTemplateDeployment.ExecContext(context, deployment.TemplateID, deployment.DeploymentID); err != nil {
+			self.rollback(tx)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (self *SQLBackend) upsertSiteDeployment(context contextpkg.Context, tx *sql.Tx, deployment *backend.Deployment) error {
+	if deployment.SiteID != "" {
+		upsertSiteDeployment := tx.StmtContext(context, self.statements.PreparedUpsertSiteDeployment)
+		if _, err := upsertSiteDeployment.ExecContext(context, deployment.SiteID, deployment.DeploymentID); err != nil {
+			self.rollback(tx)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (self *SQLBackend) hasModificationExpired(modificationTimestamp *int64) bool {
+	if modificationTimestamp == nil {
+		return true
+	}
+	delta := time.Now().UnixMicro() - *modificationTimestamp
+	return delta > self.maxModificationDuration
 }

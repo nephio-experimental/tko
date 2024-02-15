@@ -45,7 +45,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
+func NewPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	switch plugin.Executor {
 	case "command":
 		return NewCommandPluginPreparer(plugin)
@@ -56,7 +56,7 @@ func NewPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 	}
 }
 
-func NewCommandPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
+func NewCommandPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	if len(plugin.Arguments) < 1 {
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}
@@ -85,7 +85,7 @@ func NewCommandPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
 	}, nil
 }
 
-func NewKptPluginPreparer(plugin client.PluginInfo) (PreparerFunc, error) {
+func NewKptPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	if len(plugin.Arguments) != 1 {
 		return nil, errors.New("plugin of type \"command\" must have one argument")
 	}

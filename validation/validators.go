@@ -4,28 +4,46 @@ import (
 	contextpkg "context"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 type ValidatorFunc func(context contextpkg.Context, validationContext *Context) []error
 
-func (self *Validation) RegisterValidator(gvk util.GVK, validate ValidatorFunc) {
+func (self *Validation) RegisterValidator(gvk tkoutil.GVK, validate ValidatorFunc) {
 	self.validators[gvk] = validate
 }
 
-func (self *Validation) GetValidator(gvk util.GVK) (ValidatorFunc, bool, error) {
-	if validator, ok := self.validators[gvk]; ok {
-		return validator, true, nil
-	} else if plugin, ok, err := self.Client.GetPlugin(client.NewPluginID("validate", gvk)); err == nil {
-		if ok {
+var validateString = "validate"
+
+func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]ValidatorFunc, error) {
+	var validators []ValidatorFunc
+
+	if validate, ok := self.validators[gvk]; ok {
+		validators = append(validators, validate)
+	}
+
+	if plugins, err := self.Client.ListPlugins(client.ListPlugins{
+		Type:    &validateString,
+		Trigger: &gvk,
+	}); err == nil {
+		if util.IterateResults(plugins, func(plugin client.Plugin) error {
 			if validate, err := NewPluginValidator(plugin); err == nil {
-				return validate, true, nil
+				validators = append(validators, validate)
+				return nil
 			} else {
-				return nil, false, err
+				return err
 			}
+		}); err != nil {
+			return nil, err
 		}
 	} else {
-		return nil, false, err
+		return nil, err
 	}
-	return nil, false, nil
+
+	if complete && (len(validators) == 0) {
+		return []ValidatorFunc{self.DefaultValidate}, nil
+	}
+
+	return validators, nil
 }

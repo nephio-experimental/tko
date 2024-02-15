@@ -2,10 +2,10 @@ package client
 
 import (
 	contextpkg "context"
-	"io"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 type SiteInfo struct {
@@ -17,10 +17,10 @@ type SiteInfo struct {
 
 type Site struct {
 	SiteInfo
-	Resources util.Resources `json:"resources" yaml:"resources"`
+	Resources tkoutil.Resources `json:"resources" yaml:"resources"`
 }
 
-func (self *Client) RegisterSite(siteId string, templateId string, metadata map[string]string, resources util.Resources) (bool, string, error) {
+func (self *Client) RegisterSite(siteId string, templateId string, metadata map[string]string, resources tkoutil.Resources) (bool, string, error) {
 	if resources_, err := self.encodeResources(resources); err == nil {
 		return self.RegisterSiteRaw(siteId, templateId, metadata, self.ResourcesFormat, resources_)
 	} else {
@@ -57,7 +57,7 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 
 		self.log.Info("getSite")
 		if site, err := apiClient.GetSite(context, &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-			if resources, err := util.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
+			if resources, err := tkoutil.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
 				return Site{
 					SiteInfo: SiteInfo{
 						SiteID:        site.SiteId,
@@ -86,7 +86,7 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 		defer cancel()
 
 		self.log.Info("deleteSite")
-		if response, err := apiClient.DeleteSite(context, &api.DeleteSite{SiteId: siteId}); err == nil {
+		if response, err := apiClient.DeleteSite(context, &api.SiteID{SiteId: siteId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
 			return false, "", err
@@ -96,34 +96,43 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 	}
 }
 
-func (self *Client) ListSites(siteIdPatterns []string, templateIdPatterns []string, metadataPatterns map[string]string) ([]SiteInfo, error) {
+type ListSites struct {
+	SiteIDPatterns     []string
+	TemplateIDPatterns []string
+	MetadataPatterns   map[string]string
+}
+
+func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-		defer cancel()
 
 		self.log.Info("listSites")
 		if client, err := apiClient.ListSites(context, &api.ListSites{
-			SiteIdPatterns:     siteIdPatterns,
-			TemplateIdPatterns: templateIdPatterns,
-			MetadataPatterns:   metadataPatterns,
+			SiteIdPatterns:     listSites.SiteIDPatterns,
+			TemplateIdPatterns: listSites.TemplateIDPatterns,
+			MetadataPatterns:   listSites.MetadataPatterns,
 		}); err == nil {
-			var siteInfos []SiteInfo
-			for {
-				if response, err := client.Recv(); err == nil {
-					siteInfos = append(siteInfos, SiteInfo{
-						SiteID:        response.SiteId,
-						TemplateID:    response.TemplateId,
-						Metadata:      response.Metadata,
-						DeploymentIDs: response.DeploymentIds,
-					})
-				} else if err == io.EOF {
-					break
-				} else {
-					return nil, err
+			stream := util.NewResultsStream[SiteInfo](cancel)
+
+			go func() {
+				for {
+					if response, err := client.Recv(); err == nil {
+						stream.Send(SiteInfo{
+							SiteID:        response.SiteId,
+							TemplateID:    response.TemplateId,
+							Metadata:      response.Metadata,
+							DeploymentIDs: response.DeploymentIds,
+						})
+					} else {
+						stream.Close(err) // special handling for io.EOF
+						return
+					}
 				}
-			}
-			return siteInfos, nil
+			}()
+
+			return stream, nil
 		} else {
+			cancel()
 			return nil, err
 		}
 	} else {

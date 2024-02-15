@@ -3,7 +3,8 @@ package backend
 import (
 	contextpkg "context"
 
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 //
@@ -14,30 +15,73 @@ type Backend interface {
 	Connect(context contextpkg.Context) error
 	Release(context contextpkg.Context) error
 
-	// All API errors can be BadArgumentError
+	// Owns and may change the contents of the template argument.
+	// Ignores template DeploymentIDs.
+	// Can return BadArgumentError, NotDoneError.
+	SetTemplate(context contextpkg.Context, template *Template) error
 
-	SetTemplate(context contextpkg.Context, template *Template) error             // error can be NotDoneError
-	GetTemplate(context contextpkg.Context, templateId string) (*Template, error) // error can be NotFoundError
-	DeleteTemplate(context contextpkg.Context, templateId string) error           // error can be NotDoneError, NotFoundError
-	ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (Results[TemplateInfo], error)
+	// Can return BadArgumentError, NotFoundError.
+	GetTemplate(context contextpkg.Context, templateId string) (*Template, error)
 
-	SetSite(context contextpkg.Context, site *Site) error             // error can be NotDoneError
-	GetSite(context contextpkg.Context, siteId string) (*Site, error) // error can be NotFoundError
-	DeleteSite(context contextpkg.Context, siteId string) error       // error can be NotDoneError, NotFoundError
-	ListSites(context contextpkg.Context, listSites ListSites) (Results[SiteInfo], error)
+	// Does *not* delete associated deployments, but removes associations.
+	// Can return BadArgumentError, NotFoundError, NotDoneError.
+	DeleteTemplate(context contextpkg.Context, templateId string) error
 
-	SetDeployment(context contextpkg.Context, deployment *Deployment) error             // error can be NotDoneError
-	GetDeployment(context contextpkg.Context, deploymentId string) (*Deployment, error) // error can be NotFoundError
-	DeleteDeployment(context contextpkg.Context, deploymentId string) error             // error can be NotDoneError, NotFoundError
-	ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (Results[DeploymentInfo], error)
-	StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *Deployment, error)                 // error can be NotDoneError, NotFoundError, BusyError
-	EndDeploymentModification(context contextpkg.Context, modificationToken string, resources util.Resources) (string, error) // error can be NotDoneError, NotFoundError, TimeoutError
-	CancelDeploymentModification(context contextpkg.Context, modificationToken string) error                                  // error can be NotDoneError, NotFoundError
+	// Can return BadArgumentError.
+	ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (util.Results[TemplateInfo], error)
 
-	SetPlugin(context contextpkg.Context, plugin *Plugin) error               // error can be NotDoneError
-	GetPlugin(context contextpkg.Context, pluginId PluginID) (*Plugin, error) // error can be NotFoundError
-	DeletePlugin(context contextpkg.Context, pluginId PluginID) error         // error can be NotDoneError, NotFoundError
-	ListPlugins(context contextpkg.Context) (Results[Plugin], error)
+	// Owns and may change the contents of the site argument.
+	// Ignores site DeploymentIDs.
+	// Can return BadArgumentError, NotDoneError.
+	SetSite(context contextpkg.Context, site *Site) error
+
+	// Can return BadArgumentError, NotFoundError.
+	GetSite(context contextpkg.Context, siteId string) (*Site, error)
+
+	// Does *not* delete associated deployments, but removes association.
+	// Can return BadArgumentError, NotFoundError, NotDoneError.
+	DeleteSite(context contextpkg.Context, siteId string) error
+
+	// Can return BadArgumentError.
+	ListSites(context contextpkg.Context, listSites ListSites) (util.Results[SiteInfo], error)
+
+	// Owns and may change the contents of the deployment argument.
+	// Can return BadArgumentError, NotDoneError.
+	CreateDeployment(context contextpkg.Context, deployment *Deployment) error
+
+	// Can return BadArgumentError, NotFoundError.
+	GetDeployment(context contextpkg.Context, deploymentId string) (*Deployment, error)
+
+	// Does *not* delete child deployments, but orphans them.
+	// Can return BadArgumentError, NotFoundError, NotDoneError.
+	DeleteDeployment(context contextpkg.Context, deploymentId string) error
+
+	ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (util.Results[DeploymentInfo], error)
+
+	// Can return BadArgumentError, NotFoundError, NotDoneError, BusyError.
+	StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *Deployment, error)
+
+	// Owns and may change the contents of the resources argument.
+	// May change TemplateID, SiteID, Prepared, Approved.
+	// Does *not* modify Metadata, even if modified resources indicate a change.
+	// Can return BadArgumentError, NotFoundError, NotDoneError, TimeoutError.
+	EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error)
+
+	// Can return BadArgumentError, NotFoundError, NotDoneError.
+	CancelDeploymentModification(context contextpkg.Context, modificationToken string) error
+
+	// Owns and may change the contents of the plugin argument.
+	// Can return BadArgumentError, NotDoneError.
+	SetPlugin(context contextpkg.Context, plugin *Plugin) error
+
+	// Can return BadArgumentError, NotFoundError.
+	GetPlugin(context contextpkg.Context, pluginId PluginID) (*Plugin, error)
+
+	// Can return BadArgumentError, NotFoundError, NotDoneError.
+	DeletePlugin(context contextpkg.Context, pluginId PluginID) error
+
+	// Can return BadArgumentError.
+	ListPlugins(context contextpkg.Context, listPlugins ListPlugins) (util.Results[Plugin], error)
 }
 
 type ListTemplates struct {
@@ -60,4 +104,11 @@ type ListDeployments struct {
 	MetadataPatterns         map[string]string
 	Prepared                 *bool
 	Approved                 *bool
+}
+
+type ListPlugins struct {
+	Type         *string
+	NamePatterns []string
+	Executor     *string
+	Trigger      *tkoutil.GVK
 }

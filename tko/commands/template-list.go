@@ -1,7 +1,9 @@
 package commands
 
 import (
+	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/spf13/cobra"
+	"github.com/tliron/kutil/util"
 )
 
 func init() {
@@ -21,7 +23,12 @@ var templateListCommand = &cobra.Command{
 }
 
 func ListTemplates(templateIdPatterns []string, templateMetadataPatterns map[string]string) {
-	templateInfos, err := NewClient().ListTemplates(templateIdPatterns, templateMetadataPatterns)
+	templateInfos, err := NewClient().ListTemplates(client.ListTemplates{
+		TemplateIDPatterns: templateIdPatterns,
+		MetadataPatterns:   templateMetadataPatterns,
+	})
 	FailOnGRPCError(err)
-	Print(templateInfos)
+	templateInfos_, err := util.GatherResults(templateInfos)
+	util.FailOnError(err)
+	Print(templateInfos_)
 }

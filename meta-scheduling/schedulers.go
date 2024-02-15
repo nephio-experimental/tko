@@ -4,28 +4,42 @@ import (
 	contextpkg "context"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 type SchedulerFunc func(context contextpkg.Context, schedulingContext *Context) error
 
-func (self *MetaScheduling) RegisterScheduler(gvk util.GVK, schedule SchedulerFunc) {
+func (self *MetaScheduling) RegisterScheduler(gvk tkoutil.GVK, schedule SchedulerFunc) {
 	self.schedulers[gvk] = schedule
 }
 
-func (self *MetaScheduling) GetScheduler(gvk util.GVK) (SchedulerFunc, bool, error) {
+var scheduleString = "schedule"
+
+func (self *MetaScheduling) GetSchedulers(gvk tkoutil.GVK) ([]SchedulerFunc, error) {
+	var schedulers []SchedulerFunc
+
 	if schedule, ok := self.schedulers[gvk]; ok {
-		return schedule, true, nil
-	} else if plugin, ok, err := self.Client.GetPlugin(client.NewPluginID("schedule", gvk)); err == nil {
-		if ok {
+		schedulers = append(schedulers, schedule)
+	}
+
+	if plugins, err := self.Client.ListPlugins(client.ListPlugins{
+		Type:    &scheduleString,
+		Trigger: &gvk,
+	}); err == nil {
+		if util.IterateResults(plugins, func(plugin client.Plugin) error {
 			if schedule, err := NewPluginScheduler(plugin); err == nil {
-				return schedule, true, nil
+				schedulers = append(schedulers, schedule)
+				return nil
 			} else {
-				return nil, false, err
+				return err
 			}
+		}); err != nil {
+			return nil, err
 		}
 	} else {
-		return nil, false, err
+		return nil, err
 	}
-	return nil, false, nil
+
+	return schedulers, nil
 }

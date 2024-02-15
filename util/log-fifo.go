@@ -10,6 +10,8 @@ import (
 	"github.com/tliron/commonlog"
 )
 
+// TODO: move to commonlog
+
 //
 // LogFIFO
 //

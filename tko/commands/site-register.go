@@ -11,9 +11,9 @@ import (
 func init() {
 	siteCommand.AddCommand(siteRegisterCommand)
 
-	siteRegisterCommand.Flags().StringToStringVarP(&siteMetadata, "metadata", "m", nil, "metadata")
-	siteRegisterCommand.Flags().StringVarP(&url, "url", "u", "", "URL for YAML content (can be a local directory or file)")
-	siteRegisterCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use YAML content from stdin")
+	siteRegisterCommand.Flags().StringToStringVarP(&siteMetadata, "metadata", "m", nil, "mergeable metadata")
+	siteRegisterCommand.Flags().StringVarP(&url, "url", "u", "", "URL for mergeable YAML content (can be a local directory or file)")
+	siteRegisterCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable YAML content from stdin")
 }
 
 var siteRegisterCommand = &cobra.Command{

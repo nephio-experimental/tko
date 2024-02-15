@@ -15,28 +15,38 @@ type SiteInfo struct {
 	DeploymentIDs []string
 }
 
-func (self *SiteInfo) Clone() SiteInfo {
-	return SiteInfo{
-		SiteID:        self.SiteID,
-		TemplateID:    self.TemplateID,
-		Metadata:      cloneMetadata(self.Metadata),
-		DeploymentIDs: util.StringSetClone(self.DeploymentIDs),
+func (self *SiteInfo) Clone(withDeployments bool) SiteInfo {
+	if withDeployments {
+		return SiteInfo{
+			SiteID:        self.SiteID,
+			TemplateID:    self.TemplateID,
+			Metadata:      util.CloneStringMap(self.Metadata),
+			DeploymentIDs: util.CloneStringSet(self.DeploymentIDs),
+		}
+	} else {
+		return SiteInfo{
+			SiteID:     self.SiteID,
+			TemplateID: self.TemplateID,
+			Metadata:   util.CloneStringMap(self.Metadata),
+		}
 	}
 }
 
-func (self *SiteInfo) Update(resources util.Resources) {
-	updateMetadata(self.Metadata, resources)
+func (self *SiteInfo) UpdateFromResources(resources util.Resources) {
+	updateMetadataFromResources(self.Metadata, resources)
 }
 
 func (self *SiteInfo) MergeTemplateInfo(templateInfo *TemplateInfo) {
-	// Merge metadata
 	metadata := make(map[string]string)
+
 	for key, value := range templateInfo.Metadata {
 		metadata[key] = value
 	}
+
 	for key, value := range self.Metadata {
 		metadata[key] = value
 	}
+
 	self.Metadata = metadata
 }
 
@@ -64,15 +74,15 @@ func NewSiteFromBytes(siteId string, templateId string, metadata map[string]stri
 	}
 }
 
-func (self *Site) Clone() *Site {
+func (self *Site) Clone(withDeployments bool) *Site {
 	return &Site{
-		SiteInfo:  self.SiteInfo.Clone(),
-		Resources: cloneResources(self.Resources),
+		SiteInfo:  self.SiteInfo.Clone(withDeployments),
+		Resources: util.CloneResources(self.Resources),
 	}
 }
 
-func (self *Site) Update() {
-	self.SiteInfo.Update(self.Resources)
+func (self *Site) UpdateFromResources() {
+	self.SiteInfo.UpdateFromResources(self.Resources)
 }
 
 func (self *Site) EncodeResources(format string) ([]byte, error) {
@@ -81,21 +91,20 @@ func (self *Site) EncodeResources(format string) ([]byte, error) {
 
 func (self *Site) AddDeployment(deploymentId string) bool {
 	var ok bool
-	self.DeploymentIDs, ok = util.StringSetAdd(self.DeploymentIDs, deploymentId)
+	self.DeploymentIDs, ok = util.AddToStringSet(self.DeploymentIDs, deploymentId)
 	return ok
 }
 
 func (self *Site) RemoveDeployment(deploymentId string) bool {
 	var ok bool
-	self.DeploymentIDs, ok = util.StringSetRemove(self.DeploymentIDs, deploymentId)
+	self.DeploymentIDs, ok = util.RemoveFromStringSet(self.DeploymentIDs, deploymentId)
 	return ok
 }
 
 func (self *Site) MergeTemplate(template *Template) {
 	self.MergeTemplateInfo(&template.TemplateInfo)
 
-	// Merge our resources over template resources
-	resources := util.CopyResources(template.Resources)
+	resources := util.CloneResources(template.Resources)
 	resources = util.MergeResources(resources, self.Resources...)
 
 	self.Resources = resources

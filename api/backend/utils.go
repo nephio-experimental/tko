@@ -10,23 +10,7 @@ func NewID() string {
 	return ksuid.New().String()
 }
 
-func cloneMetadata(metadata map[string]string) map[string]string {
-	if metadata == nil {
-		return nil
-	}
-
-	metadata_ := make(map[string]string)
-	for key, value := range metadata {
-		metadata_[key] = value
-	}
-	return metadata_
-}
-
-func cloneResources(resources util.Resources) util.Resources {
-	return ard.Copy(resources).(util.Resources)
-}
-
-func updateMetadata(metadata map[string]string, resources util.Resources) {
+func updateMetadataFromResources(metadata map[string]string, resources util.Resources) {
 	for _, resource := range resources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 			if resourceIdentifier.GVK.Group == "metadata.nephio.org" {

@@ -2,10 +2,10 @@ package server
 
 import (
 	contextpkg "context"
-	"io"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
+	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -19,6 +19,8 @@ func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.T
 		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	template_.UpdateFromResources()
+
 	if err := self.Backend.SetTemplate(context, template_); err == nil {
 		return &api.RegisterResponse{Registered: true}, nil
 	} else if backend.IsNotDoneError(err) {
@@ -29,10 +31,10 @@ func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.T
 }
 
 // ([api.APIServer] interface)
-func (self *Server) DeleteTemplate(context contextpkg.Context, deleteTemplate *api.DeleteTemplate) (*api.DeleteResponse, error) {
-	self.Log.Infof("deleteTemplate: %s", deleteTemplate)
+func (self *Server) DeleteTemplate(context contextpkg.Context, templateId *api.TemplateID) (*api.DeleteResponse, error) {
+	self.Log.Infof("deleteTemplate: %s", templateId)
 
-	if err := self.Backend.DeleteTemplate(context, deleteTemplate.TemplateId); err == nil {
+	if err := self.Backend.DeleteTemplate(context, templateId.TemplateId); err == nil {
 		return &api.DeleteResponse{Deleted: true}, nil
 	} else if backend.IsNotDoneError(err) {
 		return &api.DeleteResponse{Deleted: false, NotDeletedReason: err.Error()}, nil
@@ -70,24 +72,18 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.API_ListTemplatesServer) error {
 	self.Log.Infof("listTemplates: %s", listTemplates)
 
-	if templateInfoStream, err := self.Backend.ListTemplates(server.Context(), backend.ListTemplates{
+	if templateInfoResults, err := self.Backend.ListTemplates(server.Context(), backend.ListTemplates{
 		TemplateIDPatterns: listTemplates.TemplateIdPatterns,
 		MetadataPatterns:   listTemplates.MetadataPatterns,
 	}); err == nil {
-		for {
-			if templateInfo, err := templateInfoStream.Next(); err == nil {
-				if err := server.Send(&api.ListTemplatesResponse{
-					TemplateId:    templateInfo.TemplateID,
-					Metadata:      templateInfo.Metadata,
-					DeploymentIds: templateInfo.DeploymentIDs,
-				}); err != nil {
-					return err
-				}
-			} else if err == io.EOF {
-				break
-			} else {
-				return ToGRPCError(err)
-			}
+		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
+			return server.Send(&api.ListedTemplate{
+				TemplateId:    templateInfo.TemplateID,
+				Metadata:      templateInfo.Metadata,
+				DeploymentIds: templateInfo.DeploymentIDs,
+			})
+		}); err != nil {
+			return ToGRPCError(err)
 		}
 	} else {
 		return ToGRPCError(err)

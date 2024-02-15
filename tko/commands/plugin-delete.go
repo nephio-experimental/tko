@@ -2,7 +2,6 @@ package commands
 
 import (
 	client "github.com/nephio-experimental/tko/api/grpc-client"
-	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
 )
@@ -12,16 +11,16 @@ func init() {
 }
 
 var pluginDeleteCommand = &cobra.Command{
-	Use:   "delete [TYPE] [GROUP] [VERSION] [KIND]",
+	Use:   "delete [TYPE] [NAME]",
 	Short: "Delete plugin",
-	Args:  cobra.ExactArgs(4),
+	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		DeletePlugin(args[0], args[1], args[2], args[3])
+		DeletePlugin(args[0], args[1])
 	},
 }
 
-func DeletePlugin(type_ string, group string, version string, kind string) {
-	pluginId := client.NewPluginID(type_, tkoutil.NewGVK(group, version, kind))
+func DeletePlugin(type_ string, name string) {
+	pluginId := client.NewPluginID(type_, name)
 	ok, reason, err := NewClient().DeletePlugin(pluginId)
 	FailOnGRPCError(err)
 	if ok {

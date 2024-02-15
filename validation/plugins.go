@@ -42,7 +42,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginValidator(plugin client.PluginInfo) (ValidatorFunc, error) {
+func NewPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 	switch plugin.Executor {
 	case "command":
 		return NewCommandPluginValidator(plugin)
@@ -51,7 +51,7 @@ func NewPluginValidator(plugin client.PluginInfo) (ValidatorFunc, error) {
 	}
 }
 
-func NewCommandPluginValidator(plugin client.PluginInfo) (ValidatorFunc, error) {
+func NewCommandPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 	if len(plugin.Arguments) < 1 {
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}

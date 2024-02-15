@@ -2,25 +2,38 @@ package client
 
 import (
 	contextpkg "context"
-	"io"
+	"fmt"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
-type PluginInfo struct {
+type Plugin struct {
 	PluginID   `json:",inline" yaml:",inline"`
 	Executor   string            `json:"executor" yaml:"executor"`
 	Arguments  []string          `json:"arguments" yaml:"arguments"`
 	Properties map[string]string `json:"properties" yaml:"properties"`
+	Triggers   []tkoutil.GVK     `json:"triggers" yaml:"triggers"`
 }
 
 type PluginID struct {
-	Type     string `json:"type" yaml:"type"`
-	util.GVK `json:",inline" yaml:",inline"`
+	Type string `json:"type" yaml:"type"`
+	Name string `json:"name" yaml:"name"`
 }
 
-func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments []string, properties map[string]string) (bool, string, error) {
+func NewPluginID(type_ string, name string) PluginID {
+	return PluginID{
+		Type: type_,
+		Name: name,
+	}
+}
+
+func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments []string, properties map[string]string, triggers []tkoutil.GVK) (bool, string, error) {
+	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
+		return false, "", fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	}
+
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
@@ -28,12 +41,11 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 		self.log.Info("registerPlugin")
 		if response, err := apiClient.RegisterPlugin(context, &api.Plugin{
 			Type:       pluginId.Type,
-			Group:      pluginId.Group,
-			Version:    pluginId.Version,
-			Kind:       pluginId.Kind,
+			Name:       pluginId.Name,
 			Executor:   executor,
 			Arguments:  arguments,
 			Properties: properties,
+			Triggers:   tkoutil.TriggersToAPI(triggers),
 		}); err == nil {
 			return response.Registered, response.NotRegisteredReason, nil
 		} else {
@@ -44,52 +56,50 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 	}
 }
 
-func NewPluginID(type_ string, gvk util.GVK) PluginID {
-	return PluginID{
-		Type: type_,
-		GVK:  gvk,
+func (self *Client) GetPlugin(pluginId PluginID) (Plugin, bool, error) {
+	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
+		return Plugin{}, false, fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
 	}
-}
 
-func (self *Client) GetPlugin(pluginId PluginID) (PluginInfo, bool, error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
 		self.log.Info("getPlugin")
-		if plugin, err := apiClient.GetPlugin(context, &api.GetPlugin{
-			Type:    pluginId.Type,
-			Group:   pluginId.Group,
-			Version: pluginId.Version,
-			Kind:    pluginId.Kind,
+		if plugin, err := apiClient.GetPlugin(context, &api.PluginID{
+			Type: pluginId.Type,
+			Name: pluginId.Name,
 		}); err == nil {
-			return PluginInfo{
-				PluginID:   NewPluginID(plugin.Type, util.NewGVK(plugin.Group, plugin.Version, plugin.Kind)),
+			return Plugin{
+				PluginID:   NewPluginID(plugin.Type, plugin.Name),
 				Executor:   plugin.Executor,
 				Arguments:  plugin.Arguments,
 				Properties: plugin.Properties,
+				Triggers:   tkoutil.TriggersFromAPI(plugin.Triggers),
 			}, true, nil
 		} else if IsNotFoundError(err) {
-			return PluginInfo{}, false, nil
+			return Plugin{}, false, nil
 		} else {
-			return PluginInfo{}, false, err
+			return Plugin{}, false, err
 		}
 	} else {
-		return PluginInfo{}, false, err
+		return Plugin{}, false, err
 	}
 }
 
 func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
+	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
+		return false, "", fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	}
+
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
 		self.log.Info("deletePlugin")
-		if response, err := apiClient.DeletePlugin(context, &api.DeletePlugin{
-			Type:    pluginId.Type,
-			Group:   pluginId.Group,
-			Version: pluginId.Version,
-			Kind:    pluginId.Kind,
+		if response, err := apiClient.DeletePlugin(context, &api.PluginID{
+			Type: pluginId.Type,
+			Name: pluginId.Name,
 		}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -100,30 +110,52 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 	}
 }
 
-func (self *Client) ListPlugins() ([]PluginInfo, error) {
+type ListPlugins struct {
+	Type         *string
+	NamePatterns []string
+	Executor     *string
+	Trigger      *tkoutil.GVK
+}
+
+func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], error) {
+	if listPlugins.Type != nil {
+		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
+			return nil, fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, *listPlugins.Type)
+		}
+	}
+
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-		defer cancel()
 
 		self.log.Info("listPlugins")
-		if client, err := apiClient.ListPlugins(context, new(api.ListPlugins)); err == nil {
-			var plugins []PluginInfo
-			for {
-				if response, err := client.Recv(); err == nil {
-					plugins = append(plugins, PluginInfo{
-						PluginID:   NewPluginID(response.Type, util.NewGVK(response.Group, response.Version, response.Kind)),
-						Executor:   response.Executor,
-						Arguments:  response.Arguments,
-						Properties: response.Properties,
-					})
-				} else if err == io.EOF {
-					break
-				} else {
-					return nil, err
+		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
+			Type:         listPlugins.Type,
+			NamePatterns: listPlugins.NamePatterns,
+			Executor:     listPlugins.Executor,
+			Trigger:      tkoutil.TriggerToAPI(listPlugins.Trigger),
+		}); err == nil {
+			stream := util.NewResultsStream[Plugin](cancel)
+
+			go func() {
+				for {
+					if response, err := client.Recv(); err == nil {
+						stream.Send(Plugin{
+							PluginID:   NewPluginID(response.Type, response.Name),
+							Executor:   response.Executor,
+							Arguments:  response.Arguments,
+							Properties: response.Properties,
+							Triggers:   tkoutil.TriggersFromAPI(response.Triggers),
+						})
+					} else {
+						stream.Close(err) // special handling for io.EOF
+						return
+					}
 				}
-			}
-			return plugins, nil
+			}()
+
+			return stream, nil
 		} else {
+			cancel()
 			return nil, err
 		}
 	} else {

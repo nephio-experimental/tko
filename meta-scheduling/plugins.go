@@ -44,7 +44,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) {
+func NewPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 	switch plugin.Executor {
 	case "command":
 		return NewCommandPluginScheduler(plugin)
@@ -53,7 +53,7 @@ func NewPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) {
 	}
 }
 
-func NewCommandPluginScheduler(plugin client.PluginInfo) (SchedulerFunc, error) {
+func NewCommandPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 	if len(plugin.Arguments) < 1 {
 		return nil, errors.New("plugin of type \"command\" must have at least one argument")
 	}

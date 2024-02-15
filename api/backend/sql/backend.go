@@ -81,6 +81,18 @@ func (self *SQLBackend) Release(context contextpkg.Context) error {
 
 // Utils
 
+func (self *SQLBackend) rollback(tx *sql.Tx) {
+	if err := tx.Rollback(); err != nil {
+		self.log.Error(err.Error())
+	}
+}
+
+func (self *SQLBackend) closeRows(rows *sql.Rows) {
+	if err := rows.Close(); err != nil {
+		self.log.Error(err.Error())
+	}
+}
+
 func (self *SQLBackend) encodeResources(resources util.Resources) ([]byte, error) {
 	return util.EncodeResources(self.resourcesFormat, resources)
 }

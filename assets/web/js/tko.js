@@ -26,10 +26,11 @@ $(document).ready(function () {
 
   syncTable('plugins', 'api/plugin/list', [
     ['type'],
-    ['gvk'],
+    ['name'],
     ['executor'],
     ['arguments'],
-    ['properties']
+    ['properties'],
+    ['triggers']
   ]);
 
   closeButton('deployments');
@@ -126,6 +127,7 @@ function createTr(row, columns) {
   tr.data('id', row.id);
   tr.data('row', row);
 
+  console.log(columns)
   for (const column of columns) {
     const [name, url, tab] = column;
 

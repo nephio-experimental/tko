@@ -2,35 +2,32 @@ package server
 
 import (
 	contextpkg "context"
-	"io"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/tliron/go-ard"
 	"github.com/tliron/go-transcribe"
+	"github.com/tliron/kutil/util"
 )
 
 func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Request) {
 	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
 	defer cancel()
 
-	if templateInfoStream, err := self.Backend.ListTemplates(context, backend.ListTemplates{}); err == nil {
+	if templateInfoResults, err := self.Backend.ListTemplates(context, backend.ListTemplates{}); err == nil {
 		var templates []ard.StringMap
-		for {
-			if templateInfo, err := templateInfoStream.Next(); err == nil {
-				templates = append(templates, ard.StringMap{
-					"id":          templateInfo.TemplateID,
-					"template":    templateInfo.TemplateID,
-					"metadata":    templateInfo.Metadata,
-					"deployments": templateInfo.DeploymentIDs,
-				})
-			} else if err == io.EOF {
-				break
-			} else {
-				writer.WriteHeader(500)
-				return
-			}
+		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
+			templates = append(templates, ard.StringMap{
+				"id":          templateInfo.TemplateID,
+				"metadata":    templateInfo.Metadata,
+				"deployments": templateInfo.DeploymentIDs,
+			})
+			return nil
+		}); err != nil {
+			writer.WriteHeader(500)
+			return
 		}
+
 		sortById(templates)
 		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(templates)
 	} else {

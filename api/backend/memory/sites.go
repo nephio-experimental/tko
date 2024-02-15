@@ -4,26 +4,30 @@ import (
 	contextpkg "context"
 
 	"github.com/nephio-experimental/tko/api/backend"
+	"github.com/tliron/kutil/util"
 )
 
 // ([backend.Backend] interface)
 func (self *MemoryBackend) SetSite(context contextpkg.Context, site *backend.Site) error {
-	site = site.Clone()
-	if site.Metadata == nil {
-		site.Metadata = make(map[string]string)
-	}
-
-	site.Update()
-
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
+	var originalDeploymentIds []string
+	if originalSite, ok := self.sites[site.SiteID]; ok {
+		originalDeploymentIds = originalSite.DeploymentIDs
+	}
+
+	// Validate and merge template
 	if site.TemplateID != "" {
-		if _, ok := self.templates[site.TemplateID]; !ok {
+		if template, ok := self.templates[site.TemplateID]; ok {
+			site.MergeTemplate(template)
+		} else {
 			return backend.NewBadArgumentErrorf("unknown template: %s", site.TemplateID)
 		}
-		self.mergeSiteResources(site)
 	}
+
+	// Restore associated deployments
+	site.DeploymentIDs = originalDeploymentIds
 
 	self.sites[site.SiteID] = site
 
@@ -36,7 +40,7 @@ func (self *MemoryBackend) GetSite(context contextpkg.Context, siteId string) (*
 	defer self.lock.Unlock()
 
 	if site, ok := self.sites[siteId]; ok {
-		return site.Clone(), nil
+		return site.Clone(true), nil
 	} else {
 		return nil, backend.NewNotFoundErrorf("site: %s", siteId)
 	}
@@ -49,11 +53,14 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 
 	if _, ok := self.sites[siteId]; ok {
 		delete(self.sites, siteId)
+
+		// Remove deployment associations
 		for _, deployment := range self.deployments {
 			if deployment.SiteID == siteId {
 				deployment.SiteID = ""
 			}
 		}
+
 		return nil
 	} else {
 		return backend.NewNotFoundErrorf("site: %s", siteId)
@@ -61,7 +68,7 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (backend.Results[backend.SiteInfo], error) {
+func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (util.Results[backend.SiteInfo], error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -82,14 +89,5 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backe
 		siteInfos = append(siteInfos, site.SiteInfo)
 	}
 
-	return backend.NewResultsSlice[backend.SiteInfo](siteInfos), nil
-}
-
-// Utils
-
-// Call when lock acquired
-func (self *MemoryBackend) mergeSiteResources(site *backend.Site) {
-	if template, ok := self.templates[site.TemplateID]; ok {
-		site.MergeTemplate(template)
-	}
+	return util.NewResultsSlice[backend.SiteInfo](siteInfos), nil
 }

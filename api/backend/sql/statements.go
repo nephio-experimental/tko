@@ -16,25 +16,64 @@ import (
 //
 
 type Statements struct {
-	InsertTemplate            string
-	InsertTemplateMetadata    string
-	InsertTemplateDeployment  string
-	SelectTemplate            string
-	DeleteTemplate            string
-	DeleteTemplateDeployments string
-	SelectTemplates           string
+	// Templates
 
-	InsertSite            string
-	InsertSiteMetadata    string
-	InsertSiteDeployment  string
-	SelectSite            string
-	DeleteSite            string
-	DeleteSiteDeployments string
-	SelectSites           string
+	CreateTemplates              string
+	DropTemplates                string
+	CreateTemplatesMetadata      string
+	DropTemplatesMetadata        string
+	CreateTemplatesMetadataIndex string
+	DropTemplatesMetadataIndex   string
+	CreateTemplatesDeployments   string
+	DropTemplatesDeployments     string
+
+	UpsertTemplate           string
+	UpsertTemplateMetadata   string
+	UpsertTemplateDeployment string
+	SelectTemplate           string
+	DeleteTemplate           string
+	DeleteTemplateMetadata   string
+	DeleteTemplateDeployment string
+	SelectTemplates          string
+
+	// Sites
+
+	CreateSites              string
+	DropSites                string
+	CreateSitesMetadata      string
+	DropSitesMetadata        string
+	CreateSitesMetadataIndex string
+	DropSitesMetadataIndex   string
+	CreateSitesDeployments   string
+	DropSitesDeployments     string
+
+	UpsertSite           string
+	UpsertSiteMetadata   string
+	UpsertSiteDeployment string
+	SelectSite           string
+	DeleteSite           string
+	DeleteSiteMetadata   string
+	DeleteSiteDeployment string
+	SelectSites          string
+
+	// Deployments
+
+	CreateDeployments                  string
+	DropDeployments                    string
+	CreateDeploymentsMetadata          string
+	DropDeploymentsMetadata            string
+	CreateDeploymentsMetadataIndex     string
+	DropDeploymentsMetadataIndex       string
+	CreateDeploymentsPreparedIndex     string
+	DropDeploymentsPreparedIndex       string
+	CreateDeploymentsApprovedIndex     string
+	DropDeploymentsApprovedIndex       string
+	CreateDeploymentsModificationIndex string
+	DropDeploymentsModificationIndex   string
 
 	InsertDeployment                 string
-	InsertDeploymentMetadata         string
 	UpdateDeployment                 string
+	UpsertDeploymentMetadata         string
 	SelectDeployment                 string
 	SelectDeploymentWithModification string
 	SelectDeploymentByModification   string
@@ -44,71 +83,53 @@ type Statements struct {
 	DeleteDeploymentMetadata         string
 	SelectDeployments                string
 
-	InsertPlugin  string
-	SelectPlugin  string
-	DeletePlugin  string
-	SelectPlugins string
+	// Plugins
 
-	CreateTemplates                    string
-	CreateTemplatesMetadata            string
-	CreateTemplatesMetadataIndex       string
-	CreateTemplatesDeployments         string
-	CreateSites                        string
-	CreateSitesMetadata                string
-	CreateSitesMetadataIndex           string
-	CreateSitesDeployments             string
-	CreateDeployments                  string
-	CreateDeploymentsMetadata          string
-	CreateDeploymentsMetadataIndex     string
-	CreateDeploymentsPreparedIndex     string
-	CreateDeploymentsApprovedIndex     string
-	CreateDeploymentsModificationIndex string
-	CreatePlugins                      string
+	CreatePlugins         string
+	DropPlugins           string
+	CreatePluginsTriggers string
+	DropPluginsTriggers   string
 
-	DropTemplates                    string
-	DropTemplatesMetadata            string
-	DropTemplatesMetadataIndex       string
-	DropTemplatesDeployments         string
-	DropSites                        string
-	DropSitesMetadata                string
-	DropSitesMetadataIndex           string
-	DropSitesDeployments             string
-	DropDeployments                  string
-	DropDeploymentsMetadata          string
-	DropDeploymentsMetadataIndex     string
-	DropDeploymentsPreparedIndex     string
-	DropDeploymentsApprovedIndex     string
-	DropDeploymentsModificationIndex string
-	DropPlugins                      string
+	UpsertPlugin         string
+	InsertPluginTrigger  string
+	SelectPlugin         string
+	DeletePlugin         string
+	DeletePluginTriggers string
+	SelectPlugins        string
 
 	// These statements will be automatically prepared and released
 	// The source SQL field has the same name without the "Prepared" prefix
-	PreparedInsertTemplate                   *sql.Stmt
-	PreparedInsertTemplateMetadata           *sql.Stmt
-	PreparedInsertTemplateDeployment         *sql.Stmt
-	PreparedSelectTemplate                   *sql.Stmt
-	PreparedDeleteTemplate                   *sql.Stmt
-	PreparedDeleteTemplateDeployments        *sql.Stmt
-	PreparedInsertSite                       *sql.Stmt
-	PreparedInsertSiteMetadata               *sql.Stmt
-	PreparedInsertSiteDeployment             *sql.Stmt
-	PreparedSelectSite                       *sql.Stmt
-	PreparedDeleteSite                       *sql.Stmt
-	PreparedDeleteSiteDeployments            *sql.Stmt
-	PreparedInsertDeployment                 *sql.Stmt
-	PreparedInsertDeploymentMetadata         *sql.Stmt
-	PreparedUpdateDeployment                 *sql.Stmt
-	PreparedSelectDeployment                 *sql.Stmt
-	PreparedSelectDeploymentWithModification *sql.Stmt
-	PreparedSelectDeploymentByModification   *sql.Stmt
-	PreparedUpdateDeploymentModification     *sql.Stmt
-	PreparedResetDeploymentModification      *sql.Stmt
-	PreparedDeleteDeployment                 *sql.Stmt
-	PreparedDeleteDeploymentMetadata         *sql.Stmt
-	PreparedInsertPlugin                     *sql.Stmt
-	PreparedSelectPlugin                     *sql.Stmt
-	PreparedDeletePlugin                     *sql.Stmt
-	PreparedSelectPlugins                    *sql.Stmt
+
+	PreparedUpsertTemplate                        *sql.Stmt
+	PreparedUpsertTemplateMetadata                *sql.Stmt
+	PreparedUpsertTemplateDeployment              *sql.Stmt
+	PreparedSelectTemplate                        *sql.Stmt
+	PreparedDeleteTemplate                        *sql.Stmt
+	PreparedDeleteTemplateMetadata                *sql.Stmt
+	PreparedDeleteTemplateDeployment              *sql.Stmt
+	PreparedDeleteTemplateDeploymentsByDeployment *sql.Stmt
+	PreparedUpsertSite                            *sql.Stmt
+	PreparedUpsertSiteMetadata                    *sql.Stmt
+	PreparedUpsertSiteDeployment                  *sql.Stmt
+	PreparedSelectSite                            *sql.Stmt
+	PreparedDeleteSite                            *sql.Stmt
+	PreparedDeleteSiteMetadata                    *sql.Stmt
+	PreparedDeleteSiteDeployment                  *sql.Stmt
+	PreparedInsertDeployment                      *sql.Stmt
+	PreparedUpdateDeployment                      *sql.Stmt
+	PreparedUpsertDeploymentMetadata              *sql.Stmt
+	PreparedSelectDeployment                      *sql.Stmt
+	PreparedSelectDeploymentWithModification      *sql.Stmt
+	PreparedSelectDeploymentByModification        *sql.Stmt
+	PreparedUpdateDeploymentModification          *sql.Stmt
+	PreparedResetDeploymentModification           *sql.Stmt
+	PreparedDeleteDeployment                      *sql.Stmt
+	PreparedDeleteDeploymentMetadata              *sql.Stmt
+	PreparedUpsertPlugin                          *sql.Stmt
+	PreparedInsertPluginTrigger                   *sql.Stmt
+	PreparedSelectPlugin                          *sql.Stmt
+	PreparedDeletePlugin                          *sql.Stmt
+	PreparedDeletePluginTriggers                  *sql.Stmt
 
 	db  *sql.DB
 	log commonlog.Logger
@@ -130,7 +151,7 @@ func (self *Statements) Prepare(context contextpkg.Context) error {
 		if stmt, err := self.db.PrepareContext(context, preparedStmtField.GetSource(self)); err == nil {
 			preparedStmtField.SetPrepared(self, stmt)
 		} else {
-			return err
+			return fmt.Errorf("preparing %s: %w", preparedStmtField.SourceName, err)
 		}
 	}
 
@@ -153,35 +174,45 @@ func (self *Statements) CreateTables(context contextpkg.Context) error {
 		self.CreateTemplates,
 		self.CreateTemplatesMetadata,
 		self.CreateTemplatesMetadataIndex,
+
 		self.CreateSites,
 		self.CreateSitesMetadata,
 		self.CreateSitesMetadataIndex,
+
 		self.CreateDeployments,
 		self.CreateDeploymentsMetadata,
 		self.CreateDeploymentsMetadataIndex,
 		self.CreateDeploymentsPreparedIndex,
 		self.CreateDeploymentsApprovedIndex,
 		self.CreateDeploymentsModificationIndex,
+
 		self.CreateTemplatesDeployments,
 		self.CreateSitesDeployments,
+
 		self.CreatePlugins,
+		self.CreatePluginsTriggers,
 	)
 }
 
 func (self *Statements) DropTables(context contextpkg.Context) error {
 	return self.execAll(context,
+		self.DropPluginsTriggers,
+		self.DropPlugins,
+
 		self.DropSitesDeployments,
 		self.DropTemplatesDeployments,
-		self.DropPlugins,
+
 		self.DropDeploymentsMetadataIndex,
 		self.DropDeploymentsMetadata,
 		self.DropDeploymentsModificationIndex,
 		self.DropDeploymentsPreparedIndex,
 		self.DropDeploymentsApprovedIndex,
 		self.DropDeployments,
+
 		self.DropSitesMetadataIndex,
 		self.DropSitesMetadata,
 		self.DropSites,
+
 		self.DropTemplatesMetadataIndex,
 		self.DropTemplatesMetadata,
 		self.DropTemplates,

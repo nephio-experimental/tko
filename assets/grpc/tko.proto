@@ -6,27 +6,27 @@ option go_package = "github.com/nephio-experimental/tko/api/grpc";
 
 service API {
     rpc registerTemplate(Template) returns (RegisterResponse);
-    rpc deleteTemplate(DeleteTemplate) returns (DeleteResponse);
+    rpc deleteTemplate(TemplateID) returns (DeleteResponse);
     rpc getTemplate(GetTemplate) returns (Template);
-    rpc listTemplates(ListTemplates) returns (stream ListTemplatesResponse);
+    rpc listTemplates(ListTemplates) returns (stream ListedTemplate);
 
     rpc registerSite(Site) returns (RegisterResponse);
-    rpc deleteSite(DeleteSite) returns (DeleteResponse);
+    rpc deleteSite(SiteID) returns (DeleteResponse);
     rpc getSite(GetSite) returns (Site);
-    rpc listSites(ListSites) returns (stream ListSitesResponse);
+    rpc listSites(ListSites) returns (stream ListedSite);
 
     rpc createDeployment(CreateDeployment) returns (CreateDeploymentResponse);
-    rpc deleteDeployment(DeleteDeployment) returns (DeleteResponse);
+    rpc deleteDeployment(DeploymentID) returns (DeleteResponse);
     rpc getDeployment(GetDeployment) returns (Deployment);
-    rpc listDeployments(ListDeployments) returns (stream ListDeploymentsResponse);
+    rpc listDeployments(ListDeployments) returns (stream ListedDeployment);
     rpc startDeploymentModification(StartDeploymentModification) returns (StartDeploymentModificationResponse);
     rpc endDeploymentModification(EndDeploymentModification) returns (EndDeploymentModificationResponse);
     rpc cancelDeploymentModification(CancelDeploymentModification) returns (CancelDeploymentModificationResponse);
 
     rpc registerPlugin(Plugin) returns (RegisterResponse);
-    rpc deletePlugin(DeletePlugin) returns (DeleteResponse);
-    rpc getPlugin(GetPlugin) returns (Plugin);
-    rpc listPlugins(ListPlugins) returns (stream ListPluginsResponse);
+    rpc deletePlugin(PluginID) returns (DeleteResponse);
+    rpc getPlugin(PluginID) returns (Plugin);
+    rpc listPlugins(ListPlugins) returns (stream Plugin);
 }
 
 message RegisterResponse {
@@ -41,6 +41,10 @@ message DeleteResponse {
 
 // Templates
 
+message TemplateID {
+    string templateId = 1;
+}
+
 message Template {
     string templateId = 1;
     map<string, string> metadata = 2;
@@ -49,13 +53,15 @@ message Template {
     repeated string deploymentIds = 5;
 }
 
+message ListedTemplate {
+    string templateId = 1;
+    map<string, string> metadata = 2;
+    repeated string deploymentIds = 3;
+}
+
 message GetTemplate {
     string templateId = 1;
     string preferredResourcesFormat = 2;
-}
-
-message DeleteTemplate {
-    string templateId = 1;
 }
 
 message ListTemplates {
@@ -63,13 +69,11 @@ message ListTemplates {
     map<string, string> metadataPatterns = 2;
 }
 
-message ListTemplatesResponse {
-    string templateId = 1;
-    map<string, string> metadata = 2;
-    repeated string deploymentIds = 3;
-}
-
 // Sites
+
+message SiteID {
+    string siteId = 1;
+}
 
 message Site {
     string siteId = 1;
@@ -80,13 +84,16 @@ message Site {
     repeated string deploymentIds = 6;
 }
 
+message ListedSite {
+    string siteId = 1;
+    string templateId = 2;
+    map<string, string> metadata = 3;
+    repeated string deploymentIds = 4;
+}
+
 message GetSite {
     string siteId = 1;
     string preferredResourcesFormat = 2;
-}
-
-message DeleteSite {
-    string siteId = 1;
 }
 
 message ListSites {
@@ -95,14 +102,11 @@ message ListSites {
     map<string, string> metadataPatterns = 3;
 }
 
-message ListSitesResponse {
-    string siteId = 1;
-    string templateId = 2;
-    map<string, string> metadata = 3;
-    repeated string deploymentIds = 4;
-}
-
 // Deployments
+
+message DeploymentID {
+    string deploymentId = 1;
+}
 
 message Deployment {
     string deploymentId = 1;
@@ -116,6 +120,16 @@ message Deployment {
     bytes resources = 9; // TODO: stream
 }
 
+message ListedDeployment {
+    string deploymentId = 1;
+    string parentDeploymentId = 2;
+    string templateId = 3;
+    string siteId = 4;
+    map<string, string> metadata = 5;
+    bool prepared = 6;
+    bool approved = 7;
+}
+
 message CreateDeployment {
     string parentDeploymentId = 1;
     string templateId = 2;
@@ -125,10 +139,6 @@ message CreateDeployment {
     bool approved = 6;
     string mergeResourcesFormat = 7;
     bytes mergeResources = 8; // TODO: stream
-}
-
-message DeleteDeployment {
-    string deploymentId = 1;
 }
 
 message CreateDeploymentResponse {
@@ -151,16 +161,6 @@ message ListDeployments {
     map<string, string> siteMetadataPatterns = 6;
     optional bool prepared = 7;
     optional bool approved = 8;
-}
-
-message ListDeploymentsResponse {
-    string deploymentId = 1;
-    string parentDeploymentId = 2;
-    string templateId = 3;
-    string siteId = 4;
-    map<string, string> metadata = 5;
-    bool prepared = 6;
-    bool approved = 7;
 }
 
 message StartDeploymentModification {
@@ -199,39 +199,30 @@ message CancelDeploymentModificationResponse {
 
 // Plugins
 
+
+message PluginID {
+    string type = 1;
+    string name = 2;
+}
+
+message GVK {
+    string group  = 1;
+    string version = 2;
+    string kind = 3;
+}
+
 message Plugin {
     string type = 1;
-    string group = 2;
-    string version = 3;
-    string kind = 4;
-    string executor = 5;
-    repeated string arguments = 6;
-    map<string, string> properties = 7;
-}
-
-message GetPlugin {
-    string type = 1;
-    string group = 2;
-    string version = 3;
-    string kind = 4;
-}
-
-message DeletePlugin {
-    string type = 1;
-    string group = 2;
-    string version = 3;
-    string kind = 4;
+    string name = 2;
+    string executor = 3;
+    repeated string arguments = 4;
+    map<string, string> properties = 5;
+    repeated GVK triggers = 6;
 }
 
 message ListPlugins {
-}
-
-message ListPluginsResponse {
-    string type = 1;
-    string group = 2;
-    string version = 3;
-    string kind = 4;
-    string executor = 5;
-    repeated string arguments = 6;
-    map<string, string> properties = 7;
+    optional string type = 1;
+    repeated string namePatterns = 2;
+    optional string executor = 3;
+    optional GVK trigger = 4;
 }

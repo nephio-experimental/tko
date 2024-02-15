@@ -13,29 +13,43 @@ type Plugin struct {
 	Executor   string
 	Arguments  []string
 	Properties map[string]string
+	Triggers   []util.GVK
 }
 
 type PluginID struct {
 	Type string
-	util.GVK
+	Name string
 }
 
-func NewPluginID(type_ string, group string, version string, kind string) PluginID {
+func NewPluginID(type_ string, name string) PluginID {
 	return PluginID{
 		Type: type_,
-		GVK:  util.NewGVK(group, version, kind),
+		Name: name,
 	}
+}
+
+// ([fmt.Stringer] interface)
+func (self *PluginID) String() string {
+	return self.Type + "|" + self.Name
+}
+
+func (self *Plugin) AddTrigger(group string, version string, kind string) {
+	self.Triggers = append(self.Triggers, util.NewGVK(group, version, kind))
+}
+
+func (self *Plugin) TriggersAsStrings() []string {
+	strings := make([]string, len(self.Triggers))
+	for index, trigger := range self.Triggers {
+		strings[index] = trigger.String()
+	}
+	return strings
 }
 
 func (self *Plugin) Clone() *Plugin {
-	properties := make(map[string]string)
-	for key, value := range self.Properties {
-		properties[key] = value
-	}
 	return &Plugin{
 		PluginID:   self.PluginID,
 		Executor:   self.Executor,
-		Arguments:  util.StringSetClone(self.Arguments),
-		Properties: properties,
+		Arguments:  util.CloneStringSet(self.Arguments),
+		Properties: util.CloneStringMap(self.Properties),
 	}
 }

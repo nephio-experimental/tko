@@ -12,15 +12,16 @@ func (self *Validation) ValidateResources(resources util.Resources, complete boo
 
 	for _, resource := range resources {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
-			if validate, ok, err := self.GetValidator(resourceIdentifier.GVK); err == nil {
-				if !ok {
-					validate = self.DefaultValidate
-				}
+			if validators, err := self.GetValidators(resourceIdentifier.GVK, complete); err == nil {
+				if len(validators) > 0 {
+					validationContext := self.NewContext(resources, resourceIdentifier, complete)
 
-				validationContext := self.NewContext(resources, resourceIdentifier, complete)
-				context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-				errs = append(errs, validate(context, validationContext)...)
-				cancel()
+					for _, validate := range validators {
+						context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+						errs = append(errs, validate(context, validationContext)...)
+						cancel()
+					}
+				}
 			} else {
 				errs = append(errs, err)
 			}
