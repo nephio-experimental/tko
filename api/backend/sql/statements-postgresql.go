@@ -34,8 +34,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			)
 		`),
 		DropTemplatesMetadata:        `DROP TABLE IF EXISTS templates_metadata`,
-		CreateTemplatesMetadataIndex: `CREATE INDEX IF NOT EXISTS templates_metadata_key ON templates_metadata (key)`,
-		DropTemplatesMetadataIndex:   `DROP INDEX IF EXISTS templates_metadata_key`,
+		CreateTemplatesMetadataIndex: `CREATE INDEX IF NOT EXISTS templates_metadata ON templates_metadata (key, value)`,
+		DropTemplatesMetadataIndex:   `DROP INDEX IF EXISTS templates_metadata`,
 		CreateTemplatesDeployments: CleanSQL(`
 			CREATE TABLE IF NOT EXISTS templates_deployments (
 				template_id TEXT NOT NULL,
@@ -116,8 +116,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			)
 		`),
 		DropSitesMetadata:        `DROP TABLE IF EXISTS sites_metadata`,
-		CreateSitesMetadataIndex: `CREATE INDEX IF NOT EXISTS sites_metadata_key ON sites_metadata (key)`,
-		DropSitesMetadataIndex:   `DROP INDEX IF EXISTS sites_metadata_key`,
+		CreateSitesMetadataIndex: `CREATE INDEX IF NOT EXISTS sites_metadata ON sites_metadata (key, value)`,
+		DropSitesMetadataIndex:   `DROP INDEX IF EXISTS sites_metadata`,
 		CreateSitesDeployments: CleanSQL(`
 			CREATE TABLE IF NOT EXISTS sites_deployments (
 				site_id TEXT NOT NULL,
@@ -210,8 +210,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			)
 		`),
 		DropDeploymentsMetadata:            `DROP TABLE IF EXISTS deployments_metadata`,
-		CreateDeploymentsMetadataIndex:     `CREATE INDEX IF NOT EXISTS deployments_metadata_key ON deployments_metadata (key)`,
-		DropDeploymentsMetadataIndex:       `DROP INDEX IF EXISTS deployments_metadata_key`,
+		CreateDeploymentsMetadataIndex:     `CREATE INDEX IF NOT EXISTS deployments_metadata ON deployments_metadata (key, value)`,
+		DropDeploymentsMetadataIndex:       `DROP INDEX IF EXISTS deployments_metadata`,
 		CreateDeploymentsPreparedIndex:     `CREATE INDEX IF NOT EXISTS deployments_prepared ON deployments (prepared)`,
 		DropDeploymentsPreparedIndex:       `DROP INDEX IF EXISTS deployments_prepared`,
 		CreateDeploymentsApprovedIndex:     `CREATE INDEX IF NOT EXISTS deployments_approved ON deployments (approved)`,
@@ -287,7 +287,11 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				PRIMARY KEY (type, name)
 			)
 		`),
-		DropPlugins: `DROP TABLE IF EXISTS plugins`,
+		DropPlugins:                `DROP TABLE IF EXISTS plugins`,
+		CreatePluginsTypeIndex:     `CREATE INDEX IF NOT EXISTS plugins_type ON plugins (type)`,
+		DropPluginsTypeIndex:       `DROP INDEX IF EXISTS plugins_type`,
+		CreatePluginsExecutorIndex: `CREATE INDEX IF NOT EXISTS plugins_executor ON plugins (executor)`,
+		DropPluginsExecutorIndex:   `DROP INDEX IF EXISTS plugins_executor`,
 		CreatePluginsTriggers: CleanSQL(`
 			CREATE TABLE IF NOT EXISTS plugins_triggers (
 				plugin_type TEXT NOT NULL,
@@ -301,7 +305,9 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 					REFERENCES plugins (type, name) ON DELETE CASCADE
 			)
 		`),
-		DropPluginsTriggers: `DROP TABLE IF EXISTS plugins_triggers`,
+		DropPluginsTriggers:        `DROP TABLE IF EXISTS plugins_triggers`,
+		CreatePluginsTriggersIndex: `CREATE INDEX IF NOT EXISTS plugins_triggers ON plugins_triggers ("group", version, kind)`,
+		DropPluginsTriggersIndex:   `DROP INDEX IF EXISTS plugins_triggers`,
 
 		UpsertPlugin: CleanSQL(`
 			INSERT INTO plugins (type, name, executor, arguments, properties)

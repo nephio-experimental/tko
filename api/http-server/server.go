@@ -18,26 +18,26 @@ import (
 //
 
 type Server struct {
-	Backend        backend.Backend
-	BackendTimeout time.Duration
-	IPStack        util.IPStack
-	Address        string
-	Port           int
-	Log            commonlog.Logger
+	Backend backend.Backend
+	Timeout time.Duration
+	IPStack util.IPStack
+	Address string
+	Port    int
+	Log     commonlog.Logger
 
 	httpServers []*http.Server
 	mux         *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, backendTimeout time.Duration, ipStack util.IPStack, address string, port int, log commonlog.Logger) (*Server, error) {
+func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, log commonlog.Logger) (*Server, error) {
 	self := Server{
-		Backend:        backend,
-		BackendTimeout: backendTimeout,
-		IPStack:        ipStack,
-		Address:        address,
-		Port:           port,
-		Log:            log,
-		mux:            http.NewServeMux(),
+		Backend: backend,
+		Timeout: timeout,
+		IPStack: ipStack,
+		Address: address,
+		Port:    port,
+		Log:     log,
+		mux:     http.NewServeMux(),
 	}
 
 	self.mux.Handle("/", http.FileServer(http.FS(web.FS)))
@@ -68,7 +68,7 @@ func (self *Server) start(level2protocol string, address string) error {
 			"address", listener.Addr().String())
 
 		httpServer := http.Server{
-			Handler: self.mux,
+			Handler: http.TimeoutHandler(self.mux, self.Timeout, ""),
 		}
 		self.httpServers = append(self.httpServers, &httpServer)
 

@@ -28,7 +28,7 @@ var grpcAddress string
 var grpcPort uint
 var grpcFormat string
 var grpcTimeout float64
-var webBackendTimeout float64
+var webTimeout float64
 var webIpStackString string
 var webIpStack util.IPStack
 var webAddress string
@@ -45,7 +45,7 @@ func init() {
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "bind HTTP/2 port for gRPC server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 5.0, "gRPC timeout in seconds")
-	startCommand.Flags().Float64Var(&webBackendTimeout, "web-backend-timeout", 5.0, "backend timeout in seconds")
+	startCommand.Flags().Float64Var(&webTimeout, "web-timeout", 5.0, "web read/write timeout in seconds")
 	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind HTTP/2 port for web server")
@@ -108,7 +108,7 @@ func Serve() {
 	util.OnExit(grpcServer.Stop)
 
 	// HTTP
-	httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webBackendTimeout), webIpStack, webAddress, int(webPort), commonlog.GetLogger("http"))
+	httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), commonlog.GetLogger("http"))
 	util.FailOnError(err)
 	util.FailOnError(httpServer.Start())
 	util.OnExit(httpServer.Stop)

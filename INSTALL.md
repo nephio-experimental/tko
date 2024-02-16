@@ -15,19 +15,20 @@ It will take a few minutes to install all dependencies. When done, it will reboo
 virtual machine and run the tests (see [testing](#testing) below).
 
 The internal web server port is mapped to your host at port 60051, so you can access
-the web UI at [http://localhost:60051/](http://localhost:60051/).
+the web dashboard at [http://localhost:60051/](http://localhost:60051/).
 
-You can run `vagrant ssh` and then `cd /vagrant` to gain access to the environment.
+You can run `vagrant ssh` and then `cd /vagrant` to gain access to the dev environment.
 We also provide a script to run commands on the virtual machine from the host. Examples:
 
     scripts/vagrant tko template list
+    scripts/vagrant tko dashboard
     scripts/vagrant kubectl get pods --all-namespaces --context=kind-edge1
     scripts/vagrant scripts/test
 
 If you have `tko` installed on the host, you can also run the client there. The API
-gRPC port is mapped to the host at port 60050, so you need to point to it explicitly:
+gRPC port is mapped to the host as 60050, so you need to point to it explicitly:
 
-    tko plugin list --grpc-port=60050
+    tko plugin dashboard --grpc-port=60050
 
 Continue to [user guide](USAGE.md).
 

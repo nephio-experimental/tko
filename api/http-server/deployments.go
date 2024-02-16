@@ -1,7 +1,6 @@
 package server
 
 import (
-	contextpkg "context"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -11,10 +10,7 @@ import (
 )
 
 func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Request) {
-	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
-	defer cancel()
-
-	if deploymentInfoResults, err := self.Backend.ListDeployments(context, backend.ListDeployments{}); err == nil {
+	if deploymentInfoResults, err := self.Backend.ListDeployments(request.Context(), backend.ListDeployments{}); err == nil {
 		var deployments []ard.StringMap
 		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
 			deployments = append(deployments, ard.StringMap{
@@ -40,11 +36,8 @@ func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Re
 }
 
 func (self *Server) getDeployment(writer http.ResponseWriter, request *http.Request) {
-	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
-	defer cancel()
-
 	id := request.URL.Query().Get("id")
-	if deploymentInfo, err := self.Backend.GetDeployment(context, id); err == nil {
+	if deploymentInfo, err := self.Backend.GetDeployment(request.Context(), id); err == nil {
 		writeResources(writer, deploymentInfo.Resources)
 	} else {
 		writer.WriteHeader(500)

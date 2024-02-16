@@ -85,10 +85,16 @@ type Statements struct {
 
 	// Plugins
 
-	CreatePlugins         string
-	DropPlugins           string
-	CreatePluginsTriggers string
-	DropPluginsTriggers   string
+	CreatePlugins              string
+	DropPlugins                string
+	CreatePluginsTypeIndex     string
+	DropPluginsTypeIndex       string
+	CreatePluginsExecutorIndex string
+	DropPluginsExecutorIndex   string
+	CreatePluginsTriggers      string
+	DropPluginsTriggers        string
+	CreatePluginsTriggersIndex string
+	DropPluginsTriggersIndex   string
 
 	UpsertPlugin         string
 	InsertPluginTrigger  string
@@ -170,7 +176,7 @@ func (self *Statements) Release() {
 }
 
 func (self *Statements) CreateTables(context contextpkg.Context) error {
-	return self.execAll(context,
+	return self.execAll(context, true,
 		self.CreateTemplates,
 		self.CreateTemplatesMetadata,
 		self.CreateTemplatesMetadataIndex,
@@ -190,13 +196,19 @@ func (self *Statements) CreateTables(context contextpkg.Context) error {
 		self.CreateSitesDeployments,
 
 		self.CreatePlugins,
+		self.CreatePluginsTypeIndex,
+		self.CreatePluginsExecutorIndex,
 		self.CreatePluginsTriggers,
+		self.CreatePluginsTriggersIndex,
 	)
 }
 
 func (self *Statements) DropTables(context contextpkg.Context) error {
-	return self.execAll(context,
+	return self.execAll(context, false,
+		self.DropPluginsTriggersIndex,
 		self.DropPluginsTriggers,
+		self.DropPluginsTypeIndex,
+		self.DropPluginsExecutorIndex,
 		self.DropPlugins,
 
 		self.DropSitesDeployments,
@@ -221,11 +233,13 @@ func (self *Statements) DropTables(context contextpkg.Context) error {
 
 // Utils
 
-func (self *Statements) execAll(context contextpkg.Context, statements ...string) error {
+func (self *Statements) execAll(context contextpkg.Context, fail bool, statements ...string) error {
 	for _, statement := range statements {
 		if _, err := self.db.ExecContext(context, statement); err != nil {
 			self.log.Critical(statement)
-			return err
+			if fail {
+				return err
+			}
 		}
 	}
 	return nil

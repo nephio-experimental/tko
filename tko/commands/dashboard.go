@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"github.com/nephio-experimental/tko/tui"
+	"github.com/nephio-experimental/tko/dashboard"
 	"github.com/spf13/cobra"
+	"github.com/tliron/kutil/util"
 )
 
 func init() {
@@ -10,10 +11,11 @@ func init() {
 }
 
 var tuiCommand = &cobra.Command{
-	Use:   "tui",
-	Short: "Start TUI (Terminal User Interface)",
+	Use:   "dashboard",
+	Short: "Start dashboard TUI",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		tui.Start()
+		err := dashboard.Dashboard(NewClient())
+		util.FailOnError(err)
 	},
 }

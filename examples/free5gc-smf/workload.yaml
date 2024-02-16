@@ -19,4 +19,4 @@ spec:
   repository: https://charts.bitnami.com/bitnami
   chart: mysql
   parameters:
-    namespaceOverride: ${ v1 Namespace ? > metadata.name }
+    namespaceOverride: "{{ get('', 'v1', 'Namespace').metadata.name }}"

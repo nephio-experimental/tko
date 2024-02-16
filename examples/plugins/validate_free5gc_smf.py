@@ -8,11 +8,14 @@ sys.path.append(str(pathlib.Path(__file__).parents[2] / 'sdk' / 'python'))
 import tko
 
 
+smf_gvk = tko.GVK('free5gc.plugin.nephio.org', 'v1alpha1', 'SMF')
+
+
 def validate(complete):
   # free5gc.plugin.nephio.org/v1alpha1, SMF
   smf = tko.get_target_resource()
   if smf is not None:
-    if tko.GVK(resource=smf) != tko.GVK('free5gc.plugin.nephio.org', 'v1alpha1', 'SMF'):
+    if tko.GVK(resource=smf) != smf_gvk:
       return
 
     tko.validate_value('resource', smf, complete, {

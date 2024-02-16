@@ -1,7 +1,6 @@
 package server
 
 import (
-	contextpkg "context"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -11,10 +10,7 @@ import (
 )
 
 func (self *Server) listSites(writer http.ResponseWriter, request *http.Request) {
-	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
-	defer cancel()
-
-	if siteInfoResults, err := self.Backend.ListSites(context, backend.ListSites{}); err == nil {
+	if siteInfoResults, err := self.Backend.ListSites(request.Context(), backend.ListSites{}); err == nil {
 		var sites []ard.StringMap
 		if err := util.IterateResults(siteInfoResults, func(siteInfo backend.SiteInfo) error {
 			sites = append(sites, ard.StringMap{
@@ -37,11 +33,8 @@ func (self *Server) listSites(writer http.ResponseWriter, request *http.Request)
 }
 
 func (self *Server) getSite(writer http.ResponseWriter, request *http.Request) {
-	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
-	defer cancel()
-
 	id := request.URL.Query().Get("id")
-	if site, err := self.Backend.GetSite(context, id); err == nil {
+	if site, err := self.Backend.GetSite(request.Context(), id); err == nil {
 		writeResources(writer, site.Resources)
 	} else {
 		writer.WriteHeader(500)

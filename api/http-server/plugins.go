@@ -1,7 +1,6 @@
 package server
 
 import (
-	contextpkg "context"
 	"net/http"
 
 	"github.com/nephio-experimental/tko/api/backend"
@@ -11,10 +10,7 @@ import (
 )
 
 func (self *Server) listPlugins(writer http.ResponseWriter, request *http.Request) {
-	context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.BackendTimeout)
-	defer cancel()
-
-	if pluginResults, err := self.Backend.ListPlugins(context, backend.ListPlugins{}); err == nil {
+	if pluginResults, err := self.Backend.ListPlugins(request.Context(), backend.ListPlugins{}); err == nil {
 		var plugins []ard.StringMap
 		if err := util.IterateResults(pluginResults, func(plugin backend.Plugin) error {
 			triggers := make([]string, len(plugin.Triggers))

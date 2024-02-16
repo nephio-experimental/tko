@@ -1,4 +1,4 @@
-import subprocess, json, tko.resources
+import subprocess, json, tko.resources, tko.expressions
 
 
 chart_gvk = tko.resources.GVK(group='workload.nephio.org', version='v1alpha1', kind='HelmChart')
@@ -39,7 +39,7 @@ def install(chart, resources, context=None):
   parameters = spec.get('parameters', None)
   if parameters is not None:
     for key, value in parameters.items():
-      value = tko.evaluate_expression(value, resources)
+      value = tko.expressions.evaluate_expression(value, resources)
       args.append('--set-json')
       args.append(f'{key}={json.dumps(value)}')
 
