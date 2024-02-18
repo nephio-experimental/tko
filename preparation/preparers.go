@@ -5,7 +5,6 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
-	"github.com/tliron/commonlog"
 	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/util"
 )
@@ -13,16 +12,23 @@ import (
 type PreparerFunc func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error)
 
 func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PreparerFunc) {
-	self.preparers[gvk] = prepare
+	preparers, _ := self.registeredPreparers[gvk]
+	preparers = append(preparers, prepare)
+	self.registeredPreparers[gvk] = preparers
 }
 
 var prepareString = "prepare"
 
+// TODO: cache
 func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PreparerFunc, error) {
+	if preparers, ok := self.preparers.Load(gvk); ok {
+		return preparers.([]PreparerFunc), nil
+	}
+
 	var preparers []PreparerFunc
 
-	if prepare, ok := self.preparers[gvk]; ok {
-		preparers = append(preparers, prepare)
+	if preparers_, ok := self.registeredPreparers[gvk]; ok {
+		preparers = append(preparers, preparers_...)
 	}
 
 	if plugins, err := self.Client.ListPlugins(client.ListPlugins{
@@ -43,44 +49,9 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PreparerFunc, error) {
 		return nil, err
 	}
 
-	return preparers, nil
-}
-
-func (self *Preparation) ShouldPrepare(resourceIdentifier tkoutil.ResourceIdentifier, resource tkoutil.Resource, log commonlog.Logger) (bool, []PreparerFunc) {
-	if prepareAnnotation, ok := tkoutil.GetPrepareAnnotation(resource); ok {
-		if prepareAnnotation == tkoutil.PrepareAnnotationHere {
-			if preparers, err := self.GetPreparers(resourceIdentifier.GVK); err == nil {
-				if len(preparers) == 0 {
-					if log != nil {
-						log.Error("no preparers registered for trigger",
-							"resourceType", resourceIdentifier.GVK)
-					}
-					return false, nil
-				}
-
-				if !tkoutil.IsPreparedAnnotation(resource) {
-					return true, preparers
-				} else if log != nil {
-					log.Info("already prepared",
-						"resource", resourceIdentifier)
-				}
-			} else if log != nil {
-				log.Error(err.Error())
-			}
-		}
-	} else if preparers, err := self.GetPreparers(resourceIdentifier.GVK); err == nil {
-		// If there is no annotation but there *is* at least one preparer then we will still try to prepare (as if the annotation is "Here")
-		if len(preparers) > 0 {
-			if !tkoutil.IsPreparedAnnotation(resource) {
-				return true, preparers
-			} else if log != nil {
-				log.Info("already prepared",
-					"resource", resourceIdentifier)
-			}
-		}
-	} else if log != nil {
-		log.Error(err.Error())
+	if preparers_, loaded := self.preparers.LoadOrStore(gvk, preparers); loaded {
+		preparers = preparers_.([]PreparerFunc)
 	}
 
-	return false, nil
+	return preparers, nil
 }

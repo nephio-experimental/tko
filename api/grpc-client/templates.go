@@ -2,6 +2,7 @@ package client
 
 import (
 	contextpkg "context"
+	"strings"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -32,7 +33,7 @@ func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]s
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("registerTemplate")
+		self.log.Infof("registerTemplate: %s, %v, %s", templateId, metadata, resourcesFormat)
 		if response, err := apiClient.RegisterTemplate(context, &api.Template{
 			TemplateId:      templateId,
 			Metadata:        metadata,
@@ -53,7 +54,7 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("getTemplate")
+		self.log.Infof("getTemplate: %s", templateId)
 		if template, err := apiClient.GetTemplate(context, &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
 			if resources, err := tkoutil.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
 				return Template{
@@ -82,7 +83,7 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("deleteTemplate")
+		self.log.Infof("deleteTemplate: %s", templateId)
 		if response, err := apiClient.DeleteTemplate(context, &api.TemplateID{TemplateId: templateId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -98,11 +99,23 @@ type ListTemplates struct {
 	MetadataPatterns   map[string]string
 }
 
+// ([fmt.Stringer] interface)
+func (self ListTemplates) String() string {
+	var s []string
+	if len(self.TemplateIDPatterns) > 0 {
+		s = append(s, "templateIdPatterns="+strings.Join(self.TemplateIDPatterns, ","))
+	}
+	if (self.MetadataPatterns != nil) && (len(self.MetadataPatterns) > 0) {
+		s = append(s, "metadataPatterns="+stringifyStringMap(self.MetadataPatterns))
+	}
+	return strings.Join(s, " ")
+}
+
 func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
-		self.log.Info("listTemplates")
+		self.log.Infof("listTemplates: %s", listTemplates)
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
 			TemplateIdPatterns: listTemplates.TemplateIDPatterns,
 			MetadataPatterns:   listTemplates.MetadataPatterns,

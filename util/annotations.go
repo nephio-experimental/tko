@@ -61,6 +61,9 @@ func IsPreparedAnnotation(resource Resource) bool {
 func SetPreparedAnnotation(resource Resource, prepared bool) bool {
 	annotation := ard.With(resource).ForceGet("metadata", "annotations", PreparedAnnotation)
 	if prepared {
+		if value, _ := annotation.String(); value == AnnotationTrue {
+			return false
+		}
 		return annotation.Set(AnnotationTrue)
 	} else {
 		return annotation.Delete()
@@ -81,6 +84,9 @@ func IsApprovedAnnotation(resource Resource) bool {
 func SetApprovedAnnotation(resource Resource, approved bool) bool {
 	annotation := ard.With(resource).ForceGet("metadata", "annotations", ApprovedAnnotation)
 	if approved {
+		if value, _ := annotation.String(); value == AnnotationTrue {
+			return false
+		}
 		return annotation.Set(AnnotationTrue)
 	} else {
 		return annotation.Delete()

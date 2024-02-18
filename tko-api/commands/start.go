@@ -89,8 +89,7 @@ func Serve() {
 	}
 
 	// Client
-	client, err := grpcclient.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
-	util.FailOnError(err)
+	client := grpcclient.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
 	// Wrap backend with validation
 	validation, err := validationpkg.NewValidation(client, tkoutil.SecondsToDuration(validatorTimeout), commonlog.GetLogger("validation"))

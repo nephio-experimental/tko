@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/tliron/go-ard"
@@ -9,10 +10,11 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) ListTemplates(writer http.ResponseWriter, request *http.Request) {
 	if templateInfoResults, err := self.Backend.ListTemplates(request.Context(), backend.ListTemplates{}); err == nil {
 		var templates []ard.StringMap
 		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
+			slices.Sort(templateInfo.DeploymentIDs)
 			templates = append(templates, ard.StringMap{
 				"id":          templateInfo.TemplateID,
 				"metadata":    templateInfo.Metadata,
@@ -31,7 +33,7 @@ func (self *Server) listTemplates(writer http.ResponseWriter, request *http.Requ
 	}
 }
 
-func (self *Server) getTemplate(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) GetTemplate(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if template, err := self.Backend.GetTemplate(request.Context(), id); err == nil {
 		writeResources(writer, template.Resources)

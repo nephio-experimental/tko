@@ -1,6 +1,8 @@
 package client
 
 import (
+	"strings"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -12,4 +14,16 @@ func IsNotFoundError(err error) bool {
 		}
 	}
 	return false
+}
+
+func stringifyStringList(list []string) string {
+	return strings.Join(list, ",")
+}
+
+func stringifyStringMap(map_ map[string]string) string {
+	var s []string
+	for k, v := range map_ {
+		s = append(s, k+"="+v)
+	}
+	return strings.Join(s, ",")
 }

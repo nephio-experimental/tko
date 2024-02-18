@@ -235,8 +235,8 @@ func (self *Statements) DropTables(context contextpkg.Context) error {
 
 func (self *Statements) execAll(context contextpkg.Context, fail bool, statements ...string) error {
 	for _, statement := range statements {
+		self.log.Info(statement)
 		if _, err := self.db.ExecContext(context, statement); err != nil {
-			self.log.Critical(statement)
 			if fail {
 				return err
 			}

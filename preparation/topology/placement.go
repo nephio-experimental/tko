@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/preparation"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/util"
 )
 
 var PlacementGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Placement")
@@ -23,9 +21,6 @@ type Deployment struct {
 
 // ([preparation.PrepareFunc] signature)
 func PreparePlacement(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Resources, error) {
-	preparationContext.Log.Info("preparing topology.nephio.org Placement",
-		"resource", preparationContext.TargetResourceIdentifer)
-
 	if placement, ok := preparationContext.GetResource(); ok {
 		prepared := true
 		var deployments []Deployment
@@ -33,18 +28,32 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 		// Gather deployments
 		templates, _ := ard.With(placement).Get("spec", "templates").List()
 		for _, template := range templates {
-			template_ := ard.With(template)
+			template_ := ard.With(template).ConvertSimilar()
 			if templateName, ok := template_.Get("template").String(); ok {
-				if templateId, ok := GetTemplateID(preparationContext.DeploymentResources, templateName); ok {
+				if templateId, ok := GetTemplateID(preparationContext, templateName); ok {
 					merge, _ := template_.Get("merge").List()
 					_, mergeResources, err := preparationContext.GetMergeResources(merge)
 					if err != nil {
 						return false, nil, err
 					}
 
-					sites, _ := template_.Get("sites").List()
-					for _, site := range sites {
-						if siteName, ok := site.(string); ok {
+					siteNames, _ := template_.Get("sites").StringList()
+					for _, siteName := range siteNames {
+						if siteIds, ok := GetSiteIDs(preparationContext, siteName); ok {
+							for _, siteId := range siteIds {
+								deployments = append(deployments, Deployment{templateId, mergeResources, siteId, nil})
+							}
+							continue
+						}
+
+						if siteId, ok := GetSiteID(preparationContext, siteName); ok {
+							deployments = append(deployments, Deployment{templateId, mergeResources, siteId, nil})
+							continue
+						}
+
+						return false, nil, fmt.Errorf("site not found: %s", siteName)
+
+						/*if siteName, ok := site.(string); ok {
 							if site_, ok := GetSite(preparationContext.DeploymentResources, siteName); ok {
 								if siteId, ok := GetStatusSiteID(site_); ok {
 									deployments = append(deployments, Deployment{templateId, mergeResources, siteId, site_})
@@ -73,11 +82,13 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 									return false, nil, err
 								}
 							}
-						}
+						}*/
 					}
 				} else {
 					return false, nil, fmt.Errorf("template not found: %s", templateName)
 				}
+			} else {
+				return false, nil, errors.New("template not specified")
 			}
 		}
 

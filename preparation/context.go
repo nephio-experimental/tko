@@ -36,7 +36,7 @@ func (self *Context) GetMergeResources(objectReferences []any) (bool, util.Resou
 		// Ensure that all mergeable resources have been prepared if they must be prepared
 		for _, resource := range resources {
 			if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
-				if shouldPrepare, _ := self.Preparation.ShouldPrepare(resourceIdentifier, resource, nil); shouldPrepare {
+				if shouldPrepare, _ := self.Preparation.IsResourcePreparable(resourceIdentifier, resource, nil); shouldPrepare {
 					self.Log.Info("aborting merge due to uprepared resource",
 						"resource", resourceIdentifier)
 					return false, nil, nil

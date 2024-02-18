@@ -42,13 +42,13 @@ func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPSt
 
 	self.mux.Handle("/", http.FileServer(http.FS(web.FS)))
 
-	self.mux.HandleFunc("/api/deployment/list", self.listDeployments)
-	self.mux.HandleFunc("/api/deployment", self.getDeployment)
-	self.mux.HandleFunc("/api/site/list", self.listSites)
-	self.mux.HandleFunc("/api/site", self.getSite)
-	self.mux.HandleFunc("/api/template/list", self.listTemplates)
-	self.mux.HandleFunc("/api/template", self.getTemplate)
-	self.mux.HandleFunc("/api/plugin/list", self.listPlugins)
+	self.mux.HandleFunc("/api/deployment/list", self.ListDeployments)
+	self.mux.HandleFunc("/api/deployment", self.GetDeployment)
+	self.mux.HandleFunc("/api/site/list", self.ListSites)
+	self.mux.HandleFunc("/api/site", self.GetSite)
+	self.mux.HandleFunc("/api/template/list", self.ListTemplates)
+	self.mux.HandleFunc("/api/template", self.GetTemplate)
+	self.mux.HandleFunc("/api/plugin/list", self.ListPlugins)
 
 	return &self, nil
 }

@@ -3,6 +3,7 @@ package client
 import (
 	contextpkg "context"
 	"fmt"
+	"strings"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -22,6 +23,11 @@ type PluginID struct {
 	Name string `json:"name" yaml:"name"`
 }
 
+// ([fmt.Stringer] interface)
+func (self PluginID) String() string {
+	return "type=" + self.Type + " name=" + self.Name
+}
+
 func NewPluginID(type_ string, name string) PluginID {
 	return PluginID{
 		Type: type_,
@@ -38,7 +44,7 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("registerPlugin")
+		self.log.Infof("registerPlugin: %s, %s, %v, %v, %v", pluginId, executor, arguments, properties, triggers)
 		if response, err := apiClient.RegisterPlugin(context, &api.Plugin{
 			Type:       pluginId.Type,
 			Name:       pluginId.Name,
@@ -65,7 +71,7 @@ func (self *Client) GetPlugin(pluginId PluginID) (Plugin, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("getPlugin")
+		self.log.Infof("getPlugin: %s", pluginId)
 		if plugin, err := apiClient.GetPlugin(context, &api.PluginID{
 			Type: pluginId.Type,
 			Name: pluginId.Name,
@@ -96,7 +102,7 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("deletePlugin")
+		self.log.Infof("deletePlugin: %s", pluginId)
 		if response, err := apiClient.DeletePlugin(context, &api.PluginID{
 			Type: pluginId.Type,
 			Name: pluginId.Name,
@@ -117,6 +123,24 @@ type ListPlugins struct {
 	Trigger      *tkoutil.GVK
 }
 
+// ([fmt.Stringer] interface)
+func (self ListPlugins) String() string {
+	var s []string
+	if self.Type != nil {
+		s = append(s, "type="+*self.Type)
+	}
+	if len(self.NamePatterns) > 0 {
+		s = append(s, "namePatterns="+stringifyStringList(self.NamePatterns))
+	}
+	if self.Executor != nil {
+		s = append(s, "executor="+*self.Executor)
+	}
+	if self.Trigger != nil {
+		s = append(s, "trigger="+self.Trigger.ShortString())
+	}
+	return strings.Join(s, " ")
+}
+
 func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], error) {
 	if listPlugins.Type != nil {
 		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
@@ -127,7 +151,7 @@ func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], 
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
-		self.log.Info("listPlugins")
+		self.log.Infof("listPlugins: %s", listPlugins)
 		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
 			Type:         listPlugins.Type,
 			NamePatterns: listPlugins.NamePatterns,

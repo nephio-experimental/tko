@@ -139,7 +139,7 @@ func (self *Server) EndDeploymentModification(context contextpkg.Context, endDep
 		return new(api.EndDeploymentModificationResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if deploymentId, err := self.Backend.EndDeploymentModification(context, endDeploymentModification.ModificationToken, resources); err == nil {
+	if deploymentId, err := self.Backend.EndDeploymentModification(context, endDeploymentModification.ModificationToken, resources, nil); err == nil {
 		return &api.EndDeploymentModificationResponse{Modified: true, DeploymentId: deploymentId}, nil
 	} else if backend.IsNotDoneError(err) {
 		return &api.EndDeploymentModificationResponse{Modified: false, NotModifiedReason: err.Error()}, nil

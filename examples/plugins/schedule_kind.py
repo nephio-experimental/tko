@@ -4,7 +4,6 @@
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).parents[2] / 'sdk' / 'python'))
 
-
 import tko, tko.kind, tko.kubectl, tko.helm
 
 

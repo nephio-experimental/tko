@@ -14,10 +14,7 @@ spec:
     - edge1
     - edge2
     - edge3
-    - select:
-        metadata:
-          Site.cloud: GDC-E
-          Site.region: bangalore
+    - bangalore
     merge:
     # If we don't add this, we would get a validation error during deployment, because it is incomplete in the free5GC SMF template
     - apiVersion: workload.plugin.nephio.org/v1alpha1

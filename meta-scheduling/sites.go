@@ -2,6 +2,7 @@ package metascheduling
 
 import (
 	contextpkg "context"
+	"sync"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -10,6 +11,7 @@ import (
 )
 
 func (self *MetaScheduling) ScheduleSites() error {
+	self.schedulers = sync.Map{}
 	//self.Log.Notice("scheduling sites")
 	if siteInfos, err := self.Client.ListSites(client.ListSites{}); err == nil {
 		return util.IterateResults(siteInfos, func(siteInfo client.SiteInfo) error {
@@ -24,8 +26,8 @@ func (self *MetaScheduling) ScheduleSites() error {
 func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 	log := commonlog.NewKeyValueLogger(self.Log,
 		"site", siteInfo.SiteID)
-
 	log.Notice("scheduling site")
+
 	if site, ok, err := self.Client.GetSite(siteInfo.SiteID); err == nil {
 		if ok {
 			self.scheduleSite(siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)

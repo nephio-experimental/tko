@@ -6,30 +6,51 @@ import (
 	"fmt"
 
 	"github.com/nephio-experimental/tko/api/backend"
+	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/preparation"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
+	"github.com/tliron/kutil/util"
 )
 
-var SiteGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "Site")
+var SiteGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Site")
+
+// TODO: cache result
+func GetSiteID(preparationContext *preparation.Context, name string) (string, bool) {
+	if site, ok := SiteGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentResources); ok {
+		return GetStatusSiteID(site)
+	}
+
+	return "", false
+}
 
 // ([preparation.PrepareFunc] signature)
-func PrepareSite(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
-	preparationContext.Log.Info("preparing topology.nephio.org Site",
-		"resource", preparationContext.TargetResourceIdentifer)
-
-	// TODO: check that all Placements have been prepared first?
-
+func PrepareSite(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Resources, error) {
 	if site, ok := preparationContext.GetResource(); ok {
 		prepared := false
 
-		spec := ard.With(site).Get("spec")
-
-		// TODO: support implicit matching
+		spec := ard.With(site).Get("spec").ConvertSimilar()
 
 		if siteId, ok := spec.Get("siteId").String(); ok {
 			SetStatusSiteID(site, siteId)
 			prepared = true
+		} else if selectMetadata, ok := spec.Get("select", "metadata").StringMap(); ok {
+			metadataPatterns := make(map[string]string)
+			for key, value := range selectMetadata {
+				metadataPatterns[key] = util.ToString(value)
+			}
+
+			if siteInfos, err := preparationContext.Preparation.Client.ListSites(clientpkg.ListSites{MetadataPatterns: metadataPatterns}); err == nil {
+				// First one we find
+				if siteInfo, err := siteInfos.Next(); err == nil {
+					siteInfos.Release()
+					SetStatusSiteID(site, siteInfo.SiteID)
+					prepared = true
+				} else {
+					siteInfos.Release()
+					return false, nil, err
+				}
+			}
 		} else if GetSpecProvisionIfNotFound(spec, site) {
 			if _, ok := GetStatusSiteID(site); !ok {
 				templateId, _ := spec.Get("provisionTemplateId").String()
@@ -59,7 +80,7 @@ func PrepareSite(context contextpkg.Context, preparationContext *preparation.Con
 		}
 
 		if prepared {
-			if !util.SetPreparedAnnotation(site, true) {
+			if !tkoutil.SetPreparedAnnotation(site, true) {
 				return false, nil, errors.New("malformed Site resource")
 			}
 			return true, preparationContext.DeploymentResources, nil
@@ -69,23 +90,23 @@ func PrepareSite(context contextpkg.Context, preparationContext *preparation.Con
 	return false, preparationContext.DeploymentResources, nil
 }
 
-func GetSite(resources util.Resources, siteName string) (util.Resource, bool) {
+func GetSite(resources tkoutil.Resources, siteName string) (tkoutil.Resource, bool) {
 	return SiteGVK.NewResourceIdentifier(siteName).GetResource(resources)
 }
 
-func GetSpecProvisionIfNotFound(spec *ard.Node, resource util.Resource) bool {
+func GetSpecProvisionIfNotFound(spec *ard.Node, resource tkoutil.Resource) bool {
 	if provisionIfNotFound, ok := spec.Get("provisionIfNotFound").Boolean(); ok {
 		return provisionIfNotFound
 	}
 	return false
 }
 
-func GetStatusSiteID(resource util.Resource) (string, bool) {
+func GetStatusSiteID(resource tkoutil.Resource) (string, bool) {
 	siteId, ok := ard.With(resource).Get("status", "siteId").String()
 	return siteId, ok
 }
 
-func SetStatusSiteID(resource util.Resource, siteId string) {
+func SetStatusSiteID(resource tkoutil.Resource, siteId string) {
 	var status ard.Map
 	var ok bool
 	if status, ok = ard.With(resource).Get("status").Map(); !ok {

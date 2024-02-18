@@ -3,11 +3,15 @@ package validation
 import (
 	contextpkg "context"
 	"errors"
+	"fmt"
+	"sync"
 
 	"github.com/nephio-experimental/tko/util"
 )
 
 func (self *Validation) ValidateResources(resources util.Resources, complete bool) error {
+	self.validators = sync.Map{}
+
 	var errs []error
 
 	for _, resource := range resources {
@@ -18,7 +22,7 @@ func (self *Validation) ValidateResources(resources util.Resources, complete boo
 
 					for _, validate := range validators {
 						context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
-						errs = append(errs, validate(context, validationContext)...)
+						errs = append(errs, wrapErrors(resourceIdentifier, validate(context, validationContext))...)
 						cancel()
 					}
 				}
@@ -26,7 +30,7 @@ func (self *Validation) ValidateResources(resources util.Resources, complete boo
 				errs = append(errs, err)
 			}
 		} else {
-			errs = append(errs, self.Kubeconform(resource, complete)...)
+			errs = append(errs, wrapErrors(resourceIdentifier, self.Kubeconform(resource, complete))...)
 		}
 	}
 
@@ -40,4 +44,14 @@ func (self *Validation) DefaultValidate(context contextpkg.Context, validationCo
 	} else {
 		return nil
 	}
+}
+
+// Utils
+
+func wrapErrors(resourceIdentifier util.ResourceIdentifier, errors []error) []error {
+	wrappedErrors := make([]error, len(errors))
+	for index, err := range errors {
+		wrappedErrors[index] = fmt.Errorf("%s: %w", resourceIdentifier, err)
+	}
+	return wrappedErrors
 }

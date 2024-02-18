@@ -5,9 +5,7 @@ metadata:
   name: upf
 
 spec:
-  explicit:
-    repository: . # this repository
-    id: nf/free5gc/upf:v1.0.0
+  templateId: nf/free5gc/upf:v1.0.0
 
 ---
 
@@ -18,12 +16,6 @@ metadata:
   name: smf
 
 spec:
-  explicit:
-    repository: . # this repository
-    id: nf/free5gc/smf:v1.0.0
-  #implicit:
-  #  repository: '*' # any repository
-  #  filters:
-  #  - apiVersion: metadata.nephio.org/v1alpha1
-  #    kind: NetworkFunction
-  #    name: smf
+  select:
+    metadata:
+      NetworkFunction.type: SMF

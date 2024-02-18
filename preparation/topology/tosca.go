@@ -16,11 +16,8 @@ var TOSCAGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
 
 // ([preparation.PrepareFunc] signature)
 func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
-	preparationContext.Log.Info("preparing topology.nephio.org TOSCA",
-		"resource", preparationContext.TargetResourceIdentifer)
-
 	if tosca, ok := preparationContext.GetResource(); ok {
-		if url, ok := ard.With(tosca).Get("spec", "url").String(); ok {
+		if url, ok := ard.With(tosca).Get("spec", "url").ConvertSimilar().String(); ok {
 			parser := util.NewTOSCAParser()
 			defer parser.Release()
 
@@ -31,6 +28,9 @@ func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Co
 					toscaResources[vertextId] = NewTOSCAResource(vertex)
 				}
 				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "nephio::Site") {
+					toscaResources[vertextId] = NewTOSCAResource(vertex)
+				}
+				for vertextId, vertex := range cloututil.GetToscaNodeTemplates(parser.Clout, "nephio::Sites") {
 					toscaResources[vertextId] = NewTOSCAResource(vertex)
 				}
 
@@ -50,14 +50,8 @@ func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Co
 					var sites ard.List
 					for _, edge := range cloututil.GetToscaRelationships(vertex, "nephio::Host") {
 						siteResource := toscaResources[edge.TargetID]
-						if cloututil.IsToscaType(edge.Target.Properties, "nephio::Site") {
+						if cloututil.IsToscaType(edge.Target.Properties, "nephio::Site") || cloututil.IsToscaType(edge.Target.Properties, "nephio::Sites") {
 							sites = append(sites, siteResource.SiteName)
-						} else {
-							// Sites
-							select_ := ard.With(edge.Target.Properties).Get("properties").Value
-							sites = append(sites, ard.Map{
-								"select": select_,
-							})
 						}
 					}
 
@@ -171,7 +165,7 @@ func (self *TOSCAResource) ToResources() util.Resources {
 
 			if property.GVK.Equals(TemplateGVK) {
 				self.TemplateName = resourceName
-			} else if property.GVK.Equals(SiteGVK) {
+			} else if property.GVK.Equals(SiteGVK) || property.GVK.Equals(SitesGVK) {
 				self.SiteName = resourceName
 			} else {
 				self.Merge = append(self.Merge, util.Resource{
@@ -206,7 +200,7 @@ type TOSCAProperty struct {
 
 func (self *TOSCAResource) NewToscaProperty(name string, value ard.Value) {
 	var property TOSCAProperty
-	metadata_ := ard.With(value).Get("$meta", "metadata")
+	metadata_ := ard.With(value).Get("$meta", "metadata").ConvertSimilar()
 	apiVersion, _ := metadata_.Get("nephio.apiVersion").String()
 	kind, _ := metadata_.Get("nephio.kind").String()
 	property.GVK = util.NewGVK2(apiVersion, kind)

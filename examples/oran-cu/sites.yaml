@@ -84,3 +84,17 @@ metadata:
   name: edge3
 
 spec: {}
+
+---
+
+apiVersion: topology.nephio.org/v1alpha1
+kind: Sites
+
+metadata:
+  name: bangalore
+
+spec:
+  select:
+    metadata:
+      Site.cloud: GDC-E
+      Site.region: bangalore

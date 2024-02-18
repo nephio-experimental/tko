@@ -35,7 +35,6 @@ var trueBool = true
 var falseBool = false
 
 func ListDeployments(parentDemploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string, preparedFilter string, approvedFilter string) {
-
 	var prepared *bool
 	switch preparedFilter {
 	case "true":

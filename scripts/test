@@ -58,6 +58,7 @@ m 'registering sites...'
 tko site register lab/1 --metadata=type=lab --url="$ROOT/examples/lab-site/" -v
 tko site register india/bangalore/south-100 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
 tko site register india/bangalore/south-101 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+tko site register usa/chicago/west-4 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
 tko site register usa/chicago/west-5 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
 
 m 'creating CSAR...'

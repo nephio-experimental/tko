@@ -26,20 +26,20 @@ type Client struct {
 	log           commonlog.Logger
 }
 
-func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resourcesFormat string, timeout time.Duration, log commonlog.Logger) (*Client, error) {
+func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resourcesFormat string, timeout time.Duration, log commonlog.Logger) *Client {
 	bind := grpcIpStack.ClientBind(grpcAddress)
 
 	if address, err := util.ToReachableIPAddress(bind.Address); err == nil {
-		return &Client{
-			GRPCLevel2Protocol: bind.Level2Protocol,
-			GRPCAddress:        address,
-			GRPCPort:           grpcPort,
-			ResourcesFormat:    resourcesFormat,
-			Timeout:            timeout,
-			log:                log,
-		}, nil
-	} else {
-		return nil, err
+		bind.Address = address
+	}
+
+	return &Client{
+		GRPCLevel2Protocol: bind.Level2Protocol,
+		GRPCAddress:        bind.Address,
+		GRPCPort:           grpcPort,
+		ResourcesFormat:    resourcesFormat,
+		Timeout:            timeout,
+		log:                log,
 	}
 }
 

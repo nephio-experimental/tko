@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	tkoutil "github.com/nephio-experimental/tko/util"
-	"github.com/nephio-experimental/tko/validation"
+	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/kutil/util"
 )
 
@@ -15,12 +15,12 @@ import (
 
 type ValidatingBackend struct {
 	Backend    Backend
-	Validation *validation.Validation
+	Validation *validationpkg.Validation
 }
 
 // Wraps an existing backend with argument validation support, including
 // the running of resource validation plugins.
-func NewValidatingBackend(backend Backend, validation *validation.Validation) *ValidatingBackend {
+func NewValidatingBackend(backend Backend, validation *validationpkg.Validation) *ValidatingBackend {
 	return &ValidatingBackend{
 		Backend:    backend,
 		Validation: validation,
@@ -141,7 +141,12 @@ func (self *ValidatingBackend) CreateDeployment(context contextpkg.Context, depl
 		return NewBadArgumentError("invalid siteId")
 	}
 
-	if err := self.Validation.ValidateResources(deployment.Resources, false); err != nil {
+	// Prepared deployments must be completely valid
+	clone := deployment.Clone(true)
+	clone.UpdateFromResources(true)
+	completeValidation := clone.Prepared
+
+	if err := self.Validation.ValidateResources(deployment.Resources, completeValidation); err != nil {
 		return WrapBadArgumentError(err)
 	}
 
@@ -181,16 +186,22 @@ func (self *ValidatingBackend) StartDeploymentModification(context contextpkg.Co
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
+func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
 	if modificationToken == "" {
 		return "", NewBadArgumentError("modificationToken is empty")
 	}
 
+	// Partial validation before calling the wrapped backend
 	if err := self.Validation.ValidateResources(resources, false); err != nil {
 		return "", WrapBadArgumentError(err)
 	}
 
-	return self.Backend.EndDeploymentModification(context, modificationToken, resources)
+	if validation == nil {
+		validation = self.Validation
+	}
+
+	// It's the wrapped backend's job to validate the complete deployment
+	return self.Backend.EndDeploymentModification(context, modificationToken, resources, validation)
 }
 
 // ([Backend] interface)

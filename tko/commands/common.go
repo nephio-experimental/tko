@@ -12,7 +12,7 @@ import (
 	"github.com/tliron/kutil/terminal"
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	statuspkg "google.golang.org/grpc/status"
 )
 
 const toolName = "tko"
@@ -31,20 +31,19 @@ var parentDeploymentId string
 var executor string
 
 func NewClient() *clientpkg.Client {
-	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), clientLog)
-	util.FailOnError(err)
+	client := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), clientLog)
 	return client
 }
 
 func FailOnGRPCError(err error) {
-	if status_, ok := status.FromError(err); ok {
-		switch code := status_.Code(); code {
+	if status, ok := statuspkg.FromError(err); ok {
+		switch code := status.Code(); code {
 		case codes.OK:
 			return
 		case codes.Unknown:
-			util.Fail(status_.Message())
+			util.Fail(status.Message())
 		default:
-			util.Failf("gRPC %s: %s", code, status_.Message())
+			util.Failf("gRPC %s: %s", code, status.Message())
 		}
 	} else {
 		util.FailOnError(err)

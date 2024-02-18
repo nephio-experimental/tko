@@ -49,7 +49,7 @@ func NewPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 	case "command":
 		return NewCommandPluginScheduler(plugin)
 	default:
-		return nil, fmt.Errorf("unsupported plugin type: %s", plugin.Type)
+		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
 	}
 }
 

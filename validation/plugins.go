@@ -47,7 +47,7 @@ func NewPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 	case "command":
 		return NewCommandPluginValidator(plugin)
 	default:
-		return nil, fmt.Errorf("unsupported plugin type: %s", plugin.Type)
+		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
 	}
 }
 

@@ -2,6 +2,7 @@ package client
 
 import (
 	contextpkg "context"
+	"strings"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -33,7 +34,7 @@ func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata m
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("registerSite")
+		self.log.Infof("registerSite: %s, %s, %v, %s", siteId, templateId, metadata, resourcesFormat)
 		if response, err := apiClient.RegisterSite(context, &api.Site{
 			SiteId:          siteId,
 			TemplateId:      templateId,
@@ -55,7 +56,7 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("getSite")
+		self.log.Infof("getSite: %s", siteId)
 		if site, err := apiClient.GetSite(context, &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
 			if resources, err := tkoutil.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
 				return Site{
@@ -85,7 +86,7 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Info("deleteSite")
+		self.log.Infof("deleteSite: %s", siteId)
 		if response, err := apiClient.DeleteSite(context, &api.SiteID{SiteId: siteId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -102,11 +103,26 @@ type ListSites struct {
 	MetadataPatterns   map[string]string
 }
 
+// ([fmt.Stringer] interface)
+func (self ListSites) String() string {
+	var s []string
+	if len(self.SiteIDPatterns) > 0 {
+		s = append(s, "siteIdPatterns="+stringifyStringList(self.SiteIDPatterns))
+	}
+	if len(self.TemplateIDPatterns) > 0 {
+		s = append(s, "templateIdPatterns="+stringifyStringList(self.TemplateIDPatterns))
+	}
+	if (self.MetadataPatterns != nil) && (len(self.MetadataPatterns) > 0) {
+		s = append(s, "metadataPatterns="+stringifyStringMap(self.MetadataPatterns))
+	}
+	return strings.Join(s, " ")
+}
+
 func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], error) {
 	if apiClient, err := self.apiClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
-		self.log.Info("listSites")
+		self.log.Infof("listSites: %s", listSites)
 		if client, err := apiClient.ListSites(context, &api.ListSites{
 			SiteIdPatterns:     listSites.SiteIDPatterns,
 			TemplateIdPatterns: listSites.TemplateIDPatterns,

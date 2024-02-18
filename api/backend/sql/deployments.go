@@ -7,6 +7,7 @@ import (
 
 	"github.com/nephio-experimental/tko/api/backend"
 	tkoutil "github.com/nephio-experimental/tko/util"
+	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
@@ -263,7 +264,7 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
+func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
 	if tx, err := self.db.BeginTx(context, nil); err == nil {
 		selectDeploymentByModification := tx.StmtContext(context, self.statements.PreparedSelectDeploymentByModification)
 		rows, err := selectDeploymentByModification.QueryContext(context, modificationToken)
@@ -301,6 +302,14 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 				originalSiteId := deploymentInfo.SiteID
 				originalMetadata := tkoutil.CloneStringMap(deployment.Metadata)
 				deployment.UpdateFromResources(false)
+
+				if validation != nil {
+					// Complete validation when fully prepared
+					if err := validation.ValidateResources(resources, deployment.Prepared); err != nil {
+						self.rollback(tx)
+						return "", err
+					}
+				}
 
 				var resources []byte
 				var err error

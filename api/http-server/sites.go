@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/tliron/go-ard"
@@ -9,10 +10,11 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func (self *Server) listSites(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request) {
 	if siteInfoResults, err := self.Backend.ListSites(request.Context(), backend.ListSites{}); err == nil {
 		var sites []ard.StringMap
 		if err := util.IterateResults(siteInfoResults, func(siteInfo backend.SiteInfo) error {
+			slices.Sort(siteInfo.DeploymentIDs)
 			sites = append(sites, ard.StringMap{
 				"id":          siteInfo.SiteID,
 				"template":    siteInfo.TemplateID,
@@ -32,7 +34,7 @@ func (self *Server) listSites(writer http.ResponseWriter, request *http.Request)
 	}
 }
 
-func (self *Server) getSite(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) GetSite(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if site, err := self.Backend.GetSite(request.Context(), id); err == nil {
 		writeResources(writer, site.Resources)

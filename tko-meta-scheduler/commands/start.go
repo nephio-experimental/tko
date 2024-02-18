@@ -22,10 +22,10 @@ func init() {
 	rootCommand.AddCommand(startCommand)
 
 	startCommand.Flags().Float64Var(&interval, "interval", 3.0, "polling interval in seconds")
-	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO API Server (\"dual\", \"ipv6\", or \"ipv4\")")
-	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO API Server")
-	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API Server")
-	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources for TKO API Server (\"yaml\" or \"cbor\")")
+	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO API (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO API")
+	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API")
+	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources for TKO API (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
 	startCommand.Flags().Float64Var(&schedulerTimeout, "scheduler-timeout", 30.0, "scheduler timeout in seconds")
 }
@@ -37,14 +37,13 @@ var startCommand = &cobra.Command{
 		grpcIpStack = util.IPStack(grpcIpStackString)
 		util.FailOnError(grpcIpStack.Validate("grpc-ip-stack"))
 
-		Serve()
+		Start()
 	},
 }
 
-func Serve() {
+func Start() {
 	// Client
-	client, err := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
-	util.FailOnError(err)
+	client := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
 	// Controller
 	metaScheduling := metascheduling.NewMetaScheduling(client, tkoutil.SecondsToDuration(schedulerTimeout), commonlog.GetLogger("meta-scheduling"))

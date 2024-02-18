@@ -5,6 +5,7 @@ import (
 
 	"github.com/nephio-experimental/tko/api/backend"
 	tkoutil "github.com/nephio-experimental/tko/util"
+	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/kutil/util"
 )
 
@@ -34,7 +35,7 @@ func (self *SpannerBackend) StartDeploymentModification(context contextpkg.Conte
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
+func (self *SpannerBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
 	return "", nil
 }
 

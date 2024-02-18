@@ -9,7 +9,7 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Request) {
 	if deploymentInfoResults, err := self.Backend.ListDeployments(request.Context(), backend.ListDeployments{}); err == nil {
 		var deployments []ard.StringMap
 		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
@@ -35,7 +35,7 @@ func (self *Server) listDeployments(writer http.ResponseWriter, request *http.Re
 	}
 }
 
-func (self *Server) getDeployment(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) GetDeployment(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if deploymentInfo, err := self.Backend.GetDeployment(request.Context(), id); err == nil {
 		writeResources(writer, deploymentInfo.Resources)

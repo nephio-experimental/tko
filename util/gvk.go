@@ -66,7 +66,7 @@ func (self GVK) String() string {
 }
 
 func (self GVK) ShortString() string {
-	return self.APIVersion() + ", " + self.Kind
+	return self.APIVersion() + "," + self.Kind
 }
 
 // Utils

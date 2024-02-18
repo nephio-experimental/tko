@@ -2,7 +2,8 @@ package server
 
 import (
 	"io"
-	"sort"
+	"slices"
+	"strings"
 
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
@@ -10,8 +11,8 @@ import (
 )
 
 func sortById(info []ard.StringMap) {
-	sort.Slice(info, func(i int, j int) bool {
-		return info[i]["id"].(string) < info[j]["id"].(string)
+	slices.SortFunc(info, func(a ard.StringMap, b ard.StringMap) int {
+		return strings.Compare(a["id"].(string), b["id"].(string))
 	})
 }
 

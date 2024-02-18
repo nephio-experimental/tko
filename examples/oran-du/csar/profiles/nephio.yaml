@@ -21,7 +21,7 @@ node_types:
           nephio.apiVersion: topology.nephio.org/v1alpha1
           nephio.kind: Template
           nephio.suffix: -template
-          nephio.target: explicit.id
+          nephio.target: templateId
     requirements:
     - host:
         capability: Host
@@ -45,5 +45,10 @@ node_types:
       metadata:
         type: map
         entry_schema: string
+        metadata:
+          nephio.apiVersion: topology.nephio.org/v1alpha1
+          nephio.kind: Sites
+          nephio.suffix: -sites
+          nephio.target: select.metadata
     capabilities:
       host: Host

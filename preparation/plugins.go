@@ -52,7 +52,7 @@ func NewPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	case "kpt":
 		return NewKptPluginPreparer(plugin)
 	default:
-		return nil, fmt.Errorf("unsupported plugin type: %s", plugin.Type)
+		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
 	}
 }
 

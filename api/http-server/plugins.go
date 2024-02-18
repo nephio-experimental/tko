@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/nephio-experimental/tko/api/backend"
 	"github.com/tliron/go-ard"
@@ -9,7 +10,7 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func (self *Server) listPlugins(writer http.ResponseWriter, request *http.Request) {
+func (self *Server) ListPlugins(writer http.ResponseWriter, request *http.Request) {
 	if pluginResults, err := self.Backend.ListPlugins(request.Context(), backend.ListPlugins{}); err == nil {
 		var plugins []ard.StringMap
 		if err := util.IterateResults(pluginResults, func(plugin backend.Plugin) error {
@@ -17,6 +18,7 @@ func (self *Server) listPlugins(writer http.ResponseWriter, request *http.Reques
 			for index, trigger := range plugin.Triggers {
 				triggers[index] = trigger.ShortString()
 			}
+			slices.Sort(triggers)
 
 			plugins = append(plugins, ard.StringMap{
 				"id":         plugin.Type + "|" + plugin.Name,

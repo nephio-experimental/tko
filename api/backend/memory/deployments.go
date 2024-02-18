@@ -6,6 +6,7 @@ import (
 
 	"github.com/nephio-experimental/tko/api/backend"
 	tkoutil "github.com/nephio-experimental/tko/util"
+	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/kutil/util"
 )
 
@@ -208,7 +209,7 @@ func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Contex
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error) {
+func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -220,8 +221,14 @@ func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context,
 				originalTemplateId := deployment.TemplateID
 				originalSiteId := deployment.SiteID
 				deployment.Resources = resources
-
 				deployment.UpdateFromResources(false)
+
+				if validation != nil {
+					// Complete validation when fully prepared
+					if err := validation.ValidateResources(resources, deployment.Prepared); err != nil {
+						return "", err
+					}
+				}
 
 				// Validate template
 

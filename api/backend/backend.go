@@ -4,6 +4,7 @@ import (
 	contextpkg "context"
 
 	tkoutil "github.com/nephio-experimental/tko/util"
+	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/kutil/util"
 )
 
@@ -64,8 +65,9 @@ type Backend interface {
 	// Owns and may change the contents of the resources argument.
 	// May change TemplateID, SiteID, Prepared, Approved.
 	// Does *not* modify Metadata, even if modified resources indicate a change.
+	// If validation is not nil, should validate the modification. If the deployment is prepared, it should be complete validation.
 	// Can return BadArgumentError, NotFoundError, NotDoneError, TimeoutError.
-	EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources) (string, error)
+	EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error)
 
 	// Can return BadArgumentError, NotFoundError, NotDoneError.
 	CancelDeploymentModification(context contextpkg.Context, modificationToken string) error
