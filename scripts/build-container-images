@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+. "$HERE/_trap"
+
+"$HERE/build"
+
+build () {
+	cp --force "$GOPATH/bin/$1" "$ROOT/dist/"
+	docker build --tag="$1" --file="assets/docker/$1" "$ROOT"
+}
+
+build tko-api
+build tko-preparer
+build tko-meta-scheduler

@@ -50,3 +50,7 @@ func NewValidation(client *clientpkg.Client, timeout time.Duration, log commonlo
 		kubeconform:          kubeconform,
 	}, nil
 }
+
+func (self *Validation) ResetPluginCache() {
+	self.validators = sync.Map{}
+}

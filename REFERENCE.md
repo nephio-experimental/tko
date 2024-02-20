@@ -14,20 +14,20 @@ in a SQL database that can be accessed with join queries.
 The metadata keys will be gathered from the Kind and the nested spec keys with a "." path notation.
 
 The name of the resource is *not* used for metadata, but is useful for identifying the resource for
-merges. A good practice is to just name it "metadata".
+merges. A good practice if you have just one of a Kind is to name it `metadata`.
 
-Metadata gathering can be disabled per resource using the "nephio.org/metadata" annotation.
+Metadata gathering can be disabled per resource using the `nephio.org/metadata` annotation.
 
 Note that metadata can also be added and modified directly against the backend. It is the *only*
 out-of-band data supported (by definition metadata is out-of-band) and is minimalistic by design.
 
 ### deployment.nephio.org
 
-Available Kind: Deployment, which will *always* be named "deployment".
+Available Kind: Deployment, which will *always* be named `deployment`.
 
-This resource is automatically added to every deployment, if it's not already there, and is used for
-information about the deployment, most notably to track the preparation status, to specify the template
-that was used for it, the site it is associated with, etc.
+This resource is automatically merged into every deployment, and is used for information about the
+deployment as a whole, most notably to track the preparation status, to specify the template that
+was used for it, the site it is associated with, etc.
 
 ### topology.nephio.org
 
@@ -67,13 +67,11 @@ infra requirements for the site and its deployments.
 
 ### [name].plugin.nephio.org
 
-This group family is used to configure plugins, for both deployment preparation and site meta-scheduling.
-Individual GVKs can be used as targets for the relevant plugin.
+This group family is merely a convention, meant specificall for plugin configuration. The `[name]`
+can be product- or vendor-specific, e.g. "free5gc" or "nokia".
 
-Note that plugins can target *any* GVK and do not need to make use of this group family, and that
-beyond the target resource the plugin can make use of *any* resource in the deployment.
-
-The [name] can be product- or vendor-specific, e.g. "free5gc" or "nokia".
+Note that plugins can be triggered by *any* GVK and do *not* need to make use of this group family,
+and even then beyond the trigger the plugin can make use of *any* resource in the deployment.
 
 Annotations
 ===========

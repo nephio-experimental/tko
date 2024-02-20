@@ -62,7 +62,7 @@ function install_tool () {
 	m "downloading $NAME $VERSION..."
 	if [ "${URL: -7}" == .tar.gz ] || [ "${URL: -4}" == .tgz ]; then
 		local ARCHIVE=$(mktemp --suffix=.tar.gz)
-		if wget --quiet --output-document="$ARCHIVE" "$URL"; then
+		if curl --silent --location --output "$ARCHIVE" "$URL"; then
 			if tar --extract --file="$ARCHIVE" --directory=/usr/bin --strip="$STRIP" "$ARCHIVE_PREFIX$NAME"; then
 				rm --force "$ARCHIVE"
 			else
@@ -74,7 +74,7 @@ function install_tool () {
 			return
 		fi
 	else
-		if ! wget --quiet --output-document="$EXEC" "$URL"; then
+		if ! curl --silent --location --output "$EXEC" "$URL"; then
 			m "could not download from \"$URL\" to \"$EXEC\"" "$RED"
 			return
 		fi

@@ -23,9 +23,15 @@ type MetaScheduling struct {
 }
 
 func NewMetaScheduling(client *clientpkg.Client, timeout time.Duration, log commonlog.Logger) *MetaScheduling {
-	return &MetaScheduling{
+	metaScheduling := MetaScheduling{
 		Client:               client,
 		Log:                  log,
 		registeredSchedulers: make(map[util.GVK][]SchedulerFunc),
 	}
+
+	return &metaScheduling
+}
+
+func (self *MetaScheduling) ResetPluginCache() {
+	self.schedulers = sync.Map{}
 }

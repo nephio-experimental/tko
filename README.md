@@ -88,27 +88,28 @@ flowchart TD
 
     A[TKO API Server]
     P[TKO Preparer]
-    M[TKO Meta-Scheduler]
+    MS[TKO Meta-Scheduler]
 
-    PP[/prepare plugins/]
-    VP[/validate plugins/]
-    SP[/schedule plugins/]
+    PP[/preparer plugins/]
+    VP[/validator plugins/]
+    SP[/scheduler plugins/]
 
     C-. gRPC ..-A
     W-. HTTP ..-A
     O-. gRPC ..-A
-    A-. gRPC .- P
-    A-. gRPC .-M
+    A-. gRPC ..- P
+    A-. gRPC ..-MS
 
     D-..-A
 
     PP---P
     VP---P
-    SP---M
+    SP---MS
 
     P-.-DPA
-    M-.-DPA
-    M-.-WC
+    PR-.-MS
+    MS-.-WC
+    MS-.-SR
 
     subgraph TC [Template Catalog]
         ST[\Site Templates/]
@@ -141,7 +142,7 @@ flowchart TD
     style P fill:blue,color:white
     style PP fill:darkblue,color:white
     style VP fill:darkblue,color:white
-    style M fill:blue,color:white
+    style MS fill:blue,color:white
     style SP fill:darkblue,color:white
     style ST fill:red,color:white
     style TT fill:red,color:white

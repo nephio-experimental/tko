@@ -25,10 +25,10 @@ We also provide a script to run commands on the virtual machine from the host. E
     scripts/vagrant kubectl get pods --all-namespaces --context=kind-edge1
     scripts/vagrant scripts/test
 
-If you have `tko` installed on the host, you can also run the client there. The API
-gRPC port is mapped to the host as 60050, so you need to point to it explicitly:
+If you have `tko` installed on the host, you can also run the client there with this
+script:
 
-    tko plugin dashboard --grpc-port=60050
+    scripts/tko-vagrant dashboard
 
 Continue to [user guide](USAGE.md).
 
@@ -37,6 +37,42 @@ from the host (it's one-way, only from the host to the virtual machine at direct
 `/vagrant`), run this in a separate terminal:
 
     vagrant rsync-auto
+
+To delete the virtual machine:
+
+    vagrant destroy
+
+Kubernetes Cluster
+------------------
+
+TKO can run in a Kubernetes cluster. We provide a quick setup on top of
+[Kind](https://kind.sigs.k8s.io/) using TKO container images published on
+[Docker Hub](https://hub.docker.com/u/tliron).
+
+Our current setup is very minimal. It uses the memory backend, rather than PostgreSQL,
+and will not provision new local clusters (to avoid running Kind inside Kind).
+
+To create the Kind cluster:
+
+    scripts/test-kind
+
+The internal web server port is mapped to your host at port 30051, so you can access
+the web dashboard at [http://localhost:30051/](http://localhost:30051/).
+
+If you have `tko` installed on the host, you can also run the client there with this
+script:
+
+    scripts/tko-kind dashboard
+
+To follow logs:
+
+    scripts/log-kind tko-api -f
+    scripts/log-kind tko-preparer -f
+    scripts/log-kind tko-meta-scheduler -f
+
+To delete the Kind cluster:
+
+    kind delete cluster --name=tko
 
 Native Installation
 -------------------
@@ -54,7 +90,7 @@ For Google gLinux hosts:
 ### Other Requirements
 
     sudo scripts/install-system-dependencies
-    scripts/install-python-dependencies
+    scripts/install-python-env
 
 Note that Python will be using a virtual environment at `~/tko-python-env`.
 

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+NAME=$1
+
+"$HERE/kubectl-kind" logs "deployment/$NAME" --namespace=tko "${@:2}"

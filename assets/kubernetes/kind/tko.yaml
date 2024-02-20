@@ -1,0 +1,11 @@
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+
+name: tko
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30050
+    hostPort: 30050
+  - containerPort: 30051
+    hostPort: 30051

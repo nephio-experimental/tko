@@ -10,12 +10,12 @@ import (
 var dashboardFrequency float64
 
 func init() {
-	rootCommand.AddCommand(tuiCommand)
+	rootCommand.AddCommand(dashboardCommand)
 
-	tuiCommand.Flags().Float64VarP(&dashboardFrequency, "frequency", "f", 3.0, "update frequency in seconds")
+	dashboardCommand.Flags().Float64VarP(&dashboardFrequency, "frequency", "f", 3.0, "update frequency in seconds")
 }
 
-var tuiCommand = &cobra.Command{
+var dashboardCommand = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start dashboard TUI",
 	Args:  cobra.NoArgs,

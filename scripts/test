@@ -3,6 +3,7 @@ set -e
 
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
+. "$HERE/_trap"
 
 m 'stopping controllers...'
 
@@ -12,8 +13,8 @@ m 'stopping controllers...'
 
 if [ "$1" == -c ]; then
 	m 'deleting clusters...'
-    kind delete cluster --name edge1 || true
-    kind delete cluster --name edge2 || true
+    kind delete cluster --name=edge1 || true
+    kind delete cluster --name=edge2 || true
 fi
 
 m 'building...'

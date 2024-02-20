@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: tko-preparer
+  namespace: tko
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tko-preparer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tko-preparer
+    spec:
+      containers:
+      - name: tko-preparer
+        image: tliron/tko-preparer:latest
+        imagePullPolicy: Always
+        env:
+        - name: TKO_grpc-address
+          value: tko-api

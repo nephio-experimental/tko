@@ -5,6 +5,7 @@ set -e
 
 HERE=/vagrant/scripts
 . "$HERE/_env"
+. "$HERE/_trap"
 
 not_root
 
@@ -17,8 +18,8 @@ sudo "$HERE/install-system-dependencies"
 m 'setup-postgresql...' $CYAN
 sudo "$HERE/setup-postgresql"
 
-m 'install-python-dependencies...' $CYAN
-"$HERE/install-python-dependencies"
+m 'install-python-env...' $CYAN
+"$HERE/install-python-env"
 
 m 'install-systemd-services...' $CYAN
 BACKEND=postgresql BACKEND_CLEAN=true "$HERE/install-systemd-services"

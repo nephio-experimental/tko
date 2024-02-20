@@ -8,8 +8,16 @@ not_root
 
 TERMINAL=$(ps -p $(ps -p $(ps -p $$ -o ppid=) -o ppid=) -o args=)
 case "$TERMINAL" in
-    *gnome-terminal*) TERMINAL=gnome-terminal;;
-    *tilix*) TERMINAL=tilix;;
+    *gnome-terminal*)
+		TERMINAL=gnome-terminal
+		;;
+    *kitty*)
+		TERMINAL=kitty
+		KITTY_FIRST=true
+		;;
+    *tilix*)
+		TERMINAL=tilix
+		;;
 	*) m "unsupported terminal: $TERMINAL" "$RED"
 esac
 
@@ -18,6 +26,15 @@ function follow () {
         gnome-terminal)
             gnome-terminal --tab --title="$1" -- "$HERE/log-service" "$1" --follow
             ;;
+        kitty)
+			if [ "$KITTY_FIRST" == true ]; then
+				KITTY_TAB=$(kitten @ launch --keep-focus --type=tab --tab-title=tko-logs --title="$1" "$HERE/log-service" "$1" --follow)
+				kitty @ goto-layout --match=id:"$KITTY_TAB" vertical
+				KITTY_FIRST=false
+			else
+				kitten @ launch --keep-focus --type=window --match=id:"$KITTY_TAB" --title="$1" "$HERE/log-service" "$1" --follow > /dev/null
+			fi
+			;;
         tilix)
             tilix --action=session-add-down --title="$1" --command="\"$HERE/log-service\" \"$1\" --follow"
             ;;

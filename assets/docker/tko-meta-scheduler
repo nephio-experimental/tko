@@ -1,0 +1,16 @@
+FROM fedora:39
+
+COPY dist/tko-meta-scheduler /usr/bin/
+
+COPY scripts/install-system-dependencies /opt/
+COPY scripts/install-python-env /opt/
+COPY scripts/_env /opt/
+COPY scripts/_functions /opt/
+
+RUN /opt/install-system-dependencies
+RUN useradd tko
+
+USER tko
+RUN /opt/install-python-env
+CMD /usr/bin/tko-meta-scheduler start -v
+

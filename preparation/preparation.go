@@ -32,3 +32,7 @@ func NewPreparation(client *clientpkg.Client, timeout time.Duration, autoApprove
 		registeredPreparers: make(map[util.GVK][]PreparerFunc),
 	}
 }
+
+func (self *Preparation) ResetPluginCache() {
+	self.preparers = sync.Map{}
+}

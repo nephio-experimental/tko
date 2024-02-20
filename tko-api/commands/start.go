@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"os"
+	"time"
 
 	backendpkg "github.com/nephio-experimental/tko/api/backend"
 	"github.com/nephio-experimental/tko/api/backend/memory"
@@ -15,12 +16,14 @@ import (
 	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
+	cobrautil "github.com/tliron/kutil/cobra"
 	"github.com/tliron/kutil/util"
 )
 
 const maxModificationDuration = 10 // seconds
 
 var backendName string
+var backendConnection string
 var backendClean bool
 var grpcIpStackString string
 var grpcIpStack util.IPStack
@@ -39,6 +42,7 @@ func init() {
 	rootCommand.AddCommand(startCommand)
 
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
+	startCommand.Flags().StringVar(&backendConnection, "backend-connection", "postgresql://tko:tko@localhost:5432/tko", "backend connection")
 	startCommand.Flags().BoolVar(&backendClean, "backend-clean", false, "clean backend data on startup")
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "bind IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "bind address for gRPC server")
@@ -50,6 +54,8 @@ func init() {
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind HTTP/2 port for web server")
 	startCommand.Flags().Float64Var(&validatorTimeout, "validator-timeout", 30.0, "validator timeout in seconds")
+
+	cobrautil.SetFlagsFromEnvironment("TKO_", startCommand)
 }
 
 var startCommand = &cobra.Command{
@@ -75,9 +81,8 @@ func Serve() {
 		backend = memory.NewMemoryBackend(maxModificationDuration, commonlog.GetLogger("backend.memory"))
 
 	case "postgresql":
-		dataSource := "postgresql://tko:tko@localhost:5432/tko"
-		log.Noticef("creating postgresql backend: %s", dataSource)
-		sqlBackend := sql.NewSQLBackend("pgx", dataSource, "cbor", maxModificationDuration, commonlog.GetLogger("backend.sql"))
+		log.Noticef("creating postgresql backend: %s", backendConnection)
+		sqlBackend := sql.NewSQLBackend("pgx", backendConnection, "cbor", maxModificationDuration, commonlog.GetLogger("backend.sql"))
 		sqlBackend.DropTablesFirst = backendClean
 		backend = sqlBackend
 
@@ -94,6 +99,8 @@ func Serve() {
 	// Wrap backend with validation
 	validation, err := validationpkg.NewValidation(client, tkoutil.SecondsToDuration(validatorTimeout), commonlog.GetLogger("validation"))
 	util.FailOnError(err)
+	validationTicker := tkoutil.NewTicker(10*time.Second, validation.ResetPluginCache)
+	util.OnExit(validationTicker.Stop)
 	backend = backendpkg.NewValidatingBackend(backend, validation)
 
 	util.FailOnError(backend.Connect(context.TODO()))

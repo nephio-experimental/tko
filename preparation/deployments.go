@@ -2,7 +2,6 @@ package preparation
 
 import (
 	"errors"
-	"sync"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -13,7 +12,6 @@ import (
 var falseBool = false
 
 func (self *Preparation) PrepareDeployments() error {
-	self.preparers = sync.Map{}
 	//self.Log.Notice("preparing deployments")
 	if deploymentInfos, err := self.Client.ListDeployments(client.ListDeployments{Prepared: &falseBool}); err == nil {
 		return util.IterateResults(deploymentInfos, func(deploymentInfo client.DeploymentInfo) error {

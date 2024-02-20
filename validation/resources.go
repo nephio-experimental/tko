@@ -4,14 +4,11 @@ import (
 	contextpkg "context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/nephio-experimental/tko/util"
 )
 
 func (self *Validation) ValidateResources(resources util.Resources, complete bool) error {
-	self.validators = sync.Map{}
-
 	var errs []error
 
 	for _, resource := range resources {

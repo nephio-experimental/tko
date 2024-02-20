@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
+	cobrautil "github.com/tliron/kutil/cobra"
 	"github.com/tliron/kutil/terminal"
 	"github.com/tliron/kutil/util"
 )
@@ -37,6 +38,8 @@ func init() {
 	rootCommand.PersistentFlags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API Server")
 	rootCommand.PersistentFlags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
 	rootCommand.PersistentFlags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
+
+	cobrautil.SetFlagsFromEnvironment("TKO_", rootCommand)
 }
 
 var rootCommand = &cobra.Command{
