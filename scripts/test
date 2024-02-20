@@ -53,6 +53,19 @@ tko template register topology/oran/cu:v1.0.0 --metadata=type=topology --url="$R
 tko template register topology/oran/du:v1.0.0 --metadata=type=topology --url="$ROOT/examples/oran-du/krm/" -v
 tko template register site/gdce:v1.0.0 --metadata=type=site --url="$ROOT/examples/gdce-site/" -v
 
+# From zip file
+#pushd "$ROOT/examples/free5gc-smf/" > /dev/null
+#rm --force /tmp/tko-free5gc-smf.zip
+#zip --recurse-paths /tmp/tko-free5gc-smf.zip .
+#popd > /dev/null
+#tko template register free5gc/smf2 --url=/tmp/tko-free5gc-smf.zip
+
+# From zip URL
+#tko template register free5gc/smf2 --url='zip:https://github.com/nephio-experimental/tko/archive/refs/heads/main.zip!tko-main/examples/free5gc-smf/infra.yaml'
+
+# From git URL
+#tko template register free5gc/smf2 -url='git:https://github.com/nephio-experimental/tko.git!examples/free5gc-smf/infra.yaml'
+
 m 'registering sites...'
 
 tko site register lab/1 --metadata=type=lab --url="$ROOT/examples/lab-site/" -v

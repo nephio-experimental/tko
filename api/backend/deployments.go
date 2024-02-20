@@ -77,6 +77,9 @@ type Deployment struct {
 }
 
 func NewDeployment(templateId string, parentDemploymentId string, siteId string, metadata map[string]string, prepared bool, approved bool, resources util.Resources) *Deployment {
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
 	return &Deployment{
 		DeploymentInfo: DeploymentInfo{
 			DeploymentID:       NewID(),
@@ -93,6 +96,9 @@ func NewDeployment(templateId string, parentDemploymentId string, siteId string,
 
 func NewDeploymentFromBytes(templateId string, parentDemploymentId string, siteId string, metadata map[string]string, prepared bool, approved bool, resourcesFormat string, resources []byte) (*Deployment, error) {
 	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
 		return &Deployment{
 			DeploymentInfo: DeploymentInfo{
 				DeploymentID:       NewID(),
@@ -136,7 +142,9 @@ func (self *Deployment) MergeTemplate(template *Template) {
 
 	resources := util.CloneResources(template.Resources)
 	resources = util.MergeResources(resources, self.Resources...)
-	resources = util.MergeResources(resources, self.NewDeploymentResource())
-
 	self.Resources = resources
+}
+
+func (self *Deployment) MergeDeploymentResource() {
+	self.Resources = util.MergeResources(self.Resources, self.NewDeploymentResource())
 }

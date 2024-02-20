@@ -20,13 +20,7 @@ func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugi
 		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, plugin.Type))
 	}
 
-	if err := self.Backend.SetPlugin(context, &backend.Plugin{
-		PluginID:   backend.NewPluginID(plugin.Type, plugin.Name),
-		Executor:   plugin.Executor,
-		Arguments:  plugin.Arguments,
-		Properties: plugin.Properties,
-		Triggers:   tkoutil.TriggersFromAPI(plugin.Triggers),
-	}); err == nil {
+	if err := self.Backend.SetPlugin(context, backend.NewPlugin(plugin.Type, plugin.Name, plugin.Executor, plugin.Arguments, plugin.Properties, tkoutil.TriggersFromAPI(plugin.Triggers))); err == nil {
 		return &api.RegisterResponse{Registered: true}, nil
 	} else if backend.IsNotDoneError(err) {
 		return &api.RegisterResponse{Registered: false, NotRegisteredReason: err.Error()}, nil

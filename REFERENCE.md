@@ -80,6 +80,7 @@ Annotations
 
 | Annotation           | Values                          | Description |
 |----------------------|---------------------------------|-------------|
+| `nephio.org/approve`   | `Default` (default), `Auto`, `Manual` | `Manual` disables auto-approval when the resource is prepared. |
 | `nephio.org/approved`  | `false` (default), `true`           | `true` marks a resource as approved. |
 | `nephio.org/metadata`  | `Here` (default), `Postpone`, `Never` | `Never` disables use of a metadata resource. `Postpone` will disable use here, and reenable after merging elsewhere. |
 | `nephio.org/merge`     | `Replace` (default), `Override`     | `Override` will override individual properties instead of replacing the whole resource. |

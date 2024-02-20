@@ -6,24 +6,28 @@ import (
 
 func MergeResources(resources Resources, mergeResources ...Resource) Resources {
 	for _, mergeResource := range mergeResources {
-		if resourceIdentifier, ok := NewResourceIdentifierForResource(mergeResource); ok {
-			renameAnnotation, _ := GetRenameAnnotation(mergeResource)
-			if renameAnnotation != "" {
-				resourceIdentifier.Name = renameAnnotation
+		if mergeResourceIdentifier, ok := NewResourceIdentifierForResource(mergeResource); ok {
+			var override bool
+			if mergeAnnotation, ok := GetMergeAnnotation(mergeResource); ok {
+				if mergeAnnotation == MergeAnnotationOverride {
+					override = true
+				}
+			}
+
+			if renameAnnotation, ok := GetRenameAnnotation(mergeResource); ok {
+				mergeResourceIdentifier.Name = renameAnnotation
 				mergeResource = ard.Copy(mergeResource).(Resource)
-				ard.With(mergeResource).Get("metadata", "name").Set(renameAnnotation)
+				ard.With(mergeResource).ConvertSimilar().ForceGet("metadata", "name").Set(renameAnnotation)
 			}
 
 			add := true
 
 			for index, resource := range resources {
-				if resourceIdentifier.Is(resource) {
-					mergeAnnotation, _ := GetMergeAnnotation(mergeResource)
-					switch mergeAnnotation {
-					case MergeAnnotationReplace, "":
+				if mergeResourceIdentifier.Is(resource) {
+					if override {
+						resources[index] = ard.Merge(resource, mergeResource, false).(Resource)
+					} else {
 						resources[index] = mergeResource
-					case MergeAnnotationOverride:
-						ard.Merge(resources[index], mergeResource, false)
 					}
 
 					add = false

@@ -52,6 +52,7 @@ func (self *MemoryBackend) CreateDeployment(context contextpkg.Context, deployme
 		deployment.UpdateFromResources(true)
 		template.AddDeployment(deployment.DeploymentID)
 	}
+	deployment.MergeDeploymentResource()
 
 	// Associate with site
 	if site != nil {

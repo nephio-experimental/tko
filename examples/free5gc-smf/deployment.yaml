@@ -1,0 +1,7 @@
+apiVersion: deployment.nephio.org/v1alpha1
+kind: Deployment
+
+metadata:
+  name: deployment
+  annotations:
+    nephio.org/approve: Manual

@@ -112,7 +112,17 @@ func (self *Preparation) finalizeDeploymentPreparation(deploymentId string, log 
 					modified = true
 				}
 
-				if self.AutoApprove {
+				approve := self.AutoApprove
+				if approveAnnotation, ok := tkoutil.GetApproveAnnotation(deployment); ok {
+					switch approveAnnotation {
+					case tkoutil.ApproveAnnotationAuto:
+						approve = true
+					case tkoutil.ApproveAnnotationManual:
+						approve = false
+					}
+				}
+
+				if approve {
 					if tkoutil.SetApprovedAnnotation(deployment, true) {
 						modified = true
 					}

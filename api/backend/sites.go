@@ -61,6 +61,9 @@ type Site struct {
 
 func NewSiteFromBytes(siteId string, templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (*Site, error) {
 	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
 		return &Site{
 			SiteInfo: SiteInfo{
 				SiteID:     siteId,

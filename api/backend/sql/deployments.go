@@ -19,7 +19,7 @@ func (self *SQLBackend) CreateDeployment(context contextpkg.Context, deployment 
 			self.rollback(tx)
 			return err
 		}
-
+		deployment.MergeDeploymentResource()
 		deployment.UpdateFromResources(true)
 
 		var resources []byte

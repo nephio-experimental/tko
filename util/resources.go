@@ -60,6 +60,9 @@ func NewDeploymentResource(templateId string, siteId string, prepared bool, appr
 		"kind":       DeploymentResourceIdentifier.GVK.Kind,
 		"metadata": ard.Map{
 			"name": DeploymentResourceIdentifier.Name,
+			"annotations": ard.Map{
+				MergeAnnotation: MergeAnnotationOverride,
+			},
 		},
 		"spec": spec,
 	}

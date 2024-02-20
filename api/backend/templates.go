@@ -44,6 +44,9 @@ type Template struct {
 
 func NewTemplateFromBytes(templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (*Template, error) {
 	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
 		return &Template{
 			TemplateInfo: TemplateInfo{
 				TemplateID: templateId,

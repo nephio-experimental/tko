@@ -5,16 +5,8 @@ import (
 )
 
 //
-// Plugin
+// PluginID
 //
-
-type Plugin struct {
-	PluginID
-	Executor   string
-	Arguments  []string
-	Properties map[string]string
-	Triggers   []util.GVK
-}
 
 type PluginID struct {
 	Type string
@@ -31,6 +23,31 @@ func NewPluginID(type_ string, name string) PluginID {
 // ([fmt.Stringer] interface)
 func (self *PluginID) String() string {
 	return self.Type + "|" + self.Name
+}
+
+//
+// Plugin
+//
+
+type Plugin struct {
+	PluginID
+	Executor   string
+	Arguments  []string
+	Properties map[string]string
+	Triggers   []util.GVK
+}
+
+func NewPlugin(type_ string, name string, executor string, arguments []string, properties map[string]string, triggers []util.GVK) *Plugin {
+	if properties == nil {
+		properties = make(map[string]string)
+	}
+	return &Plugin{
+		PluginID:   NewPluginID(type_, name),
+		Executor:   executor,
+		Arguments:  arguments,
+		Properties: properties,
+		Triggers:   triggers,
+	}
 }
 
 func (self *Plugin) AddTrigger(group string, version string, kind string) {

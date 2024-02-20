@@ -21,7 +21,7 @@ func NewResourceIdentifierForResource(resource Resource) (ResourceIdentifier, bo
 	var self ResourceIdentifier
 	var ok bool
 	if self.GVK, ok = GetGVK(resource); ok {
-		if self.Name, ok = ard.With(resource).Get("metadata", "name").String(); ok {
+		if self.Name, ok = ard.With(resource).ConvertSimilar().Get("metadata", "name").String(); ok {
 			return self, true
 		}
 	}
@@ -32,7 +32,7 @@ func NewResourceIdentifierForObjectReference(objectReference ard.Map) (ResourceI
 	var self ResourceIdentifier
 	var ok bool
 	if self.GVK, ok = GetGVK(objectReference); ok {
-		if self.Name, ok = ard.With(objectReference).Get("name").String(); ok {
+		if self.Name, ok = ard.With(objectReference).ConvertSimilar().Get("name").String(); ok {
 			return self, true
 		}
 	}
@@ -50,7 +50,7 @@ func (self ResourceIdentifier) GetResource(resources Resources) (Resource, bool)
 
 func (self ResourceIdentifier) Is(resource Resource) bool {
 	if self.GVK.Is(resource) {
-		if name, ok := ard.With(resource).Get("metadata", "name").String(); ok {
+		if name, ok := ard.With(resource).ConvertSimilar().Get("metadata", "name").String(); ok {
 			return name == self.Name
 		}
 	}

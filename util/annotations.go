@@ -21,6 +21,11 @@ const (
 	PrepareAnnotationHere     = "Here"
 	PrepareAnnotationPostpone = "Postpone"
 
+	ApproveAnnotation        = "nephio.org/approve"
+	ApproveAnnotationDefault = "Default"
+	ApproveAnnotationAuto    = "Auto"
+	ApproveAnnotationManual  = "Manual"
+
 	PreparedAnnotation = "nephio.org/prepared"
 	ApprovedAnnotation = "nephio.org/approved"
 
@@ -28,27 +33,31 @@ const (
 )
 
 func GetMetadataAnnotation(resource Resource) (string, bool) {
-	return ard.With(resource).Get("metadata", "annotations", MetadataAnnotation).String()
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", MetadataAnnotation).String()
 }
 
 func GetMergeAnnotation(resource Resource) (string, bool) {
-	return ard.With(resource).Get("metadata", "annotations", MergeAnnotation).String()
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", MergeAnnotation).String()
 }
 
 func GetRenameAnnotation(resource Resource) (string, bool) {
-	return ard.With(resource).Get("metadata", "annotations", RenameAnnotation).String()
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", RenameAnnotation).String()
 }
 
 func GetPrepareAnnotation(resource Resource) (string, bool) {
-	return ard.With(resource).Get("metadata", "annotations", PrepareAnnotation).String()
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", PrepareAnnotation).String()
+}
+
+func GetApproveAnnotation(resource Resource) (string, bool) {
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", ApproveAnnotation).String()
 }
 
 func SetPrepareAnnotation(resource Resource, value string) bool {
-	return ard.With(resource).ForceGet("metadata", "annotations", PrepareAnnotation).Set(value)
+	return ard.With(resource).ConvertSimilar().ForceGet("metadata", "annotations", PrepareAnnotation).Set(value)
 }
 
 func GetPreparedAnnotation(resource Resource) (string, bool) {
-	return ard.With(resource).Get("metadata", "annotations", PreparedAnnotation).String()
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", PreparedAnnotation).String()
 }
 
 func IsPreparedAnnotation(resource Resource) bool {
@@ -59,7 +68,7 @@ func IsPreparedAnnotation(resource Resource) bool {
 }
 
 func SetPreparedAnnotation(resource Resource, prepared bool) bool {
-	annotation := ard.With(resource).ForceGet("metadata", "annotations", PreparedAnnotation)
+	annotation := ard.With(resource).ConvertSimilar().ForceGet("metadata", "annotations", PreparedAnnotation)
 	if prepared {
 		if value, _ := annotation.String(); value == AnnotationTrue {
 			return false
@@ -71,7 +80,7 @@ func SetPreparedAnnotation(resource Resource, prepared bool) bool {
 }
 
 func GetApprovedAnnotation(resource Resource) (string, bool) {
-	return ard.With(resource).Get("metadata", "annotations", ApprovedAnnotation).String()
+	return ard.With(resource).ConvertSimilar().Get("metadata", "annotations", ApprovedAnnotation).String()
 }
 
 func IsApprovedAnnotation(resource Resource) bool {
@@ -82,7 +91,7 @@ func IsApprovedAnnotation(resource Resource) bool {
 }
 
 func SetApprovedAnnotation(resource Resource, approved bool) bool {
-	annotation := ard.With(resource).ForceGet("metadata", "annotations", ApprovedAnnotation)
+	annotation := ard.With(resource).ConvertSimilar().ForceGet("metadata", "annotations", ApprovedAnnotation)
 	if approved {
 		if value, _ := annotation.String(); value == AnnotationTrue {
 			return false
@@ -94,7 +103,9 @@ func SetApprovedAnnotation(resource Resource, approved bool) bool {
 }
 
 func UpdateAnnotationsForMerge(resource Resource) {
-	annotation := ard.With(resource).Get("metadata", "annotations", MetadataAnnotation)
+	annotations := ard.With(resource).ConvertSimilar().ForceGet("metadata", "annotations")
+
+	annotation := annotations.Get(MetadataAnnotation)
 	if metadata, ok := annotation.String(); ok {
 		switch metadata {
 		case MetadataAnnotationHere, "":
@@ -106,7 +117,7 @@ func UpdateAnnotationsForMerge(resource Resource) {
 		}
 	}
 
-	annotation = ard.With(resource).Get("metadata", "annotations", PrepareAnnotation)
+	annotation = annotations.Get(PrepareAnnotation)
 	if prepare, ok := annotation.String(); ok {
 		switch prepare {
 		case PrepareAnnotationHere, "":
