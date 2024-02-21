@@ -1,0 +1,14 @@
+FROM fedora:39
+
+COPY scripts/install-system-dependencies /opt/
+COPY scripts/install-python-env /opt/
+COPY scripts/_env /opt/
+COPY scripts/_functions /opt/
+
+RUN /opt/install-system-dependencies
+RUN useradd tko
+
+USER tko
+RUN /opt/install-python-env
+CMD exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+# https://stackoverflow.com/a/35770783

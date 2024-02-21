@@ -28,7 +28,7 @@ function follow () {
             ;;
         kitty)
 			if [ "$KITTY_FIRST" == true ]; then
-				KITTY_TAB=$(kitten @ launch --keep-focus --type=tab --tab-title=tko-logs --title="$1" "$HERE/log-service" "$1" --follow)
+				KITTY_TAB=$(kitten @ launch --keep-focus --type=tab --tab-title="TKO Logs" --title="$1" "$HERE/log-service" "$1" --follow)
 				kitty @ goto-layout --match=id:"$KITTY_TAB" vertical
 				KITTY_FIRST=false
 			else

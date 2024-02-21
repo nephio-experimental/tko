@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: tko-runner
+  namespace: tko
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tko-runner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tko-runner
+    spec:
+      containers:
+      - name: tko-runner
+        image: tliron/tko-runner:latest
+        imagePullPolicy: Always
+        ports:
+        - name: grpc
+          containerPort: 50050
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: tko-runner
+  namespace: tko
+
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: tko-runner
+  ports:
+  - name: grpc
+    port: 50050
+    targetPort: grpc
