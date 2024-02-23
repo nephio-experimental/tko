@@ -5,12 +5,14 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 . "$HERE/_trap"
 
+TAG=${TAG:-tliron}
+
 function push () {
-	docker image tag "$1" "tliron/$1"
-	docker push "tliron/$1"
+	docker image tag "$1" "$TAG/$1"
+	docker push "$TAG/$1"
 }
 
 push tko-api
-push tko-preparer
-push tko-meta-scheduler
-push tko-runner
+#push tko-preparer
+#push tko-meta-scheduler
+#push tko-runner

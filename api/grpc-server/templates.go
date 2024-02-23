@@ -3,8 +3,8 @@ package server
 import (
 	contextpkg "context"
 
-	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
+	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

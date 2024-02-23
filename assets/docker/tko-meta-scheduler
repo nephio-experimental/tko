@@ -1,6 +1,6 @@
 FROM fedora:39
 
-COPY dist/tko-meta-scheduler /usr/bin/
+COPY work/tko-meta-scheduler /usr/bin/
 
 RUN useradd tko
 

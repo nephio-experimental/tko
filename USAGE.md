@@ -9,13 +9,18 @@ it any time:
 
     scripts/test
 
-### GUI
+### TUI
 
-To access the web UI go to [http://localhost:50051](http://localhost:50051).
-(It's currently a read-only UI.)
+Included is a rich TUI that even supports mouse clicks and scrolling:
+
+    tko dashboard
 
 It's fun to click on "Deployments", rerun `scripts/test`, and see the deployments being
 created and prepared in real time!
+
+### GUI
+
+To access the web UI go to [http://localhost:50051](http://localhost:50051).
 
 ### CLI
 
@@ -38,8 +43,8 @@ To see the provisioned KIND clusters:
 
     kind get clusters
 
-To access a KIND cluster use a context name where the cluster name is prefixed with
-"kind-", e.g.:
+To access a provisioned Kind cluster use a context name where the cluster name is
+prefixed with "kind-", e.g.:
 
     kubectl get pods --all-namespaces --context=kind-edge1
 

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nephio-experimental/tko/api/backend"
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
+	"github.com/nephio-experimental/tko/backend"
 	"github.com/nephio-experimental/tko/preparation"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"

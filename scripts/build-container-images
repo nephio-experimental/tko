@@ -7,12 +7,14 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 "$HERE/build"
 
+mkdir --parents "$ROOT/work/"
+
 build () {
-	cp --force "$GOPATH/bin/$1" "$ROOT/dist/"
+	cp --force "$GOPATH/bin/$1" "$ROOT/work/"
 	docker build --tag="$1" --file="assets/docker/$1" "$ROOT"
 }
 
 build tko-api
-build tko-preparer
-build tko-meta-scheduler
-build tko-runner
+#build tko-preparer
+#build tko-meta-scheduler
+#build tko-runner

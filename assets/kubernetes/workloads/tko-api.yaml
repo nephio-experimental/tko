@@ -15,11 +15,14 @@ spec:
       labels:
         app.kubernetes.io/name: tko-api
     spec:
+      serviceAccountName: tko
       containers:
       - name: tko-api
         image: tliron/tko-api:latest
         imagePullPolicy: Always
-        #env:
+        env:
+        - name: TKO_kubernetes
+          value: "true"
         #- name: TKO_backend
         #  value: postgresql
         #- name: TKO_backend-clean
@@ -31,7 +34,10 @@ spec:
           containerPort: 50050
         - name: http
           containerPort: 50051
-
+        - name: kubernetes
+          containerPort: 50052
+      - name: etcd
+        image: gcr.io/etcd-development/etcd:v3.5.12
 ---
 
 apiVersion: v1
@@ -54,3 +60,7 @@ spec:
     port: 50051
     nodePort: 30051
     targetPort: http
+  - name: kubernetes
+    port: 50052
+    nodePort: 30052
+    targetPort: kubernetes

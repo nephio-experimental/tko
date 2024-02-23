@@ -16,12 +16,28 @@ kind create cluster --config="$ROOT/assets/kubernetes/kind/tko.yaml" || true
 
 m 'deploying TKO...'
 
+if [ "$1" == -d ]; then
+	m 'deleting TKO...'
+	"$HERE/kubectl-kind" delete -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml" || true
+	"$HERE/kubectl-kind" delete -f "$ROOT/assets/kubernetes/admin/" || true
+fi
+
 "$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/admin/"
-"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
+#"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
+"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml"
 
 m 'waiting for TKO...'
 
 "$HERE/kubectl-kind" wait --for=condition=available --timeout=60s --namespace=tko deployment/tko-api
+"$HERE/kubectl-kind" wait --for=condition=available --timeout=60s apiservice/v1alpha1.tko.nephio.org
+
+m 'creating template...'
+
+"$HERE/kubectl-kind" create -f "$ROOT/examples/kubernetes/"
+
+exit
+
+"$HERE/kubectl-kind" describe template/hello --namespace=tko
 
 m 'creating deployment...'
 

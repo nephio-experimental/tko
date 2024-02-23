@@ -4,8 +4,8 @@ import (
 	contextpkg "context"
 	"fmt"
 
-	"github.com/nephio-experimental/tko/api/backend"
 	api "github.com/nephio-experimental/tko/api/grpc"
+	"github.com/nephio-experimental/tko/backend"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"

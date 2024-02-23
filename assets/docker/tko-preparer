@@ -1,6 +1,6 @@
 FROM fedora:39
 
-COPY dist/tko-preparer /usr/bin/
+COPY work/tko-preparer /usr/bin/
 
 RUN useradd tko
 

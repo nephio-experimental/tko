@@ -1,0 +1,11 @@
+apiVersion: tko.nephio.org/v1alpha1
+kind: Site
+
+metadata:
+  name: hello
+
+spec:
+  siteId: lab:v1.0.0
+  metadata:
+    m1: hello
+    m2: world

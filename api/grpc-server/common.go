@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/nephio-experimental/tko/api/backend"
+	"github.com/nephio-experimental/tko/backend"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

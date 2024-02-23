@@ -5,6 +5,6 @@ go.work
 go.work.sum
 
 work/
-dist/
+github.com/
 
 __pycache__

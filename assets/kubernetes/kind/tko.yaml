@@ -9,3 +9,5 @@ nodes:
     hostPort: 30050
   - containerPort: 30051
     hostPort: 30051
+  - containerPort: 30052
+    hostPort: 30052

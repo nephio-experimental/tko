@@ -5,13 +5,14 @@ import (
 	"os"
 	"time"
 
-	backendpkg "github.com/nephio-experimental/tko/api/backend"
-	"github.com/nephio-experimental/tko/api/backend/memory"
-	"github.com/nephio-experimental/tko/api/backend/spanner"
-	"github.com/nephio-experimental/tko/api/backend/sql"
 	grpcclient "github.com/nephio-experimental/tko/api/grpc-client"
 	grpcserver "github.com/nephio-experimental/tko/api/grpc-server"
 	httpserver "github.com/nephio-experimental/tko/api/http-server"
+	kubernetesserver "github.com/nephio-experimental/tko/api/kubernetes-server"
+	backendpkg "github.com/nephio-experimental/tko/backend"
+	"github.com/nephio-experimental/tko/backend/memory"
+	"github.com/nephio-experimental/tko/backend/spanner"
+	"github.com/nephio-experimental/tko/backend/sql"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/spf13/cobra"
@@ -36,6 +37,8 @@ var webIpStackString string
 var webIpStack util.IPStack
 var webAddress string
 var webPort uint
+var kubernetes bool
+var kubernetesPort uint
 var validatorTimeout float64
 
 func init() {
@@ -53,6 +56,8 @@ func init() {
 	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind HTTP/2 port for web server")
+	startCommand.Flags().BoolVar(&kubernetes, "kubernetes", false, "start Kubernetes aggregated API server")
+	startCommand.Flags().UintVar(&kubernetesPort, "kubernetes-port", 50052, "bind port for Kubernetes aggregated API server")
 	startCommand.Flags().Float64Var(&validatorTimeout, "validator-timeout", 30.0, "validator timeout in seconds")
 
 	cobrautil.SetFlagsFromEnvironment("TKO_", startCommand)
@@ -118,6 +123,14 @@ func Serve() {
 	util.FailOnError(err)
 	util.FailOnError(httpServer.Start())
 	util.OnExit(httpServer.Stop)
+
+	// Kubernetes
+	if kubernetes {
+		kubernetesServer, err := kubernetesserver.NewServer(backend, int(kubernetesPort), commonlog.GetLogger("kubernetes"))
+		util.FailOnError(err)
+		kubernetesServer.Start()
+		util.OnExit(kubernetesServer.Stop)
+	}
 
 	// Block forever
 	select {}

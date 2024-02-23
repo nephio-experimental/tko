@@ -1,6 +1,6 @@
 FROM fedora:39
 
-COPY dist/tko-api /usr/bin/
+COPY work/tko-api /usr/bin/
 
 RUN useradd tko
 

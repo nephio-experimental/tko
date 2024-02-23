@@ -66,9 +66,9 @@ script:
 
 To follow logs:
 
-    scripts/log-kind tko-api -f
-    scripts/log-kind tko-preparer -f
-    scripts/log-kind tko-meta-scheduler -f
+    scripts/log-service-kind tko-api -f
+    scripts/log-service-kind tko-preparer -f
+    scripts/log-service-kind tko-meta-scheduler -f
 
 To delete the Kind cluster:
 
