@@ -2,10 +2,10 @@ apiVersion: tko.nephio.org/v1alpha1
 kind: Template
 
 metadata:
-  name: hello
+  name: k8s-hello
 
 spec:
-  templateId: demo/hello:v1.0.0
+  templateId: k8s/hello:v1.0.0
   metadata:
     m1: hello
     m2: world

@@ -2,10 +2,12 @@ package server
 
 import (
 	contextpkg "context"
+	"fmt"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
 	backendpkg "github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,14 +63,14 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 		},
 
 		ListFunc: func(context contextpkg.Context, store *Store) (runtime.Object, error) {
-			var siteList krm.SiteList
-			siteList.APIVersion = APIVersion
-			siteList.Kind = "SiteList"
+			var krmSiteList krm.SiteList
+			krmSiteList.APIVersion = APIVersion
+			krmSiteList.Kind = "SiteList"
 
 			if results, err := store.Backend.ListSites(context, backendpkg.ListSites{}); err == nil {
 				if err := util.IterateResults(results, func(siteInfo backendpkg.SiteInfo) error {
 					if krmSite, err := SiteInfoToKRM(&siteInfo); err == nil {
-						siteList.Items = append(siteList.Items, krmSite)
+						krmSiteList.Items = append(krmSiteList.Items, krmSite)
 						return nil
 					} else {
 						return err
@@ -80,7 +82,37 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			return &siteList, nil
+			return &krmSiteList, nil
+		},
+
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error) {
+			table := new(meta.Table)
+
+			krmSites, err := ToSitesKRM(object)
+			if err != nil {
+				return nil, err
+			}
+
+			descriptions := krm.Site{}.TypeMeta.SwaggerDoc()
+			nameDescription, _ := descriptions["name"]
+			siteIdDescription, _ := descriptions["siteId"]
+			templateIdDescription, _ := descriptions["templateId"]
+			table.ColumnDefinitions = []meta.TableColumnDefinition{
+				{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
+				{Name: "SiteID", Type: "string", Description: siteIdDescription},
+				{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+				//{Name: "Metadata", Description: descriptions["metadata"]},
+			}
+
+			table.Rows = make([]meta.TableRow, len(krmSites))
+			for index, krmSite := range krmSites {
+				table.Rows[index] = meta.TableRow{
+					Cells:  []any{krmSite.Name, krmSite.Spec.SiteId, krmSite.Spec.TemplateId},
+					Object: runtime.RawExtension{Object: &krmSite},
+				}
+			}
+
+			return table, nil
 		},
 	}
 
@@ -88,51 +120,84 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 	return &store
 }
 
-func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (krm.Site, error) {
-	var site krm.Site
+func ToSitesKRM(object runtime.Object) ([]krm.Site, error) {
+	switch object_ := object.(type) {
+	case *krm.SiteList:
+		return object_.Items, nil
+	case *krm.Site:
+		return []krm.Site{*object_}, nil
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", object)
+	}
+}
 
+func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (krm.Site, error) {
 	name, err := IDToName(siteInfo.SiteID)
 	if err != nil {
-		return site, err
+		return krm.Site{}, err
 	}
 
-	site.APIVersion = APIVersion
-	site.Kind = "Site"
-	site.Name = name
-	//site.GenerateName = "tko-site-"
-	site.UID = types.UID("tko|site|" + siteInfo.SiteID)
-	//site.ResourceVersion = "123"
-	site.CreationTimestamp = meta.Now()
+	var krmSite krm.Site
+	krmSite.APIVersion = APIVersion
+	krmSite.Kind = "Site"
+	krmSite.Name = name
+	krmSite.UID = types.UID("tko|site|" + siteInfo.SiteID)
 
-	siteId := siteInfo.SiteID
-	site.Spec.SiteId = &siteId
-	site.Spec.Metadata = siteInfo.Metadata
+	if siteId := siteInfo.SiteID; siteId != "" {
+		krmSite.Spec.SiteId = &siteId
+	}
+	if templateId := siteInfo.TemplateID; templateId != "" {
+		krmSite.Spec.TemplateId = &templateId
+	}
+	krmSite.Spec.Metadata = siteInfo.Metadata
+	krmSite.Spec.DeploymentIds = siteInfo.DeploymentIDs
 
-	return site, nil
+	return krmSite, nil
 }
 
 func SiteToKRM(site *backendpkg.Site) (krm.Site, error) {
-	return SiteInfoToKRM(&site.SiteInfo)
+	if krmSite, err := SiteInfoToKRM(&site.SiteInfo); err == nil {
+		if resourcesYaml, err := tkoutil.EncodeResources("yaml", site.Resources); err == nil {
+			resourcesYaml_ := util.BytesToString(resourcesYaml)
+			krmSite.Spec.ResourcesYaml = &resourcesYaml_
+			return krmSite, nil
+		} else {
+			return krm.Site{}, err
+		}
+	} else {
+		return krm.Site{}, err
+	}
 }
 
-func KRMToSite(site *krm.Site) (*backendpkg.Site, error) {
-	metadata := site.Spec.Metadata
-
+func KRMToSite(krmSite *krm.Site) (*backendpkg.Site, error) {
 	var id string
-	if site.Spec.SiteId != nil {
-		id = *site.Spec.SiteId
+	if krmSite.Spec.SiteId != nil {
+		id = *krmSite.Spec.SiteId
 	}
 	if id == "" {
 		var err error
-		if id, err = NameToID(site.Name); err != nil {
+		if id, err = NameToID(krmSite.Name); err != nil {
 			return nil, err
 		}
 	}
 
-	return &backendpkg.Site{
+	site := backendpkg.Site{
 		SiteInfo: backendpkg.SiteInfo{
 			SiteID:   id,
-			Metadata: metadata,
+			Metadata: krmSite.Spec.Metadata,
 		},
-	}, nil
+	}
+
+	if krmSite.Spec.ResourcesYaml != nil {
+		var err error
+		if site.Resources, err = tkoutil.DecodeResources("yaml", util.StringToBytes(*krmSite.Spec.ResourcesYaml)); err != nil {
+			return nil, err
+		}
+	}
+
+	if krmSite.Spec.TemplateId != nil {
+		site.TemplateID = *krmSite.Spec.TemplateId
+	}
+
+	return &site, nil
 }

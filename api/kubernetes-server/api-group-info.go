@@ -12,18 +12,17 @@ import (
 )
 
 func NewAPIGroupInfo(restOptions generic.RESTOptionsGetter, backend backend.Backend, log commonlog.Logger) (*apiserver.APIGroupInfo, error) {
-	/*templateStore, err := NewTemplateStore(restOptions)
-	if err != nil {
-		return nil, err
-	}*/
-
 	templateStore := NewTemplateStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "template"))
 	siteStore := NewSiteStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "site"))
+	deploymentStore := NewDeploymentStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "deployment"))
+	pluginStore := NewPluginStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "plugin"))
 
 	apiGroupInfo := apiserver.NewDefaultAPIGroupInfo(krmgroup.GroupName, Scheme, meta.ParameterCodec, Codecs)
 	apiGroupInfo.VersionedResourcesStorageMap[krm.Version] = map[string]rest.Storage{
-		templateStore.Plural: templateStore,
-		siteStore.Plural:     siteStore,
+		templateStore.Plural:   templateStore,
+		siteStore.Plural:       siteStore,
+		deploymentStore.Plural: deploymentStore,
+		pluginStore.Plural:     pluginStore,
 	}
 
 	return &apiGroupInfo, nil

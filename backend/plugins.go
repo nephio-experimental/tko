@@ -1,8 +1,12 @@
 package backend
 
 import (
+	"strings"
+
 	"github.com/nephio-experimental/tko/util"
 )
+
+const PluginIDSeparator = "|"
 
 //
 // PluginID
@@ -20,9 +24,17 @@ func NewPluginID(type_ string, name string) PluginID {
 	}
 }
 
+func ParsePluginID(id string) (PluginID, bool) {
+	if type_, name, ok := strings.Cut(id, PluginIDSeparator); ok {
+		return PluginID{type_, name}, true
+	} else {
+		return PluginID{}, false
+	}
+}
+
 // ([fmt.Stringer] interface)
 func (self *PluginID) String() string {
-	return self.Type + "|" + self.Name
+	return self.Type + PluginIDSeparator + self.Name
 }
 
 //

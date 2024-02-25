@@ -1,0 +1,71 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+. "$HERE/_trap"
+
+WHERE=${1:-local}
+TKO=${2:-tko}
+
+m 'registering plugins...'
+
+if [ "$WHERE" = local ]; then
+	"$TKO" plugin register validate free5gc/smf "$ROOT/examples/plugins/validate_free5gc_smf.py" --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
+	"$TKO" plugin register prepare namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=namespace=spec.namespace --trigger=workload.plugin.nephio.org,v1alpha1,Namespace -v
+	"$TKO" plugin register prepare free5gc/smf "$ROOT/examples/plugins/prepare_free5gc_smf.py" --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
+	"$TKO" plugin register schedule kind "$ROOT/examples/plugins/schedule_kind.py" --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
+	"$TKO" plugin register schedule gdce "$ROOT/examples/plugins/schedule_gdce.py" --trigger=gdce.google.com,v1alpha1,EdgeCluster -v
+fi
+
+m 'registering templates...'
+
+"$TKO" template register demo/hello-world:v1.0.0 --metadata=type=demo --url="$ROOT/examples/hello-world/" -v
+"$TKO" template register nf/free5gc/upf:v1.0.0 --metadata=type=nf --url="$ROOT/examples/free5gc-upf/" -v
+"$TKO" template register nf/free5gc/smf:v1.0.0 --metadata=type=nf --url="$ROOT/examples/free5gc-smf/" -v
+"$TKO" template register topology/oran/cu:v1.0.0 --metadata=type=topology --url="$ROOT/examples/oran-cu/" -v
+"$TKO" template register topology/oran/du:v1.0.0 --metadata=type=topology --url="$ROOT/examples/oran-du/krm/" -v
+"$TKO" template register site/gdce:v1.0.0 --metadata=type=site --url="$ROOT/examples/gdce-site/" -v
+
+# From zip file
+#pushd "$ROOT/examples/free5gc-smf/" > /dev/null
+#rm --force /tmp/tko-free5gc-smf.zip
+#zip --recurse-paths /tmp/tko-free5gc-smf.zip .
+#popd > /dev/null
+#"$TKO" template register free5gc/smf2 --url=/tmp/tko-free5gc-smf.zip
+
+# From zip URL
+#"$TKO" template register free5gc/smf2 --url='zip:https://github.com/nephio-experimental/tko/archive/refs/heads/main.zip!tko-main/examples/free5gc-smf/infra.yaml'
+
+# From git URL
+#"$TKO" template register free5gc/smf2 -url='git:https://github.com/nephio-experimental/tko.git!examples/free5gc-smf/infra.yaml'
+
+m 'registering sites...'
+
+"$TKO" site register lab/1 --metadata=type=lab --url="$ROOT/examples/lab-site/" -v
+"$TKO" site register india/bangalore/south-100 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+"$TKO" site register india/bangalore/south-101 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=bangalore -v
+"$TKO" site register usa/chicago/west-4 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
+"$TKO" site register usa/chicago/west-5 site/gdce:v1.0.0 --metadata=Site.cloud=GDC-E --metadata=Site.region=chicago -v
+
+m 'creating CSAR...'
+
+pushd "$ROOT/examples/oran-du/csar/" > /dev/null
+rm --force /tmp/tko-oran-du.csar
+zip --recurse-paths /tmp/tko-oran-du.csar .
+popd > /dev/null
+
+m 'creating deployments...'
+
+"$TKO" deployment create demo/hello-world:v1.0.0 --site=lab/1 -v
+"$TKO" deployment create topology/oran/cu:v1.0.0 -v
+"$TKO" deployment create topology/oran/du:v1.0.0 -v
+
+# D=$("$TKO" deployment create topology/oran/cu:v1.0.0 -v)
+# m "deployment name: $D"
+# "$TKO" deployment get "$D"
+# M=$("$TKO" deployment mod start "$D" --url="$ROOT/work/deployment/")
+# m "modification token: $M"
+# kpt fn eval --image=gcr.io/kpt-fn/set-namespace:v0.4.1 "$ROOT/work/deployment/" -- namespace=network-function
+# "$TKO" deployment mod end "$M" --url="$ROOT/work/deployment/"
+# TODO: set prepared?

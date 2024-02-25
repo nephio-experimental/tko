@@ -6,17 +6,32 @@ import (
 	"strings"
 )
 
-const EscapeRune rune = '$'
 const MaxNameLength = 253
+const EscapeRune rune = '-'
 
-var EscapeString = runeToString(EscapeRune)
+var EscapeRuneString = runeToString(EscapeRune)
+var ForbiddenRunes = []rune{EscapeRune, '/', ':', '%', '|'}
+
+var forbiddenRuneStrings []string
+var forbiddenRuneReplacements []string
+
+func init() {
+	length := len(ForbiddenRunes)
+	forbiddenRuneStrings = make([]string, length)
+	forbiddenRuneReplacements = make([]string, length)
+	for index, r := range ForbiddenRunes {
+		forbiddenRuneStrings[index] = runeToString(r)
+		forbiddenRuneReplacements[index] = EscapeRuneString + runeToHex(r)
+	}
+}
 
 func IDToName(id string) (string, error) {
-	id = escape(id, EscapeRune, '/', '%')
-	if length := len(id); length > MaxNameLength {
+	id = escapeName(id)
+	if length := len(id); length <= MaxNameLength {
+		return id, nil
+	} else {
 		return "", fmt.Errorf("name too long: %d", length)
 	}
-	return id, nil
 }
 
 func NameToID(name string) (string, error) {
@@ -26,7 +41,7 @@ func NameToID(name string) (string, error) {
 	for index := 0; index < length; index++ {
 		r := runes[index]
 		if r == EscapeRune {
-			if r, err := hexToRune(string(runes[index+1 : index+5])); err == nil {
+			if r, err := hexToRune(runes[index+1 : index+5]); err == nil {
 				builder.WriteRune(r)
 			} else {
 				return "", err
@@ -41,23 +56,26 @@ func NameToID(name string) (string, error) {
 
 // Utils
 
-func escape(id string, runes ...rune) string {
-	for _, r := range runes {
-		id = strings.ReplaceAll(id, runeToString(r), EscapeString+fmt.Sprintf("%04x", r))
+func escapeName(name string) string {
+	for index, r := range forbiddenRuneStrings {
+		name = strings.ReplaceAll(name, r, forbiddenRuneReplacements[index])
 	}
-	return id
+	return name
 }
 
 func runeToString(r rune) string {
-	return fmt.Sprintf("%c", r)
+	return string(r)
+	//return fmt.Sprintf("%c", r)
 }
 
 func runeToHex(r rune) string {
-	return fmt.Sprintf("%04x", r)
+	s := strconv.FormatInt(int64(r), 16)
+	return strings.Repeat("0", 4-len(s)) + s
+	//return fmt.Sprintf("%04x", r)
 }
 
-func hexToRune(hex string) (rune, error) {
-	if r, err := strconv.ParseInt(hex, 16, 32); err == nil {
+func hexToRune(hex []rune) (rune, error) {
+	if r, err := strconv.ParseInt(string(hex), 16, 32); err == nil {
 		return rune(r), nil
 	} else {
 		return 0, err

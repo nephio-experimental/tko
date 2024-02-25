@@ -23,12 +23,17 @@ type Template struct {
 }
 
 type TemplateSpec struct {
-	TemplateId *string           `json:"templateId"`
-	Metadata   map[string]string `json:"metadata"`
+	// +optional
+	TemplateId *string `json:"templateId"`
+	// +optional
+	Metadata map[string]string `json:"metadata"`
+	// +optional
+	DeploymentIds []string `json:"deploymentIds,omitempty"`
+	// +optional
+	ResourcesYaml *string `json:"resourcesYaml"`
 }
 
 type TemplateStatus struct {
-	Test string `json:"test"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -55,12 +60,19 @@ type Site struct {
 }
 
 type SiteSpec struct {
-	SiteId   *string           `json:"siteId"`
+	// +optional
+	SiteId *string `json:"siteId"`
+	// +optional
+	TemplateId *string `json:"templateId,omitempty"`
+	// +optional
 	Metadata map[string]string `json:"metadata"`
+	// +optional
+	DeploymentIds []string `json:"deploymentIds,omitempty"`
+	// +optional
+	ResourcesYaml *string `json:"resourcesYaml"`
 }
 
 type SiteStatus struct {
-	Test string `json:"test"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -86,11 +98,25 @@ type Deployment struct {
 }
 
 type DeploymentSpec struct {
-	Test string `json:"test"`
+	// +optional
+	DeploymentId *string `json:"deploymentId"`
+	// +optional
+	ParentDeploymentId *string `json:"parentDeploymentId,omitempty"`
+	// +optional
+	TemplateId *string `json:"templateId,omitempty"`
+	// +optional
+	SiteId *string `json:"siteId,omitempty"`
+	// +optional
+	Metadata map[string]string `json:"metadata"`
+	// +optional
+	Prepared *bool `json:"prepared"`
+	// +optional
+	Approved *bool `json:"approved"`
+	// +optional
+	ResourcesYaml *string `json:"resourcesYaml"`
 }
 
 type DeploymentStatus struct {
-	Test string `json:"test"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -116,11 +142,25 @@ type Plugin struct {
 }
 
 type PluginSpec struct {
-	Test string `json:"test"`
+	Type *string `json:"type"`
+	// +optional
+	PluginID *string `json:"id"`
+	Executor *string `json:"executor"`
+	// +optional
+	Arguments []string `json:"arguments"`
+	// +optional
+	Properties map[string]string `json:"properties,omitempty"`
+	// +optional
+	Triggers []Trigger `json:"triggers,omitempty"`
+}
+
+type Trigger struct {
+	Group   string `json:"group"`
+	Version string `json:"version"`
+	Kind    string `json:"kind"`
 }
 
 type PluginStatus struct {
-	Test string `json:"test"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

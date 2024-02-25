@@ -23,24 +23,16 @@ if [ "$1" == -d ]; then
 fi
 
 "$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/admin/"
-#"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
-"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml"
+"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
+#"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml"
 
 m 'waiting for TKO...'
 
 "$HERE/kubectl-kind" wait --for=condition=available --timeout=60s --namespace=tko deployment/tko-api
 "$HERE/kubectl-kind" wait --for=condition=available --timeout=60s apiservice/v1alpha1.tko.nephio.org
 
-m 'creating template...'
+m 'creating KRM...'
 
 "$HERE/kubectl-kind" create -f "$ROOT/examples/kubernetes/"
 
-exit
-
-"$HERE/kubectl-kind" describe template/hello --namespace=tko
-
-m 'creating deployment...'
-
-"$HERE/tko-kind" template register demo/hello-world:v1.0.0 --metadata=type=demo --url="$ROOT/examples/hello-world/" -v
-"$HERE/tko-kind" site register lab/1 --metadata=type=lab --url="$ROOT/examples/lab-site/" -v
-"$HERE/tko-kind" deployment create demo/hello-world:v1.0.0 --site=lab/1 -v
+"$HERE/test-scenario" remote "$HERE/tko-kind"

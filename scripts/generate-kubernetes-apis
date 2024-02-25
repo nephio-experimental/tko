@@ -61,7 +61,7 @@ rm --recursive --force "$ROOT/api/kubernetes-client"
 # To avoid warnings
 mkdir --parents "$ROOT/api/kubernetes-client/clientset/"
 mkdir --parents "$ROOT/api/kubernetes-client/listers/"
-mkdir --parents "$ROOT/api/kubernetes-client/inforers/"
+mkdir --parents "$ROOT/api/kubernetes-client/informers/"
 
 kube::codegen::gen_client \
 	--output-base "$WORK" \

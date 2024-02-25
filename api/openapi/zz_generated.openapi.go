@@ -31,6 +31,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.TemplateList":     schema_api_krm_tkonephioorg_v1alpha1_TemplateList(ref),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.TemplateSpec":     schema_api_krm_tkonephioorg_v1alpha1_TemplateSpec(ref),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.TemplateStatus":   schema_api_krm_tkonephioorg_v1alpha1_TemplateStatus(ref),
+		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Trigger":          schema_api_krm_tkonephioorg_v1alpha1_Trigger(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                                       schema_pkg_apis_meta_v1_APIGroup(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":                                   schema_pkg_apis_meta_v1_APIGroupList(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":                                    schema_pkg_apis_meta_v1_APIResource(ref),
@@ -187,15 +188,64 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentSpec(ref common.ReferenceCal
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"test": {
+					"deploymentId": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"parentDeploymentId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"templateId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"siteId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"prepared": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"approved": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"resourcesYaml": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
-				Required: []string{"test"},
 			},
 		},
 	}
@@ -206,16 +256,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentStatus(ref common.ReferenceC
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"test": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-				},
-				Required: []string{"test"},
 			},
 		},
 	}
@@ -322,17 +362,72 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref common.ReferenceCallbac
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"test": {
+					"type": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"executor": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"arguments": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"properties": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"triggers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Trigger"),
+									},
+								},
+							},
 						},
 					},
 				},
-				Required: []string{"test"},
+				Required: []string{"type", "executor"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Trigger"},
 	}
 }
 
@@ -341,16 +436,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginStatus(ref common.ReferenceCallb
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"test": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-				},
-				Required: []string{"test"},
 			},
 		},
 	}
@@ -463,6 +548,12 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteSpec(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
+					"templateId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
@@ -478,8 +569,27 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteSpec(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"deploymentIds": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"resourcesYaml": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"siteId", "metadata"},
 			},
 		},
 	}
@@ -490,16 +600,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"test": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-				},
-				Required: []string{"test"},
 			},
 		},
 	}
@@ -627,8 +727,27 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateSpec(ref common.ReferenceCallb
 							},
 						},
 					},
+					"deploymentIds": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"resourcesYaml": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"templateId", "metadata"},
 			},
 		},
 	}
@@ -639,8 +758,32 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateStatus(ref common.ReferenceCal
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+			},
+		},
+	}
+}
+
+func schema_api_krm_tkonephioorg_v1alpha1_Trigger(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"test": {
+					"group": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"kind": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
 							Type:    []string{"string"},
@@ -648,7 +791,7 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateStatus(ref common.ReferenceCal
 						},
 					},
 				},
-				Required: []string{"test"},
+				Required: []string{"group", "version", "kind"},
 			},
 		},
 	}

@@ -13,6 +13,8 @@ function push () {
 }
 
 push tko-api
-#push tko-preparer
-#push tko-meta-scheduler
-#push tko-runner
+if [ "$1" != -a ]; then
+	push tko-preparer
+	push tko-meta-scheduler
+	push tko-runner
+fi

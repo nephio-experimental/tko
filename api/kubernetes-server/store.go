@@ -49,14 +49,13 @@ type Store struct {
 	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
 	ListFunc   func(context contextpkg.Context, store *Store) (runtime.Object, error)
+	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error)
 
-	groupResource  schema.GroupResource
-	tableConverter rest.TableConvertor
+	groupResource schema.GroupResource
 }
 
 func (self *Store) Init() {
 	self.groupResource = krm.Resource(self.Plural)
-	self.tableConverter = rest.NewDefaultTableConvertor(krm.Resource(self.Plural))
 }
 
 // Note: rest.Storage is the required interface, but there are *plenty* of additional optional ones.
@@ -156,9 +155,17 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 // ([rest.Lister] interface)
 // ([rest.TableConvertor] interface)
 // ([rest.StandardStorage] interface)
-func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Object, tableOptions runtime.Object) (*meta.Table, error) {
-	self.Log.Infof("ConvertToTable: %v", tableOptions)
-	return self.tableConverter.ConvertToTable(context, object, tableOptions)
+func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Object, options runtime.Object) (*meta.Table, error) {
+	self.Log.Infof("ConvertToTable: %v", options)
+
+	//if options_, ok := options.(*meta.TableOptions); !ok || !options_.NoHeaders {
+	//}
+
+	if table, err := self.TableFunc(context, self, object); err == nil {
+		return table, nil
+	} else {
+		return nil, errors.NewInternalError(err)
+	}
 }
 
 // ([rest.Getter] interface)
@@ -166,8 +173,6 @@ func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Obj
 // ([rest.StandardStorage] interface)
 func (self *Store) Get(context contextpkg.Context, name string, options *meta.GetOptions) (runtime.Object, error) {
 	self.Log.Infof("Getter.Get: %s, %v", name, options)
-
-	//namespace, _ := request.NamespaceFrom(context)
 
 	id, err := NameToID(name)
 	if err != nil {
@@ -265,7 +270,7 @@ func (self *Store) _Create(context contextpkg.Context, name string, object runti
 }
 
 // ([rest.SubresourceObjectMetaPreserver] interface)
-func (self *Store) _PreserveRequestObjectMetaSystemFieldsOnSubresourceCreate() bool {
+func (self *Store) PreserveRequestObjectMetaSystemFieldsOnSubresourceCreate() bool {
 	self.Log.Info("PreserveRequestObjectMetaSystemFieldsOnSubresourceCreate")
 	return false
 }
@@ -401,7 +406,7 @@ func (self *Store) GenerateName(base string) string {
 // ([rest.RESTCreateUpdateStrategy] interface)
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
-func (self *Store) _AllowCreateOnUpdate() bool {
+func (self *Store) AllowCreateOnUpdate() bool {
 	self.Log.Info("AllowCreateOnUpdate")
 	return true
 }
@@ -410,7 +415,7 @@ func (self *Store) _AllowCreateOnUpdate() bool {
 // ([rest.RESTCreateUpdateStrategy] interface)
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
-func (self *Store) _PrepareForUpdate(context contextpkg.Context, object runtime.Object, oldObject runtime.Object) {
+func (self *Store) PrepareForUpdate(context contextpkg.Context, object runtime.Object, oldObject runtime.Object) {
 	self.Log.Info("PrepareForUpdate")
 }
 
@@ -418,7 +423,7 @@ func (self *Store) _PrepareForUpdate(context contextpkg.Context, object runtime.
 // ([rest.RESTCreateUpdateStrategy] interface)
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
-func (self *Store) _ValidateUpdate(context contextpkg.Context, object runtime.Object, oldObject runtime.Object) field.ErrorList {
+func (self *Store) ValidateUpdate(context contextpkg.Context, object runtime.Object, oldObject runtime.Object) field.ErrorList {
 	self.Log.Info("ValidateUpdate")
 	return nil
 }
@@ -427,7 +432,7 @@ func (self *Store) _ValidateUpdate(context contextpkg.Context, object runtime.Ob
 // ([rest.RESTCreateUpdateStrategy] interface)
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
-func (self *Store) _WarningsOnUpdate(context contextpkg.Context, object runtime.Object, oldObject runtime.Object) []string {
+func (self *Store) WarningsOnUpdate(context contextpkg.Context, object runtime.Object, oldObject runtime.Object) []string {
 	self.Log.Info("WarningsOnUpdate")
 	return nil
 }
@@ -445,7 +450,7 @@ func (self *Store) Canonicalize(object runtime.Object) {
 // ([rest.RESTCreateUpdateStrategy] interface)
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
-func (self *Store) _AllowUnconditionalUpdate() bool {
+func (self *Store) AllowUnconditionalUpdate() bool {
 	self.Log.Info("AllowUnconditionalUpdate")
 	return false
 }

@@ -2,9 +2,11 @@ package server
 
 import (
 	contextpkg "context"
+	"fmt"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	backendpkg "github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,14 +62,14 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		},
 
 		ListFunc: func(context contextpkg.Context, store *Store) (runtime.Object, error) {
-			var templateList krm.TemplateList
-			templateList.APIVersion = APIVersion
-			templateList.Kind = "TemplateList"
+			var krmTemplateList krm.TemplateList
+			krmTemplateList.APIVersion = APIVersion
+			krmTemplateList.Kind = "TemplateList"
 
 			if results, err := store.Backend.ListTemplates(context, backendpkg.ListTemplates{}); err == nil {
 				if err := util.IterateResults(results, func(templateInfo backendpkg.TemplateInfo) error {
 					if krmTemplate, err := TemplateInfoToKRM(&templateInfo); err == nil {
-						templateList.Items = append(templateList.Items, krmTemplate)
+						krmTemplateList.Items = append(krmTemplateList.Items, krmTemplate)
 						return nil
 					} else {
 						return err
@@ -79,7 +81,35 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			return &templateList, nil
+			return &krmTemplateList, nil
+		},
+
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error) {
+			table := new(meta.Table)
+
+			krmTemplates, err := ToTemplatesKRM(object)
+			if err != nil {
+				return nil, err
+			}
+
+			descriptions := krm.Template{}.TypeMeta.SwaggerDoc()
+			nameDescription, _ := descriptions["name"]
+			templateIdDescription, _ := descriptions["templateId"]
+			table.ColumnDefinitions = []meta.TableColumnDefinition{
+				{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
+				{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+				//{Name: "Metadata", Description: descriptions["metadata"]},
+			}
+
+			table.Rows = make([]meta.TableRow, len(krmTemplates))
+			for index, krmTemplate := range krmTemplates {
+				table.Rows[index] = meta.TableRow{
+					Cells:  []any{krmTemplate.Name, krmTemplate.Spec.TemplateId},
+					Object: runtime.RawExtension{Object: &krmTemplate},
+				}
+			}
+
+			return table, nil
 		},
 	}
 
@@ -87,82 +117,80 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 	return &store
 }
 
-func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, error) {
-	var template krm.Template
+func ToTemplatesKRM(object runtime.Object) ([]krm.Template, error) {
+	switch object_ := object.(type) {
+	case *krm.TemplateList:
+		return object_.Items, nil
+	case *krm.Template:
+		return []krm.Template{*object_}, nil
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", object)
+	}
+}
 
+func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, error) {
 	name, err := IDToName(templateInfo.TemplateID)
 	if err != nil {
-		return template, err
+		return krm.Template{}, err
 	}
 
-	template.APIVersion = APIVersion
-	template.Kind = "Template"
-	template.Name = name
+	var krmTemplate krm.Template
+	krmTemplate.APIVersion = APIVersion
+	krmTemplate.Kind = "Template"
+	krmTemplate.Name = name
+	krmTemplate.UID = types.UID("tko|template|" + templateInfo.TemplateID)
 	//template.GenerateName = "tko-template-"
-	template.UID = types.UID("tko|template|" + templateInfo.TemplateID)
 	//template.ResourceVersion = "123"
-	template.CreationTimestamp = meta.Now()
+	//template.CreationTimestamp = meta.Now()
 
-	templateId := templateInfo.TemplateID
-	template.Spec.TemplateId = &templateId
-	template.Spec.Metadata = templateInfo.Metadata
+	if templateId := templateInfo.TemplateID; templateId != "" {
+		krmTemplate.Spec.TemplateId = &templateId
+	}
+	krmTemplate.Spec.Metadata = templateInfo.Metadata
+	krmTemplate.Spec.DeploymentIds = templateInfo.DeploymentIDs
 
-	return template, nil
+	return krmTemplate, nil
 }
 
 func TemplateToKRM(template *backendpkg.Template) (krm.Template, error) {
-	return TemplateInfoToKRM(&template.TemplateInfo)
+	if krmTemplate, err := TemplateInfoToKRM(&template.TemplateInfo); err == nil {
+		if resourcesYaml, err := tkoutil.EncodeResources("yaml", template.Resources); err == nil {
+			resourcesYaml_ := util.BytesToString(resourcesYaml)
+			krmTemplate.Spec.ResourcesYaml = &resourcesYaml_
+			return krmTemplate, nil
+		} else {
+			return krm.Template{}, err
+		}
+	} else {
+		return krm.Template{}, err
+	}
 }
 
-func KRMToTemplate(template *krm.Template) (*backendpkg.Template, error) {
-	metadata := template.Spec.Metadata
-
+func KRMToTemplate(krmTemplate *krm.Template) (*backendpkg.Template, error) {
 	var id string
-	if template.Spec.TemplateId != nil {
-		id = *template.Spec.TemplateId
+	if krmTemplate.Spec.TemplateId != nil {
+		id = *krmTemplate.Spec.TemplateId
 	}
 	if id == "" {
 		var err error
-		if id, err = NameToID(template.Name); err != nil {
+		if id, err = NameToID(krmTemplate.Name); err != nil {
 			return nil, err
 		}
 	}
 
-	return &backendpkg.Template{
+	template := backendpkg.Template{
 		TemplateInfo: backendpkg.TemplateInfo{
 			TemplateID: id,
-			Metadata:   metadata,
+			Metadata:   krmTemplate.Spec.Metadata,
 		},
-	}, nil
-}
+	}
 
-/*
-func nameToTemplateId(context contextpkg.Context, name string) (string, error) {
-	var templateId string
-	var found bool
-
-	if results, err := self.Backend.ListTemplates(context, backendpkg.ListTemplates{
-		MetadataPatterns: map[string]string{
-			"kubernetes.name": name,
-		},
-	}); err == nil {
-		if templateInfo, err := results.Next(); err == nil {
-			templateId = templateInfo.TemplateID
-			found = true
-		} else {
-			return "", errors.NewInternalError(err)
+	if krmTemplate.Spec.ResourcesYaml != nil {
+		var err error
+		if template.Resources, err = tkoutil.DecodeResources("yaml", util.StringToBytes(*krmTemplate.Spec.ResourcesYaml)); err != nil {
+			return nil, err
 		}
-		results.Release()
-	} else if backendpkg.IsBadArgumentError(err) {
-		return "", errors.NewBadRequest(err.Error())
-	} else {
-		return "", errors.NewInternalError(err)
 	}
 
-	if found {
-		return templateId, nil
-	} else {
-		return "", errors.NewNotFound(self.groupResource, name)
-	}
+	return &template, nil
 }
-*/

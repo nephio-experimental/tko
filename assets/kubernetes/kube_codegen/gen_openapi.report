@@ -1,3 +1,7 @@
+API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,PluginSpec,Arguments
+API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,PluginSpec,Triggers
+API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,SiteSpec,DeploymentIds
+API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,TemplateSpec,DeploymentIds
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/apis/meta/v1,APIGroup,ServerAddressByClientCIDRs
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/apis/meta/v1,APIGroup,Versions
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/apis/meta/v1,APIGroupList,Groups
@@ -25,6 +29,7 @@ API rule violation: list_type_missing,k8s.io/apimachinery/pkg/apis/meta/v1,Table
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/apis/meta/v1,UpdateOptions,DryRun
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/runtime,RawExtension,Raw
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/runtime,Unknown,Raw
+API rule violation: names_match,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,PluginSpec,PluginID
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,APIResourceList,APIResources
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Duration,Duration
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,InternalEvent,Object
