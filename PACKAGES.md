@@ -1,5 +1,5 @@
-KRM Types in TKO
-================
+KRM Packages in TKO
+===================
 
 Note that these are *not* CRDs. They are types used for orchestration intent, intended to live
 side-by-side with "real" Kubernetes resources and CRs in order to create a unified, declarative

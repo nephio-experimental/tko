@@ -1,7 +1,8 @@
 package v1alpha1
 
 // Note: kube_codegen *requires* this file to be named "types.go".
-// Also make sure JSON names are lower-camel-case versions of Go names.
+// Also make sure JSON names are lower-camel-case versions of Go names
+// and that all properties are JSON-marshallable.
 
 import (
 	"github.com/tliron/go-ard"
@@ -14,6 +15,7 @@ import (
 // Template
 //
 
+// TKO template.
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -26,17 +28,26 @@ type Template struct {
 }
 
 type TemplateSpec struct {
+	// Template ID. Must be unique per TKO instance.
 	// +optional
 	TemplateId *string `json:"templateId"`
+
+	// Template metadata.
 	// +optional
 	Metadata map[string]string `json:"metadata"`
-	// +optional
-	DeploymentIds []string `json:"deploymentIds,omitempty"`
+
+	// Template KRM package. The KRM must be at least *partially* valid,
+	// meaning that required properties at any level of nesting are allowed
+	// to be missing, but properties that are assigned must have valid
+	// values.
 	// +optional
 	Package *Package `json:"package"`
 }
 
 type TemplateStatus struct {
+	// (Read only) IDs of deployments created from this template.
+	// +optional
+	DeploymentIds []string `json:"deploymentIds,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -51,6 +62,7 @@ type TemplateList struct {
 // Site
 //
 
+// TKO site.
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -63,19 +75,27 @@ type Site struct {
 }
 
 type SiteSpec struct {
+	// Site ID. Must be unique per TKO instance.
 	// +optional
 	SiteId *string `json:"siteId"`
+
+	// ID of the template from which this site was created.
 	// +optional
 	TemplateId *string `json:"templateId,omitempty"`
+
+	// Site metadata.
 	// +optional
 	Metadata map[string]string `json:"metadata"`
-	// +optional
-	DeploymentIds []string `json:"deploymentIds,omitempty"`
+
+	// Site KRM package. The KRM must be completely valid.
 	// +optional
 	Package *Package `json:"package"`
 }
 
 type SiteStatus struct {
+	// (Read only) IDs of deployments associated with this site.
+	// +optional
+	DeploymentIds []string `json:"deploymentIds,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -90,6 +110,7 @@ type SiteList struct {
 // Deployment
 //
 
+// TKO deployment.
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Deployment struct {
@@ -101,25 +122,46 @@ type Deployment struct {
 }
 
 type DeploymentSpec struct {
+	// (Read only) Deployment ID. A random UUID generated when the
+	// deployment is created.
 	// +optional
 	DeploymentId *string `json:"deploymentId"`
+
+	// ID of the deployment that created this deployment during the
+	// preparation process.
 	// +optional
 	ParentDeploymentId *string `json:"parentDeploymentId,omitempty"`
+
+	// ID of the template from which this deployment was created.
 	// +optional
 	TemplateId *string `json:"templateId,omitempty"`
+
+	// ID of the site with which this deployment is associated.
 	// +optional
 	SiteId *string `json:"siteId,omitempty"`
+
+	// Deployment metadata.
 	// +optional
 	Metadata map[string]string `json:"metadata"`
-	// +optional
-	Prepared *bool `json:"prepared"`
-	// +optional
-	Approved *bool `json:"approved"`
+
+	// Deployment KRM package. When "prepared" is true the KRM must be
+	// completely valid. Otherwise, the KRM must be at least *partially*
+	// valid, meaning that required properties at any level of nesting are
+	// allowed to be missing, but properties that are assigned must have
+	// valid values.
 	// +optional
 	Package *Package `json:"package"`
 }
 
 type DeploymentStatus struct {
+	// True if this deployment is prepared.
+	// +optional
+	Prepared *bool `json:"prepared"`
+
+	// True if this deployment is approved. Cannot be true if
+	// "prepared" is false.
+	// +optional
+	Approved *bool `json:"approved"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -134,6 +176,7 @@ type DeploymentList struct {
 // Plugin
 //
 
+// TKO plugin.
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Plugin struct {
@@ -145,14 +188,26 @@ type Plugin struct {
 }
 
 type PluginSpec struct {
+	// Can be "validate", "prepare", or "schedule".
 	Type *string `json:"type"`
+
+	// Plugin ID. Must be unique per "type" per TKO instance.
 	// +optional
 	PluginID *string `json:"id"`
+
+	// Plugin executor. Each executor has its own requirements for
+	// "arguments" and "properties".
 	Executor *string `json:"executor"`
+
+	// Sequence of arguments for the executor.
 	// +optional
 	Arguments []string `json:"arguments"`
+
+	// Map of properties for the executor.
 	// +optional
 	Properties map[string]string `json:"properties,omitempty"`
+
+	// List of KRM types (GVK) that trigger this plugin.
 	// +optional
 	Triggers []Trigger `json:"triggers,omitempty"`
 }
@@ -178,7 +233,9 @@ type PluginList struct {
 // Package
 //
 
+// KRM package.
 type Package struct {
+	// KRM package contents.
 	Resources []ard.StringMap `json:"resources,omitempty"`
 }
 
@@ -200,15 +257,18 @@ func (_ Package) OpenAPIDefinition() openapi.OpenAPIDefinition {
 	return openapi.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "KRM package.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "KRM package contents.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type: []string{"object"},
+										Description: "Resource in the KRM package.",
+										Type:        []string{"object"},
 									},
 								},
 							},

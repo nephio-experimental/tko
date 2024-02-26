@@ -6,6 +6,7 @@ import (
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	backendpkg "github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,7 +88,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			return &krmTemplateList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmTemplates, err := ToTemplatesKRM(object)
@@ -95,13 +96,10 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			if (options == nil) || !options.NoHeaders {
-				descriptions := krm.Template{}.TypeMeta.SwaggerDoc()
-				nameDescription, _ := descriptions["name"]
-				templateIdDescription, _ := descriptions["templateId"]
+			if withHeaders {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
-					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-					{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+					{Name: "Name", Type: "string", Format: "name"},
+					{Name: "TemplateID", Type: "string"},
 					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
@@ -111,7 +109,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 				row := meta.TableRow{
 					Cells: []any{krmTemplate.Name, krmTemplate.Spec.TemplateId},
 				}
-				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmTemplate}
 				}
 				table.Rows[index] = row
@@ -137,7 +135,7 @@ func ToTemplatesKRM(object runtime.Object) ([]krm.Template, error) {
 }
 
 func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, error) {
-	name, err := IDToName(templateInfo.TemplateID)
+	name, err := tkoutil.ToKubernetesName(templateInfo.TemplateID)
 	if err != nil {
 		return krm.Template{}, err
 	}
@@ -151,11 +149,10 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, err
 	//template.ResourceVersion = "123"
 	//template.CreationTimestamp = meta.Now()
 
-	if templateId := templateInfo.TemplateID; templateId != "" {
-		krmTemplate.Spec.TemplateId = &templateId
-	}
+	templateId := templateInfo.TemplateID
+	krmTemplate.Spec.TemplateId = &templateId
 	krmTemplate.Spec.Metadata = templateInfo.Metadata
-	krmTemplate.Spec.DeploymentIds = templateInfo.DeploymentIDs
+	krmTemplate.Status.DeploymentIds = templateInfo.DeploymentIDs
 
 	return krmTemplate, nil
 }
@@ -179,20 +176,15 @@ func TemplateToKRM(template *backendpkg.Template) (krm.Template, error) {
 }
 
 func KRMToTemplate(krmTemplate *krm.Template) (*backendpkg.Template, error) {
-	var id string
-	if krmTemplate.Spec.TemplateId != nil {
-		id = *krmTemplate.Spec.TemplateId
-	}
-	if id == "" {
-		var err error
-		if id, err = NameToID(krmTemplate.Name); err != nil {
-			return nil, err
-		}
+	var templateId string
+	var err error
+	if templateId, err = tkoutil.FromKubernetesName(krmTemplate.Name); err != nil {
+		return nil, err
 	}
 
 	template := backendpkg.Template{
 		TemplateInfo: backendpkg.TemplateInfo{
-			TemplateID: id,
+			TemplateID: templateId,
 			Metadata:   krmTemplate.Spec.Metadata,
 		},
 	}

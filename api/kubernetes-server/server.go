@@ -4,7 +4,9 @@ import (
 	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/commonlog"
 	"k8s.io/apiserver/pkg/server"
+	serverpkg "k8s.io/apiserver/pkg/server"
 
+	// Support *all* authentication methods (increases the size of the executable)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -21,31 +23,25 @@ type Server struct {
 }
 
 func NewServer(backend backend.Backend, port int, log commonlog.Logger) (*Server, error) {
-	config, err := NewConfig(port)
-	if err != nil {
-		return nil, err
+	server := Server{
+		Backend: backend,
+		Log:     log,
+		stop:    make(chan struct{}),
 	}
 
-	apiGroupInfo, err := NewAPIGroupInfo(config.RESTOptionsGetter, backend, log)
-	if err != nil {
+	if config, err := NewConfig(port); err == nil {
+		if server.apiServer, err = config.New(ServerName, serverpkg.NewEmptyDelegate()); err == nil {
+			if err := server.apiServer.InstallAPIGroup(NewAPIGroupInfo(config.RESTOptionsGetter, backend, log)); err == nil {
+				return &server, nil
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	} else {
 		return nil, err
 	}
-
-	apiServer, err := config.New(ServerName, server.NewEmptyDelegate())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := apiServer.InstallAPIGroup(apiGroupInfo); err != nil {
-		return nil, err
-	}
-
-	return &Server{
-		Backend:   backend,
-		Log:       log,
-		apiServer: apiServer,
-		stop:      make(chan struct{}),
-	}, nil
 }
 
 func (self *Server) Start() {

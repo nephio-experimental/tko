@@ -99,7 +99,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return &krmPluginList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmPlugins, err := ToPluginsKRM(object)
@@ -107,17 +107,12 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			if (options == nil) || !options.NoHeaders {
-				descriptions := krm.Plugin{}.TypeMeta.SwaggerDoc()
-				nameDescription, _ := descriptions["name"]
-				typeDescription, _ := descriptions["type"]
-				pluginIdDescription, _ := descriptions["pluginId"]
-				executorDescription, _ := descriptions["executor"]
+			if withHeaders {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
-					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-					{Name: "Type", Type: "string", Description: typeDescription},
-					{Name: "PluginID", Type: "string", Description: pluginIdDescription},
-					{Name: "Executor", Type: "string", Description: executorDescription},
+					{Name: "Name", Type: "string", Format: "name"},
+					{Name: "Type", Type: "string"},
+					{Name: "PluginID", Type: "string"},
+					{Name: "Executor", Type: "string"},
 					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
@@ -127,7 +122,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 				row := meta.TableRow{
 					Cells: []any{krmPlugin.Name, krmPlugin.Spec.Type, krmPlugin.Spec.PluginID, krmPlugin.Spec.Executor},
 				}
-				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmPlugin}
 				}
 				table.Rows[index] = row
@@ -154,7 +149,7 @@ func ToPluginsKRM(object runtime.Object) ([]krm.Plugin, error) {
 
 func PluginToKRM(plugin *backendpkg.Plugin) (krm.Plugin, error) {
 	pluginIdString := plugin.PluginID.String()
-	name, err := IDToName(pluginIdString)
+	name, err := tkoutil.ToKubernetesName(pluginIdString)
 	if err != nil {
 		return krm.Plugin{}, err
 	}
@@ -184,22 +179,18 @@ func PluginToKRM(plugin *backendpkg.Plugin) (krm.Plugin, error) {
 }
 
 func KRMToPlugin(krmPlugin *krm.Plugin) (*backendpkg.Plugin, error) {
-	var id string
-	if krmPlugin.Spec.PluginID != nil {
-		id = *krmPlugin.Spec.PluginID
-	}
-	if id == "" {
-		var err error
-		if id, err = NameToID(krmPlugin.Name); err != nil {
-			return nil, err
+	var pluginId backendpkg.PluginID
+	if pluginId_, err := tkoutil.FromKubernetesName(krmPlugin.Name); err == nil {
+		var ok bool
+		if pluginId, ok = backendpkg.ParsePluginID(pluginId_); !ok {
+			return nil, fmt.Errorf("malformed plugin name: %s", pluginId_)
 		}
+	} else {
+		return nil, err
 	}
 
 	plugin := backendpkg.Plugin{
-		PluginID: backendpkg.PluginID{
-			Type: *krmPlugin.Spec.Type,
-			Name: id,
-		},
+		PluginID:   pluginId,
 		Arguments:  krmPlugin.Spec.Arguments,
 		Properties: krmPlugin.Spec.Properties,
 	}

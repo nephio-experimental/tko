@@ -11,6 +11,9 @@ A PoC demonstrating scalability opportunities for Nephio with a focus on decoupl
 subsystems, specifically the data backend and API access, as well as integration with external
 site inventories and blueprint catalogs.
 
+This PoC is a complete rewrite of the Nephio core. It comprises three controllers that can run
+independently or be embedded into a control plane, such as a Kubernetes management cluster.
+
 Included backends are for [PostgreSQL](https://www.postgresql.org/) and
 [Spanner](https://cloud.google.com/spanner). Both provide scalability, resiliency, and
 atomic updates via transactions. (Note: Spanner backend is work-in-progress.) It is entirely
@@ -18,20 +21,22 @@ possible to create a backend based on git (a.k.a. "GitOps"). Such an implementat
 suitable for storing templates, but is probably not a good idea for sites and deployments,
 which are expected to number in the millions in production environments.
 
-Access to the API is via [gRPC](https://grpc.io/), which is widely supported, including in
-loadbalancers (see
-[Envoy](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/other_protocols/grpc))
-and thus service meshes. TKO makes good use of gRPC streaming directly from the
-backend to the clients, allowing scalable access to extremely large result sets.
+The TKO API can be accessed in three flavors:
 
-This PoC is a complete rewrite of the Nephio core. It comprises three controllers that can run
-independently or be embedded in a control plane, such as a Kubernetes management cluster.
-Note that when running in Kubernetes TKO does *not* use Kubernetes's API or its etcd data
-store. However, it is possible to implement a meta-scheduling plugin that would create
-resources on the management cluster, e.g. to interact with a Kubernetes-native infrastructure
-manager.
+1) [gRPC](https://grpc.io/), which is widely supported, including in loadbalancers (see
+   [Envoy](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/other_protocols/grpc))
+   and thus service meshes. TKO makes good use of gRPC streaming directly from the backend to
+   the clients, allowing scalable access to extremely large result sets.
+2) KRM via a Kubernetes aggregated API. When running in a Kubernetes management cluster, it may
+   be preferrable for controllers and operators to use KRM instead of gRPC. Note that this KRM
+   API is *not* implemented as CRs and is *not* stored in Kubernetes's etcd. Rather, it's a
+   direct KRM facade over the TKO backend. There are scalability concerns compared to gRPC that
+   will be investigated. Also note that the meta-scheduler may create other KRM in the management
+   cluster, e.g. to interact with a Kubernetes-native infrastructure manager, which may be
+   implemented as CRs. Again, there are scalability concerns for such a use case.
+3) A simple JSON-over-HTTP API for web browser applications, such as GUIs.
 
-Other ways in which TKO differs from Nephio:
+Ways in which TKO differs from Nephio:
 
 * A different approach to "specialization" (here called "preparation"), replacing the
   [kpt](https://kpt.dev/) file with per-resource plugins: no pipeline, no conditions.
@@ -70,7 +75,8 @@ Documentation
 
 * [Installation guide](INSTALL.md)
 * [User guide](USAGE.md)
-* [Reference guide](REFERENCE.md)
+* [Package reference](PACKAGES.md)
+* [KRM API](KRM.md)
 * [How preparation works](PREPARATION.md)
 * [TODO](TODO.md)
 

@@ -7,6 +7,7 @@ import (
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
 	backendpkg "github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +89,7 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return &krmSiteList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmSites, err := ToSitesKRM(object)
@@ -96,15 +97,11 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			if (options == nil) || !options.NoHeaders {
-				descriptions := krm.Site{}.TypeMeta.SwaggerDoc()
-				nameDescription, _ := descriptions["name"]
-				siteIdDescription, _ := descriptions["siteId"]
-				templateIdDescription, _ := descriptions["templateId"]
+			if withHeaders {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
-					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-					{Name: "SiteID", Type: "string", Description: siteIdDescription},
-					{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+					{Name: "Name", Type: "string", Format: "name"},
+					{Name: "SiteID", Type: "string"},
+					{Name: "TemplateID", Type: "string"},
 					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
@@ -114,7 +111,7 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 				row := meta.TableRow{
 					Cells: []any{krmSite.Name, krmSite.Spec.SiteId, krmSite.Spec.TemplateId},
 				}
-				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmSite}
 				}
 				table.Rows[index] = row
@@ -140,7 +137,7 @@ func ToSitesKRM(object runtime.Object) ([]krm.Site, error) {
 }
 
 func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (krm.Site, error) {
-	name, err := IDToName(siteInfo.SiteID)
+	name, err := tkoutil.ToKubernetesName(siteInfo.SiteID)
 	if err != nil {
 		return krm.Site{}, err
 	}
@@ -151,14 +148,13 @@ func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (krm.Site, error) {
 	krmSite.Name = name
 	krmSite.UID = types.UID("tko|site|" + siteInfo.SiteID)
 
-	if siteId := siteInfo.SiteID; siteId != "" {
-		krmSite.Spec.SiteId = &siteId
-	}
+	siteId := siteInfo.SiteID
+	krmSite.Spec.SiteId = &siteId
 	if templateId := siteInfo.TemplateID; templateId != "" {
 		krmSite.Spec.TemplateId = &templateId
 	}
 	krmSite.Spec.Metadata = siteInfo.Metadata
-	krmSite.Spec.DeploymentIds = siteInfo.DeploymentIDs
+	krmSite.Status.DeploymentIds = siteInfo.DeploymentIDs
 
 	return krmSite, nil
 }
@@ -173,20 +169,15 @@ func SiteToKRM(site *backendpkg.Site) (krm.Site, error) {
 }
 
 func KRMToSite(krmSite *krm.Site) (*backendpkg.Site, error) {
-	var id string
-	if krmSite.Spec.SiteId != nil {
-		id = *krmSite.Spec.SiteId
-	}
-	if id == "" {
-		var err error
-		if id, err = NameToID(krmSite.Name); err != nil {
-			return nil, err
-		}
+	var siteId string
+	var err error
+	if siteId, err = tkoutil.FromKubernetesName(krmSite.Name); err != nil {
+		return nil, err
 	}
 
 	site := backendpkg.Site{
 		SiteInfo: backendpkg.SiteInfo{
-			SiteID:   id,
+			SiteID:   siteId,
 			Metadata: krmSite.Spec.Metadata,
 		},
 	}

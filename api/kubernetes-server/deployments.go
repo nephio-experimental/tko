@@ -7,6 +7,7 @@ import (
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
 	backendpkg "github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +89,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return &krmDeploymentList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmDeployments, err := ToDeploymentsKRM(object)
@@ -96,23 +97,15 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			if (options == nil) || !options.NoHeaders {
-				descriptions := krm.Deployment{}.TypeMeta.SwaggerDoc()
-				nameDescription, _ := descriptions["name"]
-				deploymentIdDescription, _ := descriptions["deploymentId"]
-				parentDeploymentIdDescription, _ := descriptions["parentDeploymentId"]
-				templateIdDescription, _ := descriptions["templateId"]
-				siteIdDescription, _ := descriptions["siteId"]
-				preparedDescription, _ := descriptions["prepared"]
-				approvedDescription, _ := descriptions["approved"]
+			if withHeaders {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
-					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-					{Name: "DeploymentID", Type: "string", Description: deploymentIdDescription},
-					{Name: "ParentDeploymentID", Type: "string", Description: parentDeploymentIdDescription},
-					{Name: "TemplateID", Type: "string", Description: templateIdDescription},
-					{Name: "SiteID", Type: "string", Description: siteIdDescription},
-					{Name: "Prepared", Type: "boolean", Description: preparedDescription},
-					{Name: "Approved", Type: "boolean", Description: approvedDescription},
+					{Name: "Name", Type: "string", Format: "name"},
+					{Name: "DeploymentID", Type: "string"},
+					{Name: "ParentDeploymentID", Type: "string"},
+					{Name: "TemplateID", Type: "string"},
+					{Name: "SiteID", Type: "string"},
+					{Name: "Prepared", Type: "boolean"},
+					{Name: "Approved", Type: "boolean"},
 					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
@@ -120,9 +113,9 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			table.Rows = make([]meta.TableRow, len(krmDeployments))
 			for index, krmDeployment := range krmDeployments {
 				row := meta.TableRow{
-					Cells: []any{krmDeployment.Name, krmDeployment.Spec.DeploymentId, krmDeployment.Spec.ParentDeploymentId, krmDeployment.Spec.TemplateId, krmDeployment.Spec.SiteId, krmDeployment.Spec.Prepared, krmDeployment.Spec.Approved},
+					Cells: []any{krmDeployment.Name, krmDeployment.Spec.DeploymentId, krmDeployment.Spec.ParentDeploymentId, krmDeployment.Spec.TemplateId, krmDeployment.Spec.SiteId, krmDeployment.Status.Prepared, krmDeployment.Status.Approved},
 				}
-				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmDeployment}
 				}
 				table.Rows[index] = row
@@ -148,7 +141,7 @@ func ToDeploymentsKRM(object runtime.Object) ([]krm.Deployment, error) {
 }
 
 func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (krm.Deployment, error) {
-	name, err := IDToName(deploymentInfo.DeploymentID)
+	name, err := tkoutil.ToKubernetesName(deploymentInfo.DeploymentID)
 	if err != nil {
 		return krm.Deployment{}, err
 	}
@@ -159,27 +152,22 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (krm.Deploym
 	krmDeployment.Name = name
 	krmDeployment.UID = types.UID("tko|deployment|" + deploymentInfo.DeploymentID)
 
-	if deploymentId := deploymentInfo.DeploymentID; deploymentId != "" {
-		krmDeployment.Spec.DeploymentId = &deploymentId
-	}
-
+	deploymentId := deploymentInfo.DeploymentID
+	krmDeployment.Spec.DeploymentId = &deploymentId
 	if parentDeploymentId := deploymentInfo.ParentDeploymentID; parentDeploymentId != "" {
 		krmDeployment.Spec.ParentDeploymentId = &parentDeploymentId
 	}
-
 	if templateId := deploymentInfo.TemplateID; templateId != "" {
 		krmDeployment.Spec.TemplateId = &templateId
 	}
-
 	if siteId := deploymentInfo.SiteID; siteId != "" {
 		krmDeployment.Spec.SiteId = &siteId
 	}
-
 	krmDeployment.Spec.Metadata = deploymentInfo.Metadata
 	prepared := deploymentInfo.Prepared
-	krmDeployment.Spec.Prepared = &prepared
+	krmDeployment.Status.Prepared = &prepared
 	approved := deploymentInfo.Approved
-	krmDeployment.Spec.Approved = &approved
+	krmDeployment.Status.Approved = &approved
 
 	return krmDeployment, nil
 }
@@ -194,20 +182,15 @@ func DeploymentToKRM(deployment *backendpkg.Deployment) (krm.Deployment, error) 
 }
 
 func KRMToDeployment(krmDeployment *krm.Deployment) (*backendpkg.Deployment, error) {
-	var id string
-	if krmDeployment.Spec.DeploymentId != nil {
-		id = *krmDeployment.Spec.DeploymentId
-	}
-	if id == "" {
-		var err error
-		if id, err = NameToID(krmDeployment.Name); err != nil {
-			return nil, err
-		}
+	var deploymentId string
+	var err error
+	if deploymentId, err = tkoutil.FromKubernetesName(krmDeployment.Name); err != nil {
+		return nil, err
 	}
 
 	deployment := backendpkg.Deployment{
 		DeploymentInfo: backendpkg.DeploymentInfo{
-			DeploymentID: id,
+			DeploymentID: deploymentId,
 			Metadata:     krmDeployment.Spec.Metadata,
 		},
 	}
@@ -224,12 +207,12 @@ func KRMToDeployment(krmDeployment *krm.Deployment) (*backendpkg.Deployment, err
 		deployment.SiteID = *krmDeployment.Spec.SiteId
 	}
 
-	if krmDeployment.Spec.Prepared != nil {
-		deployment.Prepared = *krmDeployment.Spec.Prepared
+	if krmDeployment.Status.Prepared != nil {
+		deployment.Prepared = *krmDeployment.Status.Prepared
 	}
 
-	if krmDeployment.Spec.Approved != nil {
-		deployment.Approved = *krmDeployment.Spec.Approved
+	if krmDeployment.Status.Approved != nil {
+		deployment.Approved = *krmDeployment.Status.Approved
 	}
 
 	deployment.Resources = ResourcesFromKRM(krmDeployment.Spec.Package)

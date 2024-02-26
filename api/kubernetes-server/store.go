@@ -2,15 +2,19 @@ package server
 
 import (
 	contextpkg "context"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 
 	krmgroup "github.com/nephio-experimental/tko/api/krm/tko.nephio.org"
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	backendpkg "github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/tliron/kutil/util"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metabase "k8s.io/apimachinery/pkg/api/meta"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/registry/rest"
-	"k8s.io/apiserver/pkg/storage/names"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 )
 
@@ -27,7 +30,11 @@ import (
 // Store
 //
 
-const Category = "tko"
+const (
+	Category           = "tko"
+	ParallelBufferSize = 1000
+	ParallelWorkers    = 10
+)
 
 var APIVersion = krm.SchemeGroupVersion.Identifier()
 
@@ -50,7 +57,7 @@ type Store struct {
 	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
 	ListFunc   func(context contextpkg.Context, store *Store) (runtime.Object, error)
-	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error)
+	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
 
 	groupResource schema.GroupResource
 }
@@ -62,6 +69,46 @@ func (self *Store) Init() {
 // Note: rest.Storage is the required interface, but there are *plenty* of additional optional ones.
 // We've tried to specify *all* possible functions here from all optional interfaces. Those currently
 // unused are "disabled" by an underscore prefix.
+//
+// For an example implementation on top of etcd, see:
+//   https://github.com/kubernetes/apiserver/blob/v0.29.2/pkg/registry/generic/registry/store.go
+
+var (
+	validStore              = new(Store)
+	_          rest.Storage = validStore
+	_          rest.Scoper  = validStore
+	// _ rest.KindProvider = validStore
+	_ rest.ShortNamesProvider       = validStore
+	_ rest.CategoriesProvider       = validStore
+	_ rest.SingularNameProvider     = validStore
+	_ rest.GroupVersionKindProvider = validStore
+	_ rest.GroupVersionAcceptor     = validStore
+	_ rest.Lister                   = validStore
+	_ rest.Getter                   = validStore
+	// _ rest.GetterWithOptions = validStore
+	_ rest.TableConvertor             = validStore
+	_ rest.GracefulDeleter            = validStore
+	_ rest.MayReturnFullObjectDeleter = validStore
+	_ rest.CollectionDeleter          = validStore
+	_ rest.Creater                    = validStore
+	// _ rest.NamedCreater = validStore
+	_ rest.SubresourceObjectMetaPreserver = validStore
+	// _ rest.UpdatedObjectInfo = validStore
+	_ rest.Updater        = validStore
+	_ rest.CreaterUpdater = validStore
+	_ rest.Patcher        = validStore
+	// _ rest.Watcher = validStore
+	// _ rest.StandardStorage = validStore
+	// _ rest.Redirector = validStore
+	// _ rest.Responder = validStore
+	// _ rest.Connecter = validStore
+	// _ rest.ResourceStreamer = validStore
+	// _ rest.StorageMetadata = validStore
+	// _ rest.StorageVersionProvider = validStore
+	_ rest.ResetFieldsStrategy             = validStore
+	_ rest.CreateUpdateResetFieldsStrategy = validStore
+	_ rest.UpdateResetFieldsStrategy       = validStore
+)
 
 // ([rest.Storage] interface)
 // ([rest.Creater] interface)
@@ -84,6 +131,12 @@ func (self *Store) Destroy() {
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) NamespaceScoped() bool {
 	self.Log.Info("NamespaceScoped")
+	return false
+}
+
+// ([rest.KindProvider] interface)
+func (self *Store) _Kind() bool {
+	self.Log.Info("Kind")
 	return false
 }
 
@@ -129,6 +182,9 @@ func (self *Store) NewList() runtime.Object {
 func (self *Store) List(context contextpkg.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
 	self.Log.Infof("List: %v", options)
 
+	// TODO: handle watch
+	// TODO: handle limit/continue
+
 	/*
 		label := labels.Everything()
 		field := fields.Everything()
@@ -143,15 +199,12 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 		}
 	*/
 
-	//namespace, _ := request.NamespaceFrom(context)
-	//self.Log.Infof("List namespace=%s", namespace)
-
 	if list, err := self.ListFunc(context, self); err == nil {
 		return list, nil
 	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, errors.NewBadRequest(err.Error())
+		return nil, apierrors.NewBadRequest(err.Error())
 	} else {
-		return nil, errors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 }
 
@@ -162,10 +215,13 @@ func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Obj
 	self.Log.Infof("ConvertToTable: %v", options)
 
 	tableOptions, _ := options.(*meta.TableOptions)
-	if table, err := self.TableFunc(context, self, object, tableOptions); err == nil {
+	withHeaders := (options == nil) || !tableOptions.NoHeaders
+	withObject := (options == nil) || (tableOptions.IncludeObject != meta.IncludeNone)
+
+	if table, err := self.TableFunc(context, self, object, withHeaders, withObject); err == nil {
 		return table, nil
 	} else {
-		return nil, errors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 }
 
@@ -175,19 +231,19 @@ func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Obj
 func (self *Store) Get(context contextpkg.Context, name string, options *meta.GetOptions) (runtime.Object, error) {
 	self.Log.Infof("Getter.Get: %s, %v", name, options)
 
-	id, err := NameToID(name)
+	id, err := tkoutil.FromKubernetesName(name)
 	if err != nil {
-		return nil, errors.NewBadRequest(err.Error())
+		return nil, apierrors.NewBadRequest(err.Error())
 	}
 
 	if resource, err := self.GetFunc(context, self, id); err == nil {
 		return resource, nil
 	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, errors.NewBadRequest(err.Error())
+		return nil, apierrors.NewBadRequest(err.Error())
 	} else if backendpkg.IsNotFoundError(err) {
-		return nil, errors.NewNotFound(self.groupResource, name)
+		return nil, apierrors.NewNotFound(self.groupResource, name)
 	} else {
-		return nil, errors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 }
 
@@ -208,9 +264,9 @@ func (self *Store) _NewGetOptions() (runtime.Object, bool, string) {
 func (self *Store) Delete(context contextpkg.Context, name string, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions) (runtime.Object, bool, error) {
 	self.Log.Infof("Delete: %s, %v", name, options)
 
-	id, err := NameToID(name)
+	id, err := tkoutil.FromKubernetesName(name)
 	if err != nil {
-		return nil, false, errors.NewBadRequest(err.Error())
+		return nil, false, apierrors.NewBadRequest(err.Error())
 	}
 
 	// Older clients use nil to mean "delete immediately"
@@ -230,11 +286,11 @@ func (self *Store) Delete(context contextpkg.Context, name string, deleteValidat
 	if err := self.DeleteFunc(context, self, id); err == nil {
 		return nil, true, nil
 	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, false, errors.NewBadRequest(err.Error())
+		return nil, false, apierrors.NewBadRequest(err.Error())
 	} else if backendpkg.IsNotFoundError(err) {
-		return nil, false, errors.NewNotFound(self.groupResource, name)
+		return nil, false, apierrors.NewNotFound(self.groupResource, name)
 	} else {
-		return nil, false, errors.NewInternalError(err)
+		return nil, false, apierrors.NewInternalError(err)
 	}
 }
 
@@ -248,7 +304,74 @@ func (self *Store) DeleteReturnsDeletedObject() bool {
 // ([rest.StandardStorage] interface)
 func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
 	self.Log.Infof("DeleteCollection: %v", options)
-	return nil, nil
+
+	if listOptions == nil {
+		listOptions = new(metainternalversion.ListOptions)
+	} else {
+		listOptions = listOptions.DeepCopy()
+	}
+
+	var deletedOjects []runtime.Object
+	var deletedObjectsLock sync.Mutex
+	var errs []error
+	var errsLock sync.Mutex
+
+	executor := util.NewParallelExecutor[runtime.Object](ParallelBufferSize, func(object runtime.Object) error {
+		if accessor, err := metabase.Accessor(object); err == nil {
+			name := accessor.GetName()
+			if _, _, err := self.Delete(context, name, deleteValidation, options); err == nil {
+				deletedObjectsLock.Lock()
+				deletedOjects = append(deletedOjects, object)
+				deletedObjectsLock.Unlock()
+			} else if apierrors.IsNotFound(err) {
+				self.Log.Infof("listed item has already been deleted during DeleteCollection: %s", name)
+			} else {
+				errsLock.Lock()
+				errs = append(errs, err)
+				errsLock.Unlock()
+			}
+		} else {
+			errsLock.Lock()
+			errs = append(errs, err)
+			errsLock.Unlock()
+		}
+		return nil
+	})
+
+	executor.PanicAsError = "DeleteCollection"
+	executor.Start(ParallelWorkers)
+
+	for {
+		if list, err := self.List(context, listOptions); err == nil {
+			if objects, err := metabase.ExtractList(list); err == nil {
+				for _, object := range objects {
+					executor.Queue(object)
+				}
+			} else {
+				errsLock.Lock()
+				errs = append(errs, err)
+				errsLock.Unlock()
+			}
+
+			if list_, err := metabase.ListAccessor(list); err == nil {
+				if listOptions.Continue = list_.GetContinue(); listOptions.Continue == "" {
+					break
+				}
+			} else {
+				break
+			}
+		} else {
+			errsLock.Lock()
+			errs = append(errs, err)
+			errsLock.Unlock()
+		}
+	}
+
+	errs = append(executor.Wait(), errs...)
+
+	list := self.NewList()
+	metabase.SetList(list, deletedOjects)
+	return list, errors.Join(errs...)
 }
 
 // ([rest.Creater] interface)
@@ -261,7 +384,7 @@ func (self *Store) Create(context contextpkg.Context, object runtime.Object, cre
 
 	objectMeta, err := metabase.Accessor(object)
 	if err != nil {
-		return nil, errors.NewBadRequest(err.Error())
+		return nil, apierrors.NewBadRequest(err.Error())
 	}
 
 	// Generate name if necessary
@@ -286,9 +409,9 @@ func (self *Store) Create(context contextpkg.Context, object runtime.Object, cre
 	if resource, err := self.CreateFunc(context, self, object); err == nil {
 		return resource, nil
 	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, errors.NewBadRequest(err.Error())
+		return nil, apierrors.NewBadRequest(err.Error())
 	} else {
-		return nil, errors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 }
 
@@ -323,17 +446,40 @@ func (self *Store) UpdatedObject(context contextpkg.Context, oldObject runtime.O
 func (self *Store) Update(context contextpkg.Context, name string, objectInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *meta.UpdateOptions) (runtime.Object, bool, error) {
 	self.Log.Infof("Update: %s, %v", name, options)
 
-	/*
-		if resource, err := self.UpdateFunc(context, self, name, objectInfo); err == nil {
-			return resource, nil
-		} else if backendpkg.IsBadArgumentError(err) {
-			return nil, false, errors.NewBadRequest(err.Error())
-		} else {
-			return nil, false, errors.NewInternalError(err)
+	current, err := self.Get(context, name, nil)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, false, err
 		}
-	*/
+	}
 
-	return nil, false, nil
+	updated, err := objectInfo.UpdatedObject(context, current)
+	if err != nil {
+		return nil, false, err
+	}
+
+	self.Log.Errorf("UPDATED: %v", updated)
+
+	var created bool
+	if current != nil {
+		/*
+			if resource, err := self.UpdateFunc(context, self, name, objectInfo); err == nil {
+				return resource, nil
+			} else if backendpkg.IsBadArgumentError(err) {
+				return nil, false, errors.NewBadRequest(err.Error())
+			} else {
+				return nil, false, errors.NewInternalError(err)
+			}
+		*/
+	} else {
+		updated, err = self.Create(context, updated, createValidation, nil)
+		if err != nil {
+			return nil, false, err
+		}
+		created = true
+	}
+
+	return updated, created, nil
 }
 
 // ([rest.Watcher] interface)
@@ -404,7 +550,7 @@ func (self *Store) _StorageVersion() runtime.GroupVersioner {
 // ([rest.ResetFieldsStrategy] interface)
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
-func (self *Store) _GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+func (self *Store) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	self.Log.Info("GetResetFields")
 	return nil
 }
@@ -439,7 +585,7 @@ func (self *Store) Recognizes(gvk schema.GroupVersionKind) bool {
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) GenerateName(base string) string {
 	self.Log.Infof("GenerateName: %s", base)
-	return names.SimpleNameGenerator.GenerateName(base)
+	return base + backendpkg.NewID()
 }
 
 // ([rest.RESTUpdateStrategy] interface)

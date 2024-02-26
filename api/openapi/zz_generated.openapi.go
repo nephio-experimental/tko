@@ -93,7 +93,8 @@ func schema_api_krm_tkonephioorg_v1alpha1_Deployment(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "TKO deployment.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -192,31 +193,36 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentSpec(ref common.ReferenceCal
 				Properties: map[string]spec.Schema{
 					"deploymentId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "(Read only) Deployment ID. A random UUID generated when the deployment is created.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"parentDeploymentId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "ID of the deployment that created this deployment during the preparation process.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"templateId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "ID of the template from which this deployment was created.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"siteId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "ID of the site with which this deployment is associated.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "Deployment metadata.",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -229,21 +235,10 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentSpec(ref common.ReferenceCal
 							},
 						},
 					},
-					"prepared": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-					"approved": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
 					"package": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
+							Description: "Deployment KRM package. When \"prepared\" is true the KRM must be completely valid. Otherwise, the KRM must be at least *partially* valid, meaning that required properties at any level of nesting are allowed to be missing, but properties that are assigned must have valid values.",
+							Ref:         ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
 						},
 					},
 				},
@@ -259,6 +254,22 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentStatus(ref common.ReferenceC
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"prepared": {
+						SchemaProps: spec.SchemaProps{
+							Description: "True if this deployment is prepared.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"approved": {
+						SchemaProps: spec.SchemaProps{
+							Description: "True if this deployment is approved. Cannot be true if \"prepared\" is false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -268,7 +279,8 @@ func schema_api_krm_tkonephioorg_v1alpha1_Plugin(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "TKO plugin.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -367,25 +379,29 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"type": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Can be \"validate\", \"prepare\", or \"schedule\".",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Plugin ID. Must be unique per \"type\" per TKO instance.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"executor": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Plugin executor. Each executor has its own requirements for \"arguments\" and \"properties\".",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Sequence of arguments for the executor.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -399,7 +415,8 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref common.ReferenceCallbac
 					},
 					"properties": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "Map of properties for the executor.",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -414,7 +431,8 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref common.ReferenceCallbac
 					},
 					"triggers": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "List of KRM types (GVK) that trigger this plugin.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -448,7 +466,8 @@ func schema_api_krm_tkonephioorg_v1alpha1_Site(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "TKO site.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -547,19 +566,22 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteSpec(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"siteId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Site ID. Must be unique per TKO instance.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"templateId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "ID of the template from which this site was created.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "Site metadata.",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -572,23 +594,10 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteSpec(ref common.ReferenceCallback)
 							},
 						},
 					},
-					"deploymentIds": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
 					"package": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
+							Description: "Site KRM package. The KRM must be completely valid.",
+							Ref:         ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
 						},
 					},
 				},
@@ -604,6 +613,23 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"deploymentIds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "(Read only) IDs of deployments associated with this site.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -613,7 +639,8 @@ func schema_api_krm_tkonephioorg_v1alpha1_Template(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "TKO template.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -712,13 +739,15 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateSpec(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"templateId": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Template ID. Must be unique per TKO instance.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "Template metadata.",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -731,23 +760,10 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateSpec(ref common.ReferenceCallb
 							},
 						},
 					},
-					"deploymentIds": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
 					"package": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
+							Description: "Template KRM package. The KRM must be at least *partially* valid, meaning that required properties at any level of nesting are allowed to be missing, but properties that are assigned must have valid values.",
+							Ref:         ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
 						},
 					},
 				},
@@ -763,6 +779,23 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateStatus(ref common.ReferenceCal
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"deploymentIds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "(Read only) IDs of deployments created from this template.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

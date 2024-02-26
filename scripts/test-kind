@@ -33,6 +33,6 @@ m 'waiting for TKO...'
 
 m 'creating KRM...'
 
-"$HERE/kubectl-kind" create -f "$ROOT/examples/kubernetes/"
+"$HERE/kubectl-kind" apply -f "$ROOT/examples/kubernetes/"
 
 "$HERE/test-scenario" remote "$HERE/tko-kind"
