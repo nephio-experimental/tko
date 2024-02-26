@@ -50,6 +50,15 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
+		DeleteFunc: func(context contextpkg.Context, store *Store, id string) error {
+			pluginId, ok := backendpkg.ParsePluginID(id)
+			if !ok {
+				return fmt.Errorf("malformed plugin ID: %s", id)
+			}
+
+			return store.Backend.DeletePlugin(context, pluginId)
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			pluginId, ok := backendpkg.ParsePluginID(id)
 			if !ok {
@@ -90,7 +99,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return &krmPluginList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmPlugins, err := ToPluginsKRM(object)
@@ -98,25 +107,30 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			descriptions := krm.Plugin{}.TypeMeta.SwaggerDoc()
-			nameDescription, _ := descriptions["name"]
-			typeDescription, _ := descriptions["type"]
-			pluginIdDescription, _ := descriptions["pluginId"]
-			executorDescription, _ := descriptions["executor"]
-			table.ColumnDefinitions = []meta.TableColumnDefinition{
-				{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-				{Name: "Type", Type: "string", Description: typeDescription},
-				{Name: "PluginID", Type: "string", Description: pluginIdDescription},
-				{Name: "Executor", Type: "string", Description: executorDescription},
-				//{Name: "Metadata", Description: descriptions["metadata"]},
+			if (options == nil) || !options.NoHeaders {
+				descriptions := krm.Plugin{}.TypeMeta.SwaggerDoc()
+				nameDescription, _ := descriptions["name"]
+				typeDescription, _ := descriptions["type"]
+				pluginIdDescription, _ := descriptions["pluginId"]
+				executorDescription, _ := descriptions["executor"]
+				table.ColumnDefinitions = []meta.TableColumnDefinition{
+					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
+					{Name: "Type", Type: "string", Description: typeDescription},
+					{Name: "PluginID", Type: "string", Description: pluginIdDescription},
+					{Name: "Executor", Type: "string", Description: executorDescription},
+					//{Name: "Metadata", Description: descriptions["metadata"]},
+				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmPlugins))
 			for index, krmPlugin := range krmPlugins {
-				table.Rows[index] = meta.TableRow{
-					Cells:  []any{krmPlugin.Name, krmPlugin.Spec.Type, krmPlugin.Spec.PluginID, krmPlugin.Spec.Executor},
-					Object: runtime.RawExtension{Object: &krmPlugin},
+				row := meta.TableRow{
+					Cells: []any{krmPlugin.Name, krmPlugin.Spec.Type, krmPlugin.Spec.PluginID, krmPlugin.Spec.Executor},
 				}
+				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+					row.Object = runtime.RawExtension{Object: &krmPlugin}
+				}
+				table.Rows[index] = row
 			}
 
 			return table, nil

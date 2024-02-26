@@ -6,7 +6,6 @@ import (
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	backendpkg "github.com/nephio-experimental/tko/backend"
-	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,6 +48,10 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
+		DeleteFunc: func(context contextpkg.Context, store *Store, id string) error {
+			return store.Backend.DeleteTemplate(context, id)
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if template, err := store.Backend.GetTemplate(context, id); err == nil {
 				if krmTemplate, err := TemplateToKRM(template); err == nil {
@@ -84,7 +87,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			return &krmTemplateList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmTemplates, err := ToTemplatesKRM(object)
@@ -92,21 +95,26 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			descriptions := krm.Template{}.TypeMeta.SwaggerDoc()
-			nameDescription, _ := descriptions["name"]
-			templateIdDescription, _ := descriptions["templateId"]
-			table.ColumnDefinitions = []meta.TableColumnDefinition{
-				{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-				{Name: "TemplateID", Type: "string", Description: templateIdDescription},
-				//{Name: "Metadata", Description: descriptions["metadata"]},
+			if (options == nil) || !options.NoHeaders {
+				descriptions := krm.Template{}.TypeMeta.SwaggerDoc()
+				nameDescription, _ := descriptions["name"]
+				templateIdDescription, _ := descriptions["templateId"]
+				table.ColumnDefinitions = []meta.TableColumnDefinition{
+					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
+					{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+					//{Name: "Metadata", Description: descriptions["metadata"]},
+				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmTemplates))
 			for index, krmTemplate := range krmTemplates {
-				table.Rows[index] = meta.TableRow{
-					Cells:  []any{krmTemplate.Name, krmTemplate.Spec.TemplateId},
-					Object: runtime.RawExtension{Object: &krmTemplate},
+				row := meta.TableRow{
+					Cells: []any{krmTemplate.Name, krmTemplate.Spec.TemplateId},
 				}
+				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+					row.Object = runtime.RawExtension{Object: &krmTemplate}
+				}
+				table.Rows[index] = row
 			}
 
 			return table, nil
@@ -154,13 +162,17 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, err
 
 func TemplateToKRM(template *backendpkg.Template) (krm.Template, error) {
 	if krmTemplate, err := TemplateInfoToKRM(&template.TemplateInfo); err == nil {
-		if resourcesYaml, err := tkoutil.EncodeResources("yaml", template.Resources); err == nil {
-			resourcesYaml_ := util.BytesToString(resourcesYaml)
-			krmTemplate.Spec.ResourcesYaml = &resourcesYaml_
-			return krmTemplate, nil
-		} else {
-			return krm.Template{}, err
-		}
+		krmTemplate.Spec.Package = ResourcesToKRM(template.Resources)
+		return krmTemplate, nil
+		/*
+			if resourcesYaml, err := tkoutil.EncodeResources("yaml", template.Resources); err == nil {
+				resourcesYaml_ := util.BytesToString(resourcesYaml)
+				krmTemplate.Spec.ResourcesYaml = &resourcesYaml_
+				return krmTemplate, nil
+			} else {
+				return krm.Template{}, err
+			}
+		*/
 	} else {
 		return krm.Template{}, err
 	}
@@ -185,12 +197,16 @@ func KRMToTemplate(krmTemplate *krm.Template) (*backendpkg.Template, error) {
 		},
 	}
 
-	if krmTemplate.Spec.ResourcesYaml != nil {
-		var err error
-		if template.Resources, err = tkoutil.DecodeResources("yaml", util.StringToBytes(*krmTemplate.Spec.ResourcesYaml)); err != nil {
-			return nil, err
+	template.Resources = ResourcesFromKRM(krmTemplate.Spec.Package)
+
+	/*
+		if krmTemplate.Spec.ResourcesYaml != nil {
+			var err error
+			if template.Resources, err = tkoutil.DecodeResources("yaml", util.StringToBytes(*krmTemplate.Spec.ResourcesYaml)); err != nil {
+				return nil, err
+			}
 		}
-	}
+	*/
 
 	return &template, nil
 }

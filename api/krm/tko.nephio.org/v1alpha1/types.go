@@ -4,7 +4,10 @@ package v1alpha1
 // Also make sure JSON names are lower-camel-case versions of Go names.
 
 import (
+	"github.com/tliron/go-ard"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	openapi "k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 //
@@ -30,7 +33,7 @@ type TemplateSpec struct {
 	// +optional
 	DeploymentIds []string `json:"deploymentIds,omitempty"`
 	// +optional
-	ResourcesYaml *string `json:"resourcesYaml"`
+	Package *Package `json:"package"`
 }
 
 type TemplateStatus struct {
@@ -69,7 +72,7 @@ type SiteSpec struct {
 	// +optional
 	DeploymentIds []string `json:"deploymentIds,omitempty"`
 	// +optional
-	ResourcesYaml *string `json:"resourcesYaml"`
+	Package *Package `json:"package"`
 }
 
 type SiteStatus struct {
@@ -113,7 +116,7 @@ type DeploymentSpec struct {
 	// +optional
 	Approved *bool `json:"approved"`
 	// +optional
-	ResourcesYaml *string `json:"resourcesYaml"`
+	Package *Package `json:"package"`
 }
 
 type DeploymentStatus struct {
@@ -169,4 +172,50 @@ type PluginList struct {
 	meta.ListMeta `json:"metadata,omitempty"`
 
 	Items []Plugin `json:"items"`
+}
+
+//
+// Package
+//
+
+type Package struct {
+	Resources []ard.StringMap `json:"resources,omitempty"`
+}
+
+func (self *Package) DeepCopyInto(out *Package) {
+	resources := make([]ard.StringMap, len(self.Resources))
+	for index, resource := range self.Resources {
+		resources[index] = ard.Copy(resource).(ard.StringMap)
+	}
+	out.Resources = resources
+}
+
+func (self *Package) DeepCopy() *Package {
+	resources := new(Package)
+	self.DeepCopyInto(resources)
+	return resources
+}
+
+func (_ Package) OpenAPIDefinition() openapi.OpenAPIDefinition {
+	return openapi.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"resources": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type: []string{"object"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }

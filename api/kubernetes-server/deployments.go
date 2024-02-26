@@ -7,7 +7,6 @@ import (
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
 	backendpkg "github.com/nephio-experimental/tko/backend"
-	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,6 +49,10 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
+		DeleteFunc: func(context contextpkg.Context, store *Store, id string) error {
+			return store.Backend.DeleteDeployment(context, id)
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if deployment, err := store.Backend.GetDeployment(context, id); err == nil {
 				if krmDeployment, err := DeploymentToKRM(deployment); err == nil {
@@ -85,7 +88,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return &krmDeploymentList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmDeployments, err := ToDeploymentsKRM(object)
@@ -93,31 +96,36 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			descriptions := krm.Deployment{}.TypeMeta.SwaggerDoc()
-			nameDescription, _ := descriptions["name"]
-			deploymentIdDescription, _ := descriptions["deploymentId"]
-			parentDeploymentIdDescription, _ := descriptions["parentDeploymentId"]
-			templateIdDescription, _ := descriptions["templateId"]
-			siteIdDescription, _ := descriptions["siteId"]
-			preparedDescription, _ := descriptions["prepared"]
-			approvedDescription, _ := descriptions["approved"]
-			table.ColumnDefinitions = []meta.TableColumnDefinition{
-				{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-				{Name: "DeploymentID", Type: "string", Description: deploymentIdDescription},
-				{Name: "ParentDeploymentID", Type: "string", Description: parentDeploymentIdDescription},
-				{Name: "TemplateID", Type: "string", Description: templateIdDescription},
-				{Name: "SiteID", Type: "string", Description: siteIdDescription},
-				{Name: "Prepared", Type: "boolean", Description: preparedDescription},
-				{Name: "Approved", Type: "boolean", Description: approvedDescription},
-				//{Name: "Metadata", Description: descriptions["metadata"]},
+			if (options == nil) || !options.NoHeaders {
+				descriptions := krm.Deployment{}.TypeMeta.SwaggerDoc()
+				nameDescription, _ := descriptions["name"]
+				deploymentIdDescription, _ := descriptions["deploymentId"]
+				parentDeploymentIdDescription, _ := descriptions["parentDeploymentId"]
+				templateIdDescription, _ := descriptions["templateId"]
+				siteIdDescription, _ := descriptions["siteId"]
+				preparedDescription, _ := descriptions["prepared"]
+				approvedDescription, _ := descriptions["approved"]
+				table.ColumnDefinitions = []meta.TableColumnDefinition{
+					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
+					{Name: "DeploymentID", Type: "string", Description: deploymentIdDescription},
+					{Name: "ParentDeploymentID", Type: "string", Description: parentDeploymentIdDescription},
+					{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+					{Name: "SiteID", Type: "string", Description: siteIdDescription},
+					{Name: "Prepared", Type: "boolean", Description: preparedDescription},
+					{Name: "Approved", Type: "boolean", Description: approvedDescription},
+					//{Name: "Metadata", Description: descriptions["metadata"]},
+				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmDeployments))
 			for index, krmDeployment := range krmDeployments {
-				table.Rows[index] = meta.TableRow{
-					Cells:  []any{krmDeployment.Name, krmDeployment.Spec.DeploymentId, krmDeployment.Spec.ParentDeploymentId, krmDeployment.Spec.TemplateId, krmDeployment.Spec.SiteId, krmDeployment.Spec.Prepared, krmDeployment.Spec.Approved},
-					Object: runtime.RawExtension{Object: &krmDeployment},
+				row := meta.TableRow{
+					Cells: []any{krmDeployment.Name, krmDeployment.Spec.DeploymentId, krmDeployment.Spec.ParentDeploymentId, krmDeployment.Spec.TemplateId, krmDeployment.Spec.SiteId, krmDeployment.Spec.Prepared, krmDeployment.Spec.Approved},
 				}
+				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+					row.Object = runtime.RawExtension{Object: &krmDeployment}
+				}
+				table.Rows[index] = row
 			}
 
 			return table, nil
@@ -178,13 +186,8 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (krm.Deploym
 
 func DeploymentToKRM(deployment *backendpkg.Deployment) (krm.Deployment, error) {
 	if krmDeployment, err := DeploymentInfoToKRM(&deployment.DeploymentInfo); err == nil {
-		if resourcesYaml, err := tkoutil.EncodeResources("yaml", deployment.Resources); err == nil {
-			resourcesYaml_ := util.BytesToString(resourcesYaml)
-			krmDeployment.Spec.ResourcesYaml = &resourcesYaml_
-			return krmDeployment, nil
-		} else {
-			return krm.Deployment{}, err
-		}
+		krmDeployment.Spec.Package = ResourcesToKRM(deployment.Resources)
+		return krmDeployment, nil
 	} else {
 		return krm.Deployment{}, err
 	}
@@ -209,13 +212,6 @@ func KRMToDeployment(krmDeployment *krm.Deployment) (*backendpkg.Deployment, err
 		},
 	}
 
-	if krmDeployment.Spec.ResourcesYaml != nil {
-		var err error
-		if deployment.Resources, err = tkoutil.DecodeResources("yaml", util.StringToBytes(*krmDeployment.Spec.ResourcesYaml)); err != nil {
-			return nil, err
-		}
-	}
-
 	if krmDeployment.Spec.ParentDeploymentId != nil {
 		deployment.ParentDeploymentID = *krmDeployment.Spec.ParentDeploymentId
 	}
@@ -235,6 +231,8 @@ func KRMToDeployment(krmDeployment *krm.Deployment) (*backendpkg.Deployment, err
 	if krmDeployment.Spec.Approved != nil {
 		deployment.Approved = *krmDeployment.Spec.Approved
 	}
+
+	deployment.Resources = ResourcesFromKRM(krmDeployment.Spec.Package)
 
 	return &deployment, nil
 }

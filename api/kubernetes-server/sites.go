@@ -7,7 +7,6 @@ import (
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
 	backendpkg "github.com/nephio-experimental/tko/backend"
-	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,6 +49,10 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
+		DeleteFunc: func(context contextpkg.Context, store *Store, id string) error {
+			return store.Backend.DeleteSite(context, id)
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if site, err := store.Backend.GetSite(context, id); err == nil {
 				if krmSite, err := SiteToKRM(site); err == nil {
@@ -85,7 +88,7 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return &krmSiteList, nil
 		},
 
-		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error) {
+		TableFunc: func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error) {
 			table := new(meta.Table)
 
 			krmSites, err := ToSitesKRM(object)
@@ -93,23 +96,28 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
-			descriptions := krm.Site{}.TypeMeta.SwaggerDoc()
-			nameDescription, _ := descriptions["name"]
-			siteIdDescription, _ := descriptions["siteId"]
-			templateIdDescription, _ := descriptions["templateId"]
-			table.ColumnDefinitions = []meta.TableColumnDefinition{
-				{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
-				{Name: "SiteID", Type: "string", Description: siteIdDescription},
-				{Name: "TemplateID", Type: "string", Description: templateIdDescription},
-				//{Name: "Metadata", Description: descriptions["metadata"]},
+			if (options == nil) || !options.NoHeaders {
+				descriptions := krm.Site{}.TypeMeta.SwaggerDoc()
+				nameDescription, _ := descriptions["name"]
+				siteIdDescription, _ := descriptions["siteId"]
+				templateIdDescription, _ := descriptions["templateId"]
+				table.ColumnDefinitions = []meta.TableColumnDefinition{
+					{Name: "Name", Type: "string", Format: "name", Description: nameDescription},
+					{Name: "SiteID", Type: "string", Description: siteIdDescription},
+					{Name: "TemplateID", Type: "string", Description: templateIdDescription},
+					//{Name: "Metadata", Description: descriptions["metadata"]},
+				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmSites))
 			for index, krmSite := range krmSites {
-				table.Rows[index] = meta.TableRow{
-					Cells:  []any{krmSite.Name, krmSite.Spec.SiteId, krmSite.Spec.TemplateId},
-					Object: runtime.RawExtension{Object: &krmSite},
+				row := meta.TableRow{
+					Cells: []any{krmSite.Name, krmSite.Spec.SiteId, krmSite.Spec.TemplateId},
 				}
+				if (options == nil) || (options.IncludeObject != meta.IncludeNone) {
+					row.Object = runtime.RawExtension{Object: &krmSite}
+				}
+				table.Rows[index] = row
 			}
 
 			return table, nil
@@ -157,13 +165,8 @@ func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (krm.Site, error) {
 
 func SiteToKRM(site *backendpkg.Site) (krm.Site, error) {
 	if krmSite, err := SiteInfoToKRM(&site.SiteInfo); err == nil {
-		if resourcesYaml, err := tkoutil.EncodeResources("yaml", site.Resources); err == nil {
-			resourcesYaml_ := util.BytesToString(resourcesYaml)
-			krmSite.Spec.ResourcesYaml = &resourcesYaml_
-			return krmSite, nil
-		} else {
-			return krm.Site{}, err
-		}
+		krmSite.Spec.Package = ResourcesToKRM(site.Resources)
+		return krmSite, nil
 	} else {
 		return krm.Site{}, err
 	}
@@ -188,16 +191,11 @@ func KRMToSite(krmSite *krm.Site) (*backendpkg.Site, error) {
 		},
 	}
 
-	if krmSite.Spec.ResourcesYaml != nil {
-		var err error
-		if site.Resources, err = tkoutil.DecodeResources("yaml", util.StringToBytes(*krmSite.Spec.ResourcesYaml)); err != nil {
-			return nil, err
-		}
-	}
-
 	if krmSite.Spec.TemplateId != nil {
 		site.TemplateID = *krmSite.Spec.TemplateId
 	}
+
+	site.Resources = ResourcesFromKRM(krmSite.Spec.Package)
 
 	return &site, nil
 }

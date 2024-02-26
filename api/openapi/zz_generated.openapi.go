@@ -8,6 +8,7 @@
 package openapi
 
 import (
+	v1alpha1 "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	common "k8s.io/kube-openapi/pkg/common"
 	spec "k8s.io/kube-openapi/pkg/validation/spec"
@@ -19,6 +20,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.DeploymentList":   schema_api_krm_tkonephioorg_v1alpha1_DeploymentList(ref),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.DeploymentSpec":   schema_api_krm_tkonephioorg_v1alpha1_DeploymentSpec(ref),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.DeploymentStatus": schema_api_krm_tkonephioorg_v1alpha1_DeploymentStatus(ref),
+		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package":          v1alpha1.Package{}.OpenAPIDefinition(),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Plugin":           schema_api_krm_tkonephioorg_v1alpha1_Plugin(ref),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.PluginList":       schema_api_krm_tkonephioorg_v1alpha1_PluginList(ref),
 		"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.PluginSpec":       schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref),
@@ -239,15 +241,16 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentSpec(ref common.ReferenceCal
 							Format: "",
 						},
 					},
-					"resourcesYaml": {
+					"package": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"},
 	}
 }
 
@@ -583,15 +586,16 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteSpec(ref common.ReferenceCallback)
 							},
 						},
 					},
-					"resourcesYaml": {
+					"package": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"},
 	}
 }
 
@@ -741,15 +745,16 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateSpec(ref common.ReferenceCallb
 							},
 						},
 					},
-					"resourcesYaml": {
+					"package": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"),
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1.Package"},
 	}
 }
 

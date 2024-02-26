@@ -110,10 +110,9 @@ func (in *DeploymentSpec) DeepCopyInto(out *DeploymentSpec) {
 		*out = new(bool)
 		**out = **in
 	}
-	if in.ResourcesYaml != nil {
-		in, out := &in.ResourcesYaml, &out.ResourcesYaml
-		*out = new(string)
-		**out = **in
+	if in.Package != nil {
+		in, out := &in.Package, &out.Package
+		*out = (*in).DeepCopy()
 	}
 	return
 }
@@ -355,10 +354,9 @@ func (in *SiteSpec) DeepCopyInto(out *SiteSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ResourcesYaml != nil {
-		in, out := &in.ResourcesYaml, &out.ResourcesYaml
-		*out = new(string)
-		**out = **in
+	if in.Package != nil {
+		in, out := &in.Package, &out.Package
+		*out = (*in).DeepCopy()
 	}
 	return
 }
@@ -470,10 +468,9 @@ func (in *TemplateSpec) DeepCopyInto(out *TemplateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ResourcesYaml != nil {
-		in, out := &in.ResourcesYaml, &out.ResourcesYaml
-		*out = new(string)
-		**out = **in
+	if in.Package != nil {
+		in, out := &in.Package, &out.Package
+		*out = (*in).DeepCopy()
 	}
 	return
 }

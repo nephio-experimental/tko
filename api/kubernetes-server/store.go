@@ -47,9 +47,10 @@ type Store struct {
 
 	// These can return backend errors
 	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
+	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
 	ListFunc   func(context contextpkg.Context, store *Store) (runtime.Object, error)
-	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object) (*meta.Table, error)
+	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, options *meta.TableOptions) (*meta.Table, error)
 
 	groupResource schema.GroupResource
 }
@@ -59,6 +60,8 @@ func (self *Store) Init() {
 }
 
 // Note: rest.Storage is the required interface, but there are *plenty* of additional optional ones.
+// We've tried to specify *all* possible functions here from all optional interfaces. Those currently
+// unused are "disabled" by an underscore prefix.
 
 // ([rest.Storage] interface)
 // ([rest.Creater] interface)
@@ -158,10 +161,8 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Object, options runtime.Object) (*meta.Table, error) {
 	self.Log.Infof("ConvertToTable: %v", options)
 
-	//if options_, ok := options.(*meta.TableOptions); !ok || !options_.NoHeaders {
-	//}
-
-	if table, err := self.TableFunc(context, self, object); err == nil {
+	tableOptions, _ := options.(*meta.TableOptions)
+	if table, err := self.TableFunc(context, self, object, tableOptions); err == nil {
 		return table, nil
 	} else {
 		return nil, errors.NewInternalError(err)
@@ -206,7 +207,35 @@ func (self *Store) _NewGetOptions() (runtime.Object, bool, string) {
 // ([rest.StandardStorage] interface)
 func (self *Store) Delete(context contextpkg.Context, name string, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions) (runtime.Object, bool, error) {
 	self.Log.Infof("Delete: %s, %v", name, options)
-	return nil, true, nil
+
+	id, err := NameToID(name)
+	if err != nil {
+		return nil, false, errors.NewBadRequest(err.Error())
+	}
+
+	// Older clients use nil to mean "delete immediately"
+	if options == nil {
+		options = meta.NewDeleteOptions(0)
+	}
+
+	/*
+		// Validate if necessary
+		if deleteValidation != nil {
+			if err := deleteValidation(context, object.DeepCopyObject()); err != nil {
+				return nil, false, err
+			}
+		}
+	*/
+
+	if err := self.DeleteFunc(context, self, id); err == nil {
+		return nil, true, nil
+	} else if backendpkg.IsBadArgumentError(err) {
+		return nil, false, errors.NewBadRequest(err.Error())
+	} else if backendpkg.IsNotFoundError(err) {
+		return nil, false, errors.NewNotFound(self.groupResource, name)
+	} else {
+		return nil, false, errors.NewInternalError(err)
+	}
 }
 
 // ([rest.MayReturnFullObjectDeleter] interface)
@@ -293,7 +322,18 @@ func (self *Store) UpdatedObject(context contextpkg.Context, oldObject runtime.O
 // ([rest.StandardStorage] interface)
 func (self *Store) Update(context contextpkg.Context, name string, objectInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *meta.UpdateOptions) (runtime.Object, bool, error) {
 	self.Log.Infof("Update: %s, %v", name, options)
-	return self.New(), false, nil
+
+	/*
+		if resource, err := self.UpdateFunc(context, self, name, objectInfo); err == nil {
+			return resource, nil
+		} else if backendpkg.IsBadArgumentError(err) {
+			return nil, false, errors.NewBadRequest(err.Error())
+		} else {
+			return nil, false, errors.NewInternalError(err)
+		}
+	*/
+
+	return nil, false, nil
 }
 
 // ([rest.Watcher] interface)

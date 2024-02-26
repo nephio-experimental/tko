@@ -1,3 +1,4 @@
+API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,Package,Resources
 API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,PluginSpec,Arguments
 API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,PluginSpec,Triggers
 API rule violation: list_type_missing,github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1,SiteSpec,DeploymentIds
