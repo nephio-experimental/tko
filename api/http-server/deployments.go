@@ -9,6 +9,8 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
+const TimeFormat = "2006/01/02 15:04:05"
+
 func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Request) {
 	if deploymentInfoResults, err := self.Backend.ListDeployments(request.Context(), backend.ListDeployments{}); err == nil {
 		var deployments []ard.StringMap
@@ -18,6 +20,8 @@ func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Re
 				"template": deploymentInfo.TemplateID,
 				"parent":   deploymentInfo.ParentDeploymentID,
 				"site":     deploymentInfo.SiteID,
+				"created":  deploymentInfo.Created.In(self.Timezone).Format(TimeFormat),
+				"updated":  deploymentInfo.Updated.In(self.Timezone).Format(TimeFormat),
 				"prepared": deploymentInfo.Prepared,
 				"approved": deploymentInfo.Approved,
 				"metadata": deploymentInfo.Metadata,

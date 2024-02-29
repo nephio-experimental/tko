@@ -36,8 +36,7 @@ spec:
           containerPort: 50051
         - name: kubernetes
           containerPort: 50052
-      - name: etcd
-        image: gcr.io/etcd-development/etcd:v3.5.12
+
 ---
 
 apiVersion: v1

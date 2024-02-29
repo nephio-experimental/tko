@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package tko;
 
 option go_package = "github.com/nephio-experimental/tko/api/grpc";
@@ -118,10 +120,12 @@ message Deployment {
     string templateId = 3;
     string siteId = 4;
     map<string, string> metadata = 5;
-    bool prepared = 6;
-    bool approved = 7;
-    string resourcesFormat = 8;
-    bytes resources = 9; // TODO: stream
+    google.protobuf.Timestamp created = 6;
+    google.protobuf.Timestamp updated = 7;
+    bool prepared = 8;
+    bool approved = 9;
+    string resourcesFormat = 10;
+    bytes resources = 11; // TODO: stream
 }
 
 message ListedDeployment {
@@ -130,8 +134,10 @@ message ListedDeployment {
     string templateId = 3;
     string siteId = 4;
     map<string, string> metadata = 5;
-    bool prepared = 6;
-    bool approved = 7;
+    google.protobuf.Timestamp created = 6;
+    google.protobuf.Timestamp updated = 7;
+    bool prepared = 8;
+    bool approved = 9;
 }
 
 message CreateDeployment {

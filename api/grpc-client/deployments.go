@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -18,6 +19,8 @@ type DeploymentInfo struct {
 	TemplateID         string            `json:"templateId" yaml:"templateId"`
 	SiteID             string            `json:"siteId,omitempty" yaml:"siteId,omitempty"`
 	Metadata           map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Created            time.Time         `json:"created" yaml:"created"`
+	Updated            time.Time         `json:"updated" yaml:"updated"`
 	Prepared           bool              `json:"prepared" yaml:"prepared"`
 	Approved           bool              `json:"approved" yaml:"approved"`
 }
@@ -74,6 +77,8 @@ func (self *Client) GetDeployment(deploymentId string) (Deployment, bool, error)
 						TemplateID:   deployment.TemplateId,
 						SiteID:       deployment.SiteId,
 						Metadata:     deployment.Metadata,
+						Created:      self.toTime(deployment.Created),
+						Updated:      self.toTime(deployment.Updated),
 						Prepared:     deployment.Prepared,
 						Approved:     deployment.Approved,
 					},
@@ -179,6 +184,8 @@ func (self *Client) ListDeployments(listDeployments ListDeployments) (util.Resul
 							TemplateID:         response.TemplateId,
 							SiteID:             response.SiteId,
 							Metadata:           response.Metadata,
+							Created:            self.toTime(response.Created),
+							Updated:            self.toTime(response.Updated),
 							Prepared:           response.Prepared,
 							Approved:           response.Approved,
 						})

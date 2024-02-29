@@ -3,6 +3,7 @@ package backend
 import (
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
@@ -18,6 +19,8 @@ type DeploymentInfo struct {
 	TemplateID         string
 	SiteID             string
 	Metadata           map[string]string
+	Created            time.Time
+	Updated            time.Time
 	Prepared           bool
 	Approved           bool
 }
@@ -29,6 +32,8 @@ func (self *DeploymentInfo) Clone() DeploymentInfo {
 		TemplateID:         self.TemplateID,
 		SiteID:             self.SiteID,
 		Metadata:           util.CloneStringMap(self.Metadata),
+		Created:            self.Created,
+		Updated:            self.Updated,
 		Prepared:           self.Prepared,
 		Approved:           self.Approved,
 	}
@@ -85,36 +90,21 @@ type Deployment struct {
 	Resources util.Resources
 }
 
-func NewDeployment(templateId string, parentDemploymentId string, siteId string, metadata map[string]string, prepared bool, approved bool, resources util.Resources) *Deployment {
-	if metadata == nil {
-		metadata = make(map[string]string)
-	}
-	return &Deployment{
-		DeploymentInfo: DeploymentInfo{
-			DeploymentID:       NewID(),
-			ParentDeploymentID: parentDemploymentId,
-			TemplateID:         templateId,
-			SiteID:             siteId,
-			Metadata:           metadata,
-			Prepared:           prepared,
-			Approved:           approved,
-		},
-		Resources: resources,
-	}
-}
-
-func NewDeploymentFromBytes(templateId string, parentDemploymentId string, siteId string, metadata map[string]string, prepared bool, approved bool, resourcesFormat string, resources []byte) (*Deployment, error) {
+func NewDeploymentFromBytes(parentDemploymentId string, templateId string, siteId string, metadata map[string]string, prepared bool, approved bool, resourcesFormat string, resources []byte) (*Deployment, error) {
 	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
 		if metadata == nil {
 			metadata = make(map[string]string)
 		}
+		now := time.Now().UTC()
 		return &Deployment{
 			DeploymentInfo: DeploymentInfo{
 				DeploymentID:       NewID(),
-				TemplateID:         templateId,
 				ParentDeploymentID: parentDemploymentId,
+				TemplateID:         templateId,
 				SiteID:             siteId,
 				Metadata:           metadata,
+				Created:            now,
+				Updated:            now,
 				Prepared:           prepared,
 				Approved:           approved,
 			},

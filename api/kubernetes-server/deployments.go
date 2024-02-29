@@ -3,6 +3,8 @@ package server
 import (
 	contextpkg "context"
 	"fmt"
+	"strconv"
+	"time"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
@@ -106,11 +108,18 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 					{Name: "SiteID", Type: "string"},
 					{Name: "Prepared", Type: "boolean"},
 					{Name: "Approved", Type: "boolean"},
+					{Name: "Created", Type: "string", Format: "date-time"},
+					{Name: "Updated", Type: "string", Format: "date-time"},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmDeployments))
 			for index, krmDeployment := range krmDeployments {
+				var updated time.Time
+				if updated_, err := strconv.ParseInt(krmDeployment.ResourceVersion, 10, 64); err == nil {
+					updated = time.UnixMicro(updated_)
+				}
+
 				row := meta.TableRow{
 					Cells: []any{
 						krmDeployment.Name,
@@ -120,6 +129,9 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 						krmDeployment.Spec.SiteId,
 						krmDeployment.Status.Prepared,
 						krmDeployment.Status.Approved,
+						// Note: kubectl will always display these in UTC, even if we change the timezone here
+						krmDeployment.CreationTimestamp,
+						updated,
 					},
 				}
 				if withObject {
@@ -158,6 +170,8 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (krm.Deploym
 	krmDeployment.Kind = "Deployment"
 	krmDeployment.Name = name
 	krmDeployment.UID = types.UID("tko|deployment|" + deploymentInfo.DeploymentID)
+	krmDeployment.CreationTimestamp = meta.NewTime(deploymentInfo.Created)
+	krmDeployment.ResourceVersion = strconv.FormatInt(deploymentInfo.Updated.UnixMicro(), 10)
 
 	deploymentId := deploymentInfo.DeploymentID
 	krmDeployment.Spec.DeploymentId = &deploymentId

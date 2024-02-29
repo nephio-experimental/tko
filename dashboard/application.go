@@ -17,6 +17,8 @@ type GetYAMLFunc func(id any) (string, string, error)
 //
 
 type Application struct {
+	Timezone *time.Location
+
 	client    *clientpkg.Client
 	frequency time.Duration
 
@@ -26,8 +28,13 @@ type Application struct {
 	ticker      *Ticker
 }
 
-func NewApplication(client *clientpkg.Client, frequency time.Duration) *Application {
+func NewApplication(client *clientpkg.Client, frequency time.Duration, timezone *time.Location) *Application {
+	if timezone == nil {
+		timezone = time.Local
+	}
+
 	self := Application{
+		Timezone:    timezone,
 		client:      client,
 		frequency:   frequency,
 		application: tview.NewApplication(),

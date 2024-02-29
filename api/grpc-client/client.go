@@ -8,6 +8,7 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 //
@@ -20,6 +21,7 @@ type Client struct {
 	GRPCPort           int
 	ResourcesFormat    string
 	Timeout            time.Duration
+	Timezone           *time.Location
 
 	apiClient     api.APIClient
 	apiClientLock sync.Mutex
@@ -39,6 +41,7 @@ func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resou
 		GRPCPort:           grpcPort,
 		ResourcesFormat:    resourcesFormat,
 		Timeout:            timeout,
+		Timezone:           time.Local,
 		log:                log,
 	}
 }
@@ -62,4 +65,8 @@ func (self *Client) APIClient() (api.APIClient, error) {
 
 func (self *Client) encodeResources(resources tkoutil.Resources) ([]byte, error) {
 	return tkoutil.EncodeResources(self.ResourcesFormat, resources)
+}
+
+func (self *Client) toTime(timestamp *timestamppb.Timestamp) time.Time {
+	return timestamp.AsTime().In(self.Timezone)
 }

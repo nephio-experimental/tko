@@ -8,7 +8,9 @@ $(document).ready(function () {
     ['site', 'api/site?id=', 'sites'],
     ['metadata'],
     ['prepared'],
-    ['approved']
+    ['approved'],
+    ['created'],
+    ['updated']
   ]);
 
   syncTable('sites', 'api/site/list', [

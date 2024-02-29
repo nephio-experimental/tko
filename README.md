@@ -167,6 +167,7 @@ flowchart TD
 Additional Resources
 --------------------
 
+* [Presentation recording](https://www.youtube.com/watch?v=rYQYj84Bcec)
 * [Components proposal](https://docs.google.com/drawings/d/1I7e3zm9-xC6cDxNd_ANPCVGbOQLgjAX25cImhwObG74)
   ([presentation recording](https://www.youtube.com/watch?v=nwd4t0DTTH8))
 * [Nephio R2 Summit presentation slides](https://docs.google.com/presentation/d/1I54I6RvexMjcP-qJSDq3xEqCyD6rCEfU_lcAdSFy1iM)

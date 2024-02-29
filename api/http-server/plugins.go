@@ -21,7 +21,7 @@ func (self *Server) ListPlugins(writer http.ResponseWriter, request *http.Reques
 			slices.Sort(triggers)
 
 			plugins = append(plugins, ard.StringMap{
-				"id":         plugin.Type + "|" + plugin.Name,
+				"id":         plugin.PluginID.String(),
 				"type":       plugin.Type,
 				"name":       plugin.Name,
 				"executor":   plugin.Executor,

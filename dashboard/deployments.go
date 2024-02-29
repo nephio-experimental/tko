@@ -10,6 +10,8 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
+const TimeFormat = "2006/01/02 15:04:05"
+
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateDeployments(table *tview.Table) {
 	if deploymentInfos, err := self.client.ListDeployments(client.ListDeployments{}); err == nil {
@@ -20,7 +22,7 @@ func (self *Application) UpdateDeployments(table *tview.Table) {
 
 			table.Clear()
 
-			SetTableHeader(table, "ID", "Template", "Parent", "Site", "Prepared", "Approved")
+			SetTableHeader(table, "ID", "Template", "Parent", "Site", "Prepared", "Approved", "Created", "Updated")
 
 			for row, deploymentInfo := range deploymentInfos_ {
 				row++
@@ -42,6 +44,8 @@ func (self *Application) UpdateDeployments(table *tview.Table) {
 				}
 				table.SetCell(row, 4, BoolTableCell(deploymentInfo.Prepared))
 				table.SetCell(row, 5, BoolTableCell(deploymentInfo.Approved))
+				table.SetCellSimple(row, 6, deploymentInfo.Created.In(self.Timezone).Format(TimeFormat))
+				table.SetCellSimple(row, 7, deploymentInfo.Updated.In(self.Timezone).Format(TimeFormat))
 			}
 		}
 	}

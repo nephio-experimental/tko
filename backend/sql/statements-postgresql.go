@@ -186,6 +186,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				parent_deployment_id TEXT,
 				template_id TEXT,
 				site_id TEXT,
+				created TIMESTAMP,
+				updated TIMESTAMP,
 				prepared BOOLEAN,
 				approved BOOLEAN,
 				modification_token TEXT,
@@ -224,12 +226,12 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DropDeploymentsModificationIndex:   `DROP INDEX IF EXISTS deployments_modification`,
 
 		InsertDeployment: CleanSQL(`
-			INSERT INTO deployments (deployment_id, parent_deployment_id, template_id, site_id, prepared, approved, resources)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO deployments (deployment_id, parent_deployment_id, template_id, site_id, created, updated, prepared, approved, resources)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`),
 		UpdateDeployment: CleanSQL(`
 			UPDATE deployments
-			SET prepared = $2, approved = $3, resources = $4, modification_token = NULL, modification_timestamp = 0
+			SET updated = $2, prepared = $3, approved = $4, resources = $5, modification_token = NULL, modification_timestamp = 0
 			WHERE deployment_id = $1
 		`),
 		UpsertDeploymentMetadata: CleanSQL(`
@@ -240,21 +242,21 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				value = $3
 		`),
 		SelectDeployment: CleanSQL(`
-			SELECT parent_deployment_id, template_id, site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), prepared, approved, resources
+			SELECT parent_deployment_id, template_id, site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), created, updated, prepared, approved, resources
 			FROM deployments
 			LEFT JOIN deployments_metadata ON deployments.deployment_id = deployments_metadata.deployment_id
 			WHERE deployments.deployment_id = $1
 			GROUP BY deployments.deployment_id
 		`),
 		SelectDeploymentWithModification: CleanSQL(`
-			SELECT parent_deployment_id, template_id, site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), prepared, approved, resources, modification_token, modification_timestamp
+			SELECT parent_deployment_id, template_id, site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), created, updated, prepared, approved, resources, modification_token, modification_timestamp
 			FROM deployments
 			LEFT JOIN deployments_metadata ON deployments.deployment_id = deployments_metadata.deployment_id
 			WHERE deployments.deployment_id = $1
 			GROUP BY deployments.deployment_id
 		`),
 		SelectDeploymentByModification: CleanSQL(`
-			SELECT deployments.deployment_id, template_id, site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), prepared, approved, modification_timestamp
+			SELECT deployments.deployment_id, template_id, site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), created, updated, prepared, approved, modification_timestamp
 			FROM deployments
 			LEFT JOIN deployments_metadata ON deployments.deployment_id = deployments_metadata.deployment_id
 			WHERE modification_token = $1
@@ -273,7 +275,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DeleteDeployment:         `DELETE FROM deployments WHERE deployment_id = $1`,
 		DeleteDeploymentMetadata: `DELETE FROM deployments_metadata WHERE deployment_id = $1`,
 		SelectDeployments: CleanSQL(`
-			SELECT deployments.deployment_id, parent_deployment_id, deployments.template_id, deployments.site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), prepared, approved
+			SELECT deployments.deployment_id, parent_deployment_id, deployments.template_id, deployments.site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), created, updated, prepared, approved
 			FROM deployments
 			LEFT JOIN deployments_metadata ON deployments.deployment_id = deployments_metadata.deployment_id
 			GROUP BY deployments.deployment_id

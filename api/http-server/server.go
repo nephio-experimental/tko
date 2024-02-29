@@ -18,26 +18,32 @@ import (
 //
 
 type Server struct {
-	Backend backend.Backend
-	Timeout time.Duration
-	IPStack util.IPStack
-	Address string
-	Port    int
-	Log     commonlog.Logger
+	Backend  backend.Backend
+	Timeout  time.Duration
+	IPStack  util.IPStack
+	Address  string
+	Port     int
+	Timezone *time.Location
+	Log      commonlog.Logger
 
 	httpServers []*http.Server
 	mux         *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, log commonlog.Logger) (*Server, error) {
+func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, timezone *time.Location, log commonlog.Logger) (*Server, error) {
+	if timezone == nil {
+		timezone = time.Local
+	}
+
 	self := Server{
-		Backend: backend,
-		Timeout: timeout,
-		IPStack: ipStack,
-		Address: address,
-		Port:    port,
-		Log:     log,
-		mux:     http.NewServeMux(),
+		Backend:  backend,
+		Timeout:  timeout,
+		IPStack:  ipStack,
+		Address:  address,
+		Port:     port,
+		Timezone: timezone,
+		Log:      log,
+		mux:      http.NewServeMux(),
 	}
 
 	self.mux.Handle("/", http.FileServer(http.FS(web.FS)))

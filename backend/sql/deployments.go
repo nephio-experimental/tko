@@ -30,7 +30,7 @@ func (self *SQLBackend) CreateDeployment(context contextpkg.Context, deployment 
 		}
 
 		insertDeployment := tx.StmtContext(context, self.statements.PreparedInsertDeployment)
-		if _, err := insertDeployment.ExecContext(context, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Prepared, deployment.Approved, resources); err != nil {
+		if _, err := insertDeployment.ExecContext(context, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Created, deployment.Updated, deployment.Prepared, deployment.Approved, resources); err != nil {
 			self.rollback(tx)
 			return err
 		}
@@ -66,10 +66,11 @@ func (self *SQLBackend) GetDeployment(context contextpkg.Context, deploymentId s
 
 	if rows.Next() {
 		var parentDeploymentId, templateId, siteId *string
+		var created, updated time.Time
 		var prepared, approved bool
 		var metadataJson, resources []byte
-		if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &resources); err == nil {
-			return self.newDeployment(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved, resources)
+		if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &created, &updated, &prepared, &approved, &resources); err == nil {
+			return self.newDeployment(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, created, updated, prepared, approved, resources)
 		} else {
 			return nil, err
 		}
@@ -184,9 +185,10 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 			var deploymentId string
 			var parentDeploymentId, templateId, siteId *string
 			var metadataJson []byte
+			var created, updated time.Time
 			var prepared, approved bool
-			if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved); err == nil {
-				if deploymentInfo, err := self.newDeploymentInfo(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved); err == nil {
+			if err := rows.Scan(&deploymentId, &parentDeploymentId, &templateId, &siteId, &metadataJson, &created, &updated, &prepared, &approved); err == nil {
+				if deploymentInfo, err := self.newDeploymentInfo(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, created, updated, prepared, approved); err == nil {
 					stream.Send(deploymentInfo)
 				} else {
 					stream.Close(err)
@@ -216,10 +218,11 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 
 		if rows.Next() {
 			var parentDeploymentId, templateId, siteId, modificationToken *string
+			var created, updated time.Time
 			var prepared, approved bool
 			var metadataJson, resources []byte
 			var modificationTimestamp *int64
-			if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &resources, &modificationToken, &modificationTimestamp); err == nil {
+			if err := rows.Scan(&parentDeploymentId, &templateId, &siteId, &metadataJson, &created, &updated, &prepared, &approved, &resources, &modificationToken, &modificationTimestamp); err == nil {
 				self.closeRows(rows)
 
 				available := (modificationToken == nil) || (*modificationToken == "")
@@ -232,7 +235,7 @@ func (self *SQLBackend) StartDeploymentModification(context contextpkg.Context, 
 					return "", nil, backend.NewBusyErrorf("deployment: %s", deploymentId)
 				}
 
-				if deployment, err := self.newDeployment(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved, resources); err == nil {
+				if deployment, err := self.newDeployment(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, created, updated, prepared, approved, resources); err == nil {
 					modificationToken_ := backend.NewID()
 					modificationTimestamp_ := time.Now().UnixMicro()
 
@@ -280,9 +283,10 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 			var deploymentId string
 			var templateId, siteId *string
 			var metadataJson []byte
+			var created, updated time.Time
 			var prepared, approved bool
 			var modificationTimestamp *int64
-			if err := rows.Scan(&deploymentId, &templateId, &siteId, &metadataJson, &prepared, &approved, &modificationTimestamp); err == nil {
+			if err := rows.Scan(&deploymentId, &templateId, &siteId, &metadataJson, &created, &updated, &prepared, &approved, &modificationTimestamp); err == nil {
 				self.closeRows(rows)
 
 				if self.hasModificationExpired(modificationTimestamp) {
@@ -291,7 +295,7 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 				}
 
 				var deploymentInfo backend.DeploymentInfo
-				if deploymentInfo, err = self.newDeploymentInfo(deploymentId, nil, templateId, siteId, metadataJson, prepared, approved); err != nil {
+				if deploymentInfo, err = self.newDeploymentInfo(deploymentId, nil, templateId, siteId, metadataJson, created, updated, prepared, approved); err != nil {
 					self.rollback(tx)
 					return "", err
 				}
@@ -321,8 +325,10 @@ func (self *SQLBackend) EndDeploymentModification(context contextpkg.Context, mo
 					return "", err
 				}
 
+				deployment.Updated = time.Now().UTC()
+
 				updateDeployment := tx.StmtContext(context, self.statements.PreparedUpdateDeployment)
-				if _, err := updateDeployment.ExecContext(context, deployment.DeploymentID, deployment.Prepared, deployment.Approved, resources); err != nil {
+				if _, err := updateDeployment.ExecContext(context, deployment.DeploymentID, deployment.Updated, deployment.Prepared, deployment.Approved, resources); err != nil {
 					self.rollback(tx)
 					return "", err
 				}
@@ -408,10 +414,12 @@ func (self *SQLBackend) CancelDeploymentModification(context contextpkg.Context,
 
 // Utils
 
-func (self *SQLBackend) newDeploymentInfo(deploymentId string, parentDeploymentId *string, templateId *string, siteId *string, metadataJson []byte, prepared bool, approved bool) (backend.DeploymentInfo, error) {
+func (self *SQLBackend) newDeploymentInfo(deploymentId string, parentDeploymentId *string, templateId *string, siteId *string, metadataJson []byte, created time.Time, updated time.Time, prepared bool, approved bool) (backend.DeploymentInfo, error) {
 	deploymentInfo := backend.DeploymentInfo{
 		DeploymentID: deploymentId,
 		Metadata:     make(map[string]string),
+		Created:      created,
+		Updated:      updated,
 		Prepared:     prepared,
 		Approved:     approved,
 	}
@@ -435,8 +443,8 @@ func (self *SQLBackend) newDeploymentInfo(deploymentId string, parentDeploymentI
 	return deploymentInfo, nil
 }
 
-func (self *SQLBackend) newDeployment(deploymentId string, parentDeploymentId *string, templateId *string, siteId *string, metadataJson []byte, prepared bool, approved bool, resources []byte) (*backend.Deployment, error) {
-	if deploymentInfo, err := self.newDeploymentInfo(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, prepared, approved); err == nil {
+func (self *SQLBackend) newDeployment(deploymentId string, parentDeploymentId *string, templateId *string, siteId *string, metadataJson []byte, created time.Time, updated time.Time, prepared bool, approved bool, resources []byte) (*backend.Deployment, error) {
+	if deploymentInfo, err := self.newDeploymentInfo(deploymentId, parentDeploymentId, templateId, siteId, metadataJson, created, updated, prepared, approved); err == nil {
 		deployment := backend.Deployment{DeploymentInfo: deploymentInfo}
 		if deployment.Resources, err = self.decodeResources(resources); err == nil {
 			return &deployment, nil

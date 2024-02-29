@@ -9,13 +9,14 @@ import (
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ([api.APIServer] interface)
 func (self *Server) CreateDeployment(context contextpkg.Context, createDeployment *api.CreateDeployment) (*api.CreateDeploymentResponse, error) {
 	self.Log.Infof("createDeployment: %+v", createDeployment)
 
-	deployment, err := backend.NewDeploymentFromBytes(createDeployment.TemplateId, createDeployment.ParentDeploymentId, createDeployment.SiteId, createDeployment.MergeMetadata, createDeployment.Prepared, createDeployment.Approved, createDeployment.MergeResourcesFormat, createDeployment.MergeResources)
+	deployment, err := backend.NewDeploymentFromBytes(createDeployment.ParentDeploymentId, createDeployment.TemplateId, createDeployment.SiteId, createDeployment.MergeMetadata, createDeployment.Prepared, createDeployment.Approved, createDeployment.MergeResourcesFormat, createDeployment.MergeResources)
 	if err != nil {
 		return new(api.CreateDeploymentResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -57,6 +58,8 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 				ParentDeploymentId: deployment.ParentDeploymentID,
 				TemplateId:         deployment.TemplateID,
 				SiteId:             deployment.SiteID,
+				Created:            timestamppb.New(deployment.Created),
+				Updated:            timestamppb.New(deployment.Updated),
 				Prepared:           deployment.Prepared,
 				Approved:           deployment.Approved,
 				ResourcesFormat:    resourcesFormat,
@@ -93,6 +96,8 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 				TemplateId:         deploymentInfo.TemplateID,
 				SiteId:             deploymentInfo.SiteID,
 				Metadata:           deploymentInfo.Metadata,
+				Created:            timestamppb.New(deploymentInfo.Created),
+				Updated:            timestamppb.New(deploymentInfo.Updated),
 				Prepared:           deploymentInfo.Prepared,
 				Approved:           deploymentInfo.Approved,
 			})

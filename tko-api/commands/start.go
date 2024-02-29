@@ -37,6 +37,7 @@ var webIpStackString string
 var webIpStack util.IPStack
 var webAddress string
 var webPort uint
+var webTimezone string
 var kubernetes bool
 var kubernetesPort uint
 var validatorTimeout float64
@@ -56,6 +57,7 @@ func init() {
 	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind HTTP/2 port for web server")
+	startCommand.Flags().StringVar(&webTimezone, "web-timezone", "", "web server timezone, e.g. \"UTC\" (empty string for local)")
 	startCommand.Flags().BoolVar(&kubernetes, "kubernetes", false, "start Kubernetes aggregated API server")
 	startCommand.Flags().UintVar(&kubernetesPort, "kubernetes-port", 50052, "bind port for Kubernetes aggregated API server")
 	startCommand.Flags().Float64Var(&validatorTimeout, "validator-timeout", 30.0, "validator timeout in seconds")
@@ -98,6 +100,13 @@ func Serve() {
 		util.Failf("unsupported backend: %s", backendName)
 	}
 
+	var webTimezone_ *time.Location
+	if webTimezone != "" {
+		var err error
+		webTimezone_, err = time.LoadLocation(webTimezone)
+		util.FailOnError(err)
+	}
+
 	// Client
 	client := grpcclient.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
@@ -119,7 +128,7 @@ func Serve() {
 	util.OnExit(grpcServer.Stop)
 
 	// HTTP
-	httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), commonlog.GetLogger("http"))
+	httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), webTimezone_, commonlog.GetLogger("http"))
 	util.FailOnError(err)
 	util.FailOnError(httpServer.Start())
 	util.OnExit(httpServer.Stop)

@@ -45,11 +45,11 @@ To delete the virtual machine:
 Kubernetes Cluster
 ------------------
 
-TKO can run in a Kubernetes cluster. We provide a quick setup on top of
-[Kind](https://kind.sigs.k8s.io/) using TKO container images published on
-[Docker Hub](https://hub.docker.com/u/tliron).
+TKO can run in a Kubernetes cluster with a rich KRM aggregated API. We provide a quick
+setup on top of [Kind](https://kind.sigs.k8s.io/) using TKO container images published
+on [Docker Hub](https://hub.docker.com/u/tliron).
 
-Our current setup is very minimal. It uses the memory backend, rather than PostgreSQL,
+Our Kind setup is currenbtly minimal. It uses the memory backend, rather than PostgreSQL,
 and will not provision new local clusters (to avoid running Kind inside Kind).
 
 To create the Kind cluster:
@@ -63,6 +63,14 @@ If you have `tko` installed on the host, you can also run the client there with 
 script:
 
     scripts/tko-kind dashboard
+
+`kubectl` access is provided with this script (it simply uses Kind's kubeconfig
+context):
+
+    scripts/kubectl-kind get tko
+    scripts/kubectl-kind describe template/demo-002fhello-002dworld-003av1.0.0
+
+See the [KRM API guide](KRM.md) for more information.
 
 To follow logs:
 

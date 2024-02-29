@@ -295,6 +295,7 @@ func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context,
 					}
 				}
 
+				deployment.Updated = time.Now().UTC()
 				self.deployments[deploymentId] = deployment
 
 				return deploymentId, nil
