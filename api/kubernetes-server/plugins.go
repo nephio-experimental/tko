@@ -20,11 +20,11 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		Kind:        "Plugin",
-		ListKind:    "PluginList",
-		Singular:    "plugin",
-		Plural:      "plugins",
-		ObjectTyper: Scheme,
+		TypeKind:     "Plugin",
+		TypeListKind: "PluginList",
+		TypeSingular: "plugin",
+		TypePlural:   "plugins",
+		ObjectTyper:  Scheme,
 
 		NewResourceFunc: func() runtime.Object {
 			return new(krm.Plugin)

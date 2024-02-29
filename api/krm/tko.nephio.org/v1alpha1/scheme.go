@@ -41,3 +41,23 @@ var schemeBuilder = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error 
 	meta.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 })
+
+// Internal Group-Version.
+var InternalSchemeGroupVersion = schema.GroupVersion{Group: krmgroup.GroupName, Version: runtime.APIVersionInternal}
+
+// Adds all our internally-versioned types to a scheme.
+var AddInternalToScheme = internalSchemeBuilder.AddToScheme
+
+var internalSchemeBuilder = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(InternalSchemeGroupVersion,
+		new(Template),
+		new(TemplateList),
+		new(Site),
+		new(SiteList),
+		new(Deployment),
+		new(DeploymentList),
+		new(Plugin),
+		new(PluginList),
+	)
+	return nil
+})

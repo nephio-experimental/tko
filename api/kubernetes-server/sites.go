@@ -20,11 +20,11 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		Kind:        "Site",
-		ListKind:    "SiteList",
-		Singular:    "site",
-		Plural:      "sites",
-		ObjectTyper: Scheme,
+		TypeKind:     "Site",
+		TypeListKind: "SiteList",
+		TypeSingular: "site",
+		TypePlural:   "sites",
+		ObjectTyper:  Scheme,
 
 		NewResourceFunc: func() runtime.Object {
 			return new(krm.Site)

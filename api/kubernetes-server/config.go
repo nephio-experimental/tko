@@ -21,33 +21,33 @@ var ConfigVersion = version.Info{
 }
 
 func NewConfig(port int) (*apiserver.CompletedConfig, error) {
-	config, err := NewRecommendedConfig(port)
+	recommendedConfig, err := NewRecommendedConfig(port)
 	if err != nil {
 		return nil, err
 	}
 
-	completedConfig := config.Complete()
+	completedConfig := recommendedConfig.Complete()
 	completedConfig.Version = &ConfigVersion
 
 	return &completedConfig, nil
 }
 
 func NewRecommendedConfig(port int) (*apiserver.RecommendedConfig, error) {
-	config := apiserver.NewRecommendedConfig(Codecs)
+	recommendedConfig := apiserver.NewRecommendedConfig(Codecs)
 
 	namer := openapi.NewDefinitionNamer(Scheme)
 
-	config.OpenAPIConfig = apiserver.DefaultOpenAPIConfig(tkoopenapi.GetOpenAPIDefinitions, namer)
-	config.OpenAPIConfig.Info.Title = OpenAPITitle
-	config.OpenAPIConfig.Info.Version = OpenAPIVersion
+	recommendedConfig.OpenAPIConfig = apiserver.DefaultOpenAPIConfig(tkoopenapi.GetOpenAPIDefinitions, namer)
+	recommendedConfig.OpenAPIConfig.Info.Title = OpenAPITitle
+	recommendedConfig.OpenAPIConfig.Info.Version = OpenAPIVersion
 
-	config.OpenAPIV3Config = apiserver.DefaultOpenAPIV3Config(tkoopenapi.GetOpenAPIDefinitions, namer)
-	config.OpenAPIV3Config.Info.Title = OpenAPITitle
-	config.OpenAPIV3Config.Info.Version = OpenAPIVersion
+	recommendedConfig.OpenAPIV3Config = apiserver.DefaultOpenAPIV3Config(tkoopenapi.GetOpenAPIDefinitions, namer)
+	recommendedConfig.OpenAPIV3Config.Info.Title = OpenAPITitle
+	recommendedConfig.OpenAPIV3Config.Info.Version = OpenAPIVersion
 
 	if options, err := NewRecommendedOptions(port); err == nil {
-		if err := options.ApplyTo(config); err == nil {
-			return config, nil
+		if err := options.ApplyTo(recommendedConfig); err == nil {
+			return recommendedConfig, nil
 		} else {
 			return nil, err
 		}

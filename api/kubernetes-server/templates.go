@@ -19,11 +19,11 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		Kind:        "Template",
-		ListKind:    "TemplateList",
-		Singular:    "template",
-		Plural:      "templates",
-		ObjectTyper: Scheme,
+		TypeKind:     "Template",
+		TypeListKind: "TemplateList",
+		TypeSingular: "template",
+		TypePlural:   "templates",
+		ObjectTyper:  Scheme,
 
 		NewResourceFunc: func() runtime.Object {
 			return new(krm.Template)
@@ -148,7 +148,6 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, err
 	krmTemplate.Name = name
 	krmTemplate.UID = types.UID("tko|template|" + templateInfo.TemplateID)
 	//template.GenerateName = "tko-template-"
-	//template.ResourceVersion = "123"
 	//template.CreationTimestamp = meta.Now()
 
 	templateId := templateInfo.TemplateID

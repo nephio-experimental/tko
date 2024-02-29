@@ -45,18 +45,19 @@ type Store struct {
 	Backend backendpkg.Backend
 	Log     commonlog.Logger
 
-	Kind        string
-	ListKind    string
-	Singular    string
-	Plural      string
-	Short       []string
-	ObjectTyper runtime.ObjectTyper
+	TypeKind       string
+	TypeListKind   string
+	TypeSingular   string
+	TypePlural     string
+	TypeShortNames []string
+	ObjectTyper    runtime.ObjectTyper
 
 	NewResourceFunc     func() runtime.Object
 	NewResourceListFunc func() runtime.Object
 
 	// These can return backend errors
 	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
+	UpdateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) // optional
 	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
 	ListFunc   func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error)
@@ -66,28 +67,30 @@ type Store struct {
 }
 
 func (self *Store) Init() {
-	self.groupResource = krm.Resource(self.Plural)
+	self.groupResource = krm.Resource(self.TypePlural)
 }
 
 // Note: rest.Storage is the required interface, but there are *plenty* of additional optional ones.
 // We've tried to specify *all* possible functions here from all optional interfaces. Those currently
 // unused are "disabled" by an underscore prefix.
 //
+// Also note that all functions must returns errors from "k8s.io/apimachinery/pkg/api/errors".
+//
 // For an example implementation on top of etcd, see:
 //   https://github.com/kubernetes/apiserver/blob/v0.29.2/pkg/registry/generic/registry/store.go
 
 var (
-	validStore              = new(Store)
-	_          rest.Storage = validStore
-	_          rest.Scoper  = validStore
-	// _ rest.KindProvider = validStore
-	_ rest.ShortNamesProvider       = validStore
-	_ rest.CategoriesProvider       = validStore
-	_ rest.SingularNameProvider     = validStore
-	_ rest.GroupVersionKindProvider = validStore
-	_ rest.GroupVersionAcceptor     = validStore
-	_ rest.Lister                   = validStore
-	_ rest.Getter                   = validStore
+	validStore                               = new(Store)
+	_          rest.Storage                  = validStore
+	_          rest.Scoper                   = validStore
+	_          rest.KindProvider             = validStore
+	_          rest.ShortNamesProvider       = validStore
+	_          rest.CategoriesProvider       = validStore
+	_          rest.SingularNameProvider     = validStore
+	_          rest.GroupVersionKindProvider = validStore
+	_          rest.GroupVersionAcceptor     = validStore
+	_          rest.Lister                   = validStore
+	_          rest.Getter                   = validStore
 	// _ rest.GetterWithOptions = validStore
 	_ rest.TableConvertor             = validStore
 	_ rest.GracefulDeleter            = validStore
@@ -96,10 +99,9 @@ var (
 	_ rest.Creater                    = validStore
 	// _ rest.NamedCreater = validStore
 	_ rest.SubresourceObjectMetaPreserver = validStore
-	// _ rest.UpdatedObjectInfo = validStore
-	_ rest.Updater        = validStore
-	_ rest.CreaterUpdater = validStore
-	_ rest.Patcher        = validStore
+	_ rest.Updater                        = validStore
+	_ rest.CreaterUpdater                 = validStore
+	_ rest.Patcher                        = validStore
 	// _ rest.Watcher = validStore
 	// _ rest.StandardStorage = validStore
 	// _ rest.Redirector = validStore
@@ -138,15 +140,15 @@ func (self *Store) NamespaceScoped() bool {
 }
 
 // ([rest.KindProvider] interface)
-func (self *Store) _Kind() bool {
+func (self *Store) Kind() string {
 	self.Log.Info("Kind")
-	return false
+	return self.TypeKind
 }
 
 // ([rest.ShortNamesProvider] interface)
 func (self *Store) ShortNames() []string {
 	self.Log.Info("ShortNames")
-	return self.Short
+	return self.TypeShortNames
 }
 
 // ([rest.SingularNameProvider] interface)
@@ -158,13 +160,13 @@ func (self *Store) Categories() []string {
 // ([rest.CategoriesProvider] interface)
 func (self *Store) GetSingularName() string {
 	self.Log.Info("GetSingularName")
-	return self.Singular
+	return self.TypeSingular
 }
 
 // ([rest.GroupVersionKindProvider] interface)
 func (self *Store) GroupVersionKind(containingGV schema.GroupVersion) schema.GroupVersionKind {
 	self.Log.Infof("GroupVersionKind: %s", containingGV)
-	return containingGV.WithKind(self.Kind)
+	return containingGV.WithKind(self.TypeKind)
 }
 
 // ([rest.GroupVersionAcceptor] interface)
@@ -203,7 +205,6 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 			// same result set. Thus it may be possible that certain names may repeat more
 			// than once for a client that is concatenating result chunks. Clients concerned
 			// about duplicates should thus do their own de-duping.
-
 			if offset_, err := strconv.ParseUint(options.Continue, 10, 64); err == nil {
 				offset = uint(offset_)
 			} else {
@@ -241,7 +242,7 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 
 			// This should not happen, but just in case
 			if count > maxCount {
-				self.Log.Warningf("List: fetched too many resources: %d > %d", count, maxCount)
+				self.Log.Warningf("List: fetched too many objects: %d > %d", count, maxCount)
 				metabase.SetList(list, objects[:maxCount])
 				count = maxCount
 			}
@@ -285,14 +286,12 @@ func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Obj
 	withObject := (options == nil) || (tableOptions.IncludeObject != meta.IncludeNone)
 
 	if table, err := self.TableFunc(context, self, object, withHeaders, withObject); err == nil {
-		// Copy properties from list to table
-		// ("kubectl get" expects this, but "kubectl get -o yaml" doesn't... welp!)
 		if list_, err := metabase.ListAccessor(object); err == nil {
+			// Copy properties from list to table
+			// ("kubectl get" expects this, but "kubectl get -o yaml" doesn't... welp!)
 			table.ResourceVersion = list_.GetResourceVersion()
 			table.RemainingItemCount = list_.GetRemainingItemCount()
 			table.Continue = list_.GetContinue()
-		} else {
-			return nil, apierrors.NewInternalError(err)
 		}
 		return table, nil
 	} else {
@@ -315,8 +314,8 @@ func (self *Store) Get(context contextpkg.Context, name string, options *meta.Ge
 		return nil, apierrors.NewBadRequest(err.Error())
 	}
 
-	if resource, err := self.GetFunc(context, self, id); err == nil {
-		return resource, nil
+	if object, err := self.GetFunc(context, self, id); err == nil {
+		return object, nil
 	} else if backendpkg.IsBadArgumentError(err) {
 		return nil, apierrors.NewBadRequest(err.Error())
 	} else if backendpkg.IsNotFoundError(err) {
@@ -391,6 +390,8 @@ func (self *Store) DeleteReturnsDeletedObject() bool {
 // ([rest.CollectionDeleter] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
+	// Note: This verb cannot be called via kubectl; test with other clients
+
 	if options == nil {
 		self.Log.Info("DeleteCollection")
 	} else {
@@ -498,8 +499,8 @@ func (self *Store) Create(context contextpkg.Context, object runtime.Object, cre
 		return nil, nil
 	}
 
-	if resource, err := self.CreateFunc(context, self, object); err == nil {
-		return resource, nil
+	if object, err = self.CreateFunc(context, self, object); err == nil {
+		return object, nil
 	} else if backendpkg.IsBadArgumentError(err) {
 		return nil, apierrors.NewBadRequest(err.Error())
 	} else {
@@ -523,18 +524,6 @@ func (self *Store) PreserveRequestObjectMetaSystemFieldsOnSubresourceCreate() bo
 	return false
 }
 
-// ([rest.UpdatedObjectInfo] interface)
-func (self *Store) _Preconditions() *meta.Preconditions {
-	self.Log.Info("Preconditions")
-	return nil
-}
-
-// ([rest.UpdatedObjectInfo] interface)
-func (self *Store) UpdatedObject(context contextpkg.Context, oldObject runtime.Object) (runtime.Object, error) {
-	self.Log.Info("UpdatedObject")
-	return nil, nil
-}
-
 // ([rest.Updater] interface)
 // ([rest.CreaterUpdater] interface)
 // ([rest.Patcher] interface)
@@ -546,42 +535,53 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 		self.Log.Infof("Update: name=%s options=%+v", name, *options)
 	}
 
-	current, err := self.Get(context, name, nil)
+	currentObject, err := self.Get(context, name, nil)
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
+			if forceAllowCreate || self.AllowCreateOnUpdate() {
+				self.Log.Infof("Update: will create name=%s", name)
+				currentObject = nil // just making sure
+			} else {
+				return nil, false, err
+			}
+		} else {
 			return nil, false, err
 		}
 	}
 
-	updated, err := objectInfo.UpdatedObject(context, current)
+	// Note: Running "kubectl apply --server-side" works as expected. However, without the
+	// "--server-side" flag it seems that kubectl sends the updated object using the special
+	// "__internal" API version, so that objectInfo.UpdatedObject() would understandably fail
+	// to find the type. Our workaround is to call krm.AddInternalToScheme() on the API
+	// server's Scheme (see scheme.go). Is this is a bug in kubectl? In apiserver? If not,
+	// why this odd bevavior?
+
+	updatedObject, err := objectInfo.UpdatedObject(context, currentObject)
 	if err != nil {
-		return nil, false, err
+		return nil, false, apierrors.NewInternalError(err)
 	}
 
 	if (options != nil) && (len(options.DryRun) > 0) {
 		return nil, false, nil
 	}
 
-	var created bool
-	if current != nil {
-		/*
-			if resource, err := self.UpdateFunc(context, self, name, objectInfo); err == nil {
-				return resource, nil
-			} else if backendpkg.IsBadArgumentError(err) {
-				return nil, false, errors.NewBadRequest(err.Error())
-			} else {
-				return nil, false, errors.NewInternalError(err)
-			}
-		*/
-	} else {
-		if updated, err = self.Create(context, updated, createValidation, nil); err == nil {
-			created = true
-		} else {
-			return nil, false, err
-		}
+	var updateOrCreate func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
+	if currentObject != nil {
+		updateOrCreate = self.UpdateFunc
+	}
+	if updateOrCreate == nil {
+		updateOrCreate = self.CreateFunc
 	}
 
-	return updated, created, nil
+	if updatedObject, err = updateOrCreate(context, self, updatedObject); err == nil {
+		return updatedObject, currentObject == nil, nil
+	} else if backendpkg.IsBadArgumentError(err) {
+		return nil, false, apierrors.NewBadRequest(err.Error())
+	} else if backendpkg.IsNotFoundError(err) {
+		return nil, false, apierrors.NewNotFound(self.groupResource, name)
+	} else {
+		return nil, false, apierrors.NewInternalError(err)
+	}
 }
 
 // ([rest.Watcher] interface)
@@ -681,7 +681,7 @@ func (self *Store) ObjectKinds(object runtime.Object) ([]schema.GroupVersionKind
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) Recognizes(gvk schema.GroupVersionKind) bool {
 	self.Log.Infof("Recognizes: gvk=%s", gvk)
-	return (gvk.Group == krmgroup.GroupName) && (gvk.Version == krm.Version) && (gvk.Kind == self.Kind)
+	return (gvk.Group == krmgroup.GroupName) && (gvk.Version == krm.Version) && (gvk.Kind == self.TypeKind)
 }
 
 // ([names.NameGenerator] interface)
@@ -745,7 +745,7 @@ func (self *Store) Canonicalize(object runtime.Object) {
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) AllowUnconditionalUpdate() bool {
 	self.Log.Info("AllowUnconditionalUpdate")
-	return false
+	return true
 }
 
 // ([rest.RESTCreateStrategy] interface)

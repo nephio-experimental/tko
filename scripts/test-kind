@@ -24,7 +24,6 @@ fi
 
 "$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/admin/"
 "$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
-#"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml"
 
 m 'waiting for TKO...'
 

@@ -20,11 +20,11 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		Kind:        "Deployment",
-		ListKind:    "DeploymentList",
-		Singular:    "deployment",
-		Plural:      "deployments",
-		ObjectTyper: Scheme,
+		TypeKind:     "Deployment",
+		TypeListKind: "DeploymentList",
+		TypeSingular: "deployment",
+		TypePlural:   "deployments",
+		ObjectTyper:  Scheme,
 
 		NewResourceFunc: func() runtime.Object {
 			return new(krm.Deployment)
