@@ -123,7 +123,6 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 	filterNotApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == false)
 
 	self.lock.Lock()
-	defer self.lock.Unlock()
 
 	var deploymentInfos []backend.DeploymentInfo
 	for _, deployment := range self.deployments {
@@ -182,7 +181,20 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeplo
 		deploymentInfos = append(deploymentInfos, deployment.DeploymentInfo)
 	}
 
-	return util.NewResultsSlice[backend.DeploymentInfo](deploymentInfos), nil
+	self.lock.Unlock()
+
+	backend.SortDeploymentInfos(deploymentInfos)
+
+	length := uint(len(deploymentInfos))
+	if listDeployments.Offset > length {
+		deploymentInfos = nil
+	} else if end := listDeployments.Offset + listDeployments.MaxCount; end > length {
+		deploymentInfos = deploymentInfos[listDeployments.Offset:]
+	} else {
+		deploymentInfos = deploymentInfos[listDeployments.Offset:end]
+	}
+
+	return util.NewResultsSlice(deploymentInfos), nil
 }
 
 // ([backend.Backend] interface)

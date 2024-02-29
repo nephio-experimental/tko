@@ -40,11 +40,11 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 		return false, "", fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
 	}
 
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("registerPlugin: %s, %s, %v, %v, %v", pluginId, executor, arguments, properties, triggers)
+		self.log.Infof("registerPlugin: pluginId=%s executor=%s arguments=%v properties=%v triggers=%v", pluginId, executor, arguments, properties, triggers)
 		if response, err := apiClient.RegisterPlugin(context, &api.Plugin{
 			Type:       pluginId.Type,
 			Name:       pluginId.Name,
@@ -67,11 +67,11 @@ func (self *Client) GetPlugin(pluginId PluginID) (Plugin, bool, error) {
 		return Plugin{}, false, fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
 	}
 
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("getPlugin: %s", pluginId)
+		self.log.Infof("getPlugin: pluginId=%s", pluginId)
 		if plugin, err := apiClient.GetPlugin(context, &api.PluginID{
 			Type: pluginId.Type,
 			Name: pluginId.Name,
@@ -98,11 +98,11 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 		return false, "", fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
 	}
 
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("deletePlugin: %s", pluginId)
+		self.log.Infof("deletePlugin: pluginId=%s", pluginId)
 		if response, err := apiClient.DeletePlugin(context, &api.PluginID{
 			Type: pluginId.Type,
 			Name: pluginId.Name,
@@ -117,6 +117,8 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 }
 
 type ListPlugins struct {
+	Offset       uint
+	MaxCount     uint
 	Type         *string
 	NamePatterns []string
 	Executor     *string
@@ -148,11 +150,13 @@ func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], 
 		}
 	}
 
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Infof("listPlugins: %s", listPlugins)
 		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
+			Offset:       uint32(listPlugins.Offset),
+			MaxCount:     uint32(listPlugins.MaxCount),
 			Type:         listPlugins.Type,
 			NamePatterns: listPlugins.NamePatterns,
 			Executor:     listPlugins.Executor,

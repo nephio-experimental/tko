@@ -66,12 +66,12 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmDeploymentList krm.DeploymentList
 			krmDeploymentList.APIVersion = APIVersion
 			krmDeploymentList.Kind = "DeploymentList"
 
-			if results, err := store.Backend.ListDeployments(context, backendpkg.ListDeployments{}); err == nil {
+			if results, err := store.Backend.ListDeployments(context, backendpkg.ListDeployments{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(deploymentInfo backendpkg.DeploymentInfo) error {
 					if krmDeployment, err := DeploymentInfoToKRM(&deploymentInfo); err == nil {
 						krmDeploymentList.Items = append(krmDeploymentList.Items, krmDeployment)
@@ -106,14 +106,21 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 					{Name: "SiteID", Type: "string"},
 					{Name: "Prepared", Type: "boolean"},
 					{Name: "Approved", Type: "boolean"},
-					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmDeployments))
 			for index, krmDeployment := range krmDeployments {
 				row := meta.TableRow{
-					Cells: []any{krmDeployment.Name, krmDeployment.Spec.DeploymentId, krmDeployment.Spec.ParentDeploymentId, krmDeployment.Spec.TemplateId, krmDeployment.Spec.SiteId, krmDeployment.Status.Prepared, krmDeployment.Status.Approved},
+					Cells: []any{
+						krmDeployment.Name,
+						krmDeployment.Spec.DeploymentId,
+						krmDeployment.Spec.ParentDeploymentId,
+						krmDeployment.Spec.TemplateId,
+						krmDeployment.Spec.SiteId,
+						krmDeployment.Status.Prepared,
+						krmDeployment.Status.Approved,
+					},
 				}
 				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmDeployment}

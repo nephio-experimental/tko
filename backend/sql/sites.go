@@ -83,6 +83,9 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 	var with SqlWith
 	var where SqlWhere
 
+	args.AddValue(listSites.Offset)
+	args.AddValue(listSites.MaxCount)
+
 	for _, pattern := range listSites.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("sites.site_id ~ " + pattern)

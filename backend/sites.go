@@ -1,6 +1,9 @@
 package backend
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/nephio-experimental/tko/util"
 )
 
@@ -48,6 +51,12 @@ func (self *SiteInfo) MergeTemplateInfo(templateInfo *TemplateInfo) {
 	}
 
 	self.Metadata = metadata
+}
+
+func SortSiteInfos(siteInfos []SiteInfo) {
+	slices.SortFunc(siteInfos, func(a SiteInfo, b SiteInfo) int {
+		return strings.Compare(a.SiteID, b.SiteID)
+	})
 }
 
 //

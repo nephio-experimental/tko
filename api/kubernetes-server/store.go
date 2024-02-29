@@ -3,10 +3,13 @@ package server
 import (
 	contextpkg "context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
+	"time"
 
 	krmgroup "github.com/nephio-experimental/tko/api/krm/tko.nephio.org"
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
@@ -56,7 +59,7 @@ type Store struct {
 	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
 	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
-	ListFunc   func(context contextpkg.Context, store *Store) (runtime.Object, error)
+	ListFunc   func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error)
 	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
 
 	groupResource schema.GroupResource
@@ -166,7 +169,7 @@ func (self *Store) GroupVersionKind(containingGV schema.GroupVersion) schema.Gro
 
 // ([rest.GroupVersionAcceptor] interface)
 func (self *Store) AcceptsGroupVersion(gv schema.GroupVersion) bool {
-	self.Log.Infof("AcceptsGroupVersion: %s", gv)
+	self.Log.Infof("AcceptsGroupVersion: gv=%s", gv)
 	return (gv.Group == krmgroup.GroupName) && (gv.Version == krm.Version)
 }
 
@@ -180,10 +183,42 @@ func (self *Store) NewList() runtime.Object {
 // ([rest.Lister] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) List(context contextpkg.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
-	self.Log.Infof("List: %v", options)
+	if options == nil {
+		self.Log.Info("List")
+	} else {
+		self.Log.Infof("List: options=%+v", *options)
+	}
 
-	// TODO: handle watch
-	// TODO: handle limit/continue
+	var offset uint
+	var maxCount uint
+
+	if options != nil {
+		if options.Watch {
+			return nil, apierrors.NewBadRequest("\"watch\" is not supported")
+		}
+
+		if options.Continue != "" {
+			// Note: Every call results in a new query to the backend (we are not setting
+			// ResourceVersion), so there is no guarantee that we are indeed continuing the
+			// same result set. Thus it may be possible that certain names may repeat more
+			// than once for a client that is concatenating result chunks. Clients concerned
+			// about duplicates should thus do their own de-duping.
+
+			if offset_, err := strconv.ParseUint(options.Continue, 10, 64); err == nil {
+				offset = uint(offset_)
+			} else {
+				return nil, apierrors.NewBadRequest(fmt.Sprintf("malformed \"continue\": %s", err.Error()))
+			}
+		}
+
+		maxCount = uint(options.Limit)
+
+		if options.TimeoutSeconds != nil {
+			var cancel contextpkg.CancelFunc
+			context, cancel = contextpkg.WithTimeout(context, time.Duration(*options.TimeoutSeconds)*time.Second)
+			defer cancel()
+		}
+	}
 
 	/*
 		label := labels.Everything()
@@ -199,7 +234,34 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 		}
 	*/
 
-	if list, err := self.ListFunc(context, self); err == nil {
+	if list, err := self.ListFunc(context, self, offset, maxCount); err == nil {
+		// Check if there are potentially more results
+		if objects, err := metabase.ExtractList(list); err == nil {
+			count := uint(len(objects))
+
+			// This should not happen, but just in case
+			if count > maxCount {
+				self.Log.Warningf("List: fetched too many resources: %d > %d", count, maxCount)
+				metabase.SetList(list, objects[:maxCount])
+				count = maxCount
+			}
+
+			if count == maxCount {
+				// Note: If all the results fit exactly in maxCount then we don't actually have more results
+				// and there's no need to continue, but optimizing for that case here would be challenging.
+				// Ssome backends, such as SQL, might not report additional results within the query window.
+				if list_, err := metabase.ListAccessor(list); err == nil {
+					continue_ := strconv.FormatUint(uint64(offset+count), 10)
+					self.Log.Infof("List: setting continue: %s", continue_)
+					list_.SetContinue(continue_)
+				} else {
+					return nil, apierrors.NewInternalError(err)
+				}
+			}
+		} else {
+			return nil, apierrors.NewInternalError(err)
+		}
+
 		return list, nil
 	} else if backendpkg.IsBadArgumentError(err) {
 		return nil, apierrors.NewBadRequest(err.Error())
@@ -208,17 +270,30 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 	}
 }
 
-// ([rest.Lister] interface)
 // ([rest.TableConvertor] interface)
+// ([rest.Lister] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Object, options runtime.Object) (*meta.Table, error) {
-	self.Log.Infof("ConvertToTable: %v", options)
+	if options == nil {
+		self.Log.Info("ConvertToTable")
+	} else {
+		self.Log.Infof("ConvertToTable: options=%+v", options)
+	}
 
 	tableOptions, _ := options.(*meta.TableOptions)
 	withHeaders := (options == nil) || !tableOptions.NoHeaders
 	withObject := (options == nil) || (tableOptions.IncludeObject != meta.IncludeNone)
 
 	if table, err := self.TableFunc(context, self, object, withHeaders, withObject); err == nil {
+		// Copy properties from list to table
+		// ("kubectl get" expects this, but "kubectl get -o yaml" doesn't... welp!)
+		if list_, err := metabase.ListAccessor(object); err == nil {
+			table.ResourceVersion = list_.GetResourceVersion()
+			table.RemainingItemCount = list_.GetRemainingItemCount()
+			table.Continue = list_.GetContinue()
+		} else {
+			return nil, apierrors.NewInternalError(err)
+		}
 		return table, nil
 	} else {
 		return nil, apierrors.NewInternalError(err)
@@ -229,7 +304,11 @@ func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Obj
 // ([rest.Patcher] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) Get(context contextpkg.Context, name string, options *meta.GetOptions) (runtime.Object, error) {
-	self.Log.Infof("Getter.Get: %s, %v", name, options)
+	if options == nil {
+		self.Log.Infof("Getter.Get: name=%s", name)
+	} else {
+		self.Log.Infof("Getter.Get: name=%s options=%+v", name, *options)
+	}
 
 	id, err := tkoutil.FromKubernetesName(name)
 	if err != nil {
@@ -249,7 +328,7 @@ func (self *Store) Get(context contextpkg.Context, name string, options *meta.Ge
 
 // ([rest.GetterWithOptions] interface)
 func (self *Store) _Get(context contextpkg.Context, name string, options runtime.Object) (runtime.Object, error) {
-	self.Log.Infof("GetterWithOptions.Get: %s", name)
+	self.Log.Infof("GetterWithOptions.Get: name=%s", name)
 	return self.New(), nil
 }
 
@@ -262,14 +341,19 @@ func (self *Store) _NewGetOptions() (runtime.Object, bool, string) {
 // ([rest.GracefulDeleter] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) Delete(context contextpkg.Context, name string, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions) (runtime.Object, bool, error) {
-	self.Log.Infof("Delete: %s, %v", name, options)
+	if options == nil {
+		self.Log.Infof("Delete: name=%s", name)
+	} else {
+		self.Log.Infof("Delete: name=%s options=%+v", name, *options)
+	}
 
 	id, err := tkoutil.FromKubernetesName(name)
 	if err != nil {
 		return nil, false, apierrors.NewBadRequest(err.Error())
 	}
 
-	// Older clients use nil to mean "delete immediately"
+	// Older clients use nil to mean no grace period
+	// (for completion; we always delete immediately)
 	if options == nil {
 		options = meta.NewDeleteOptions(0)
 	}
@@ -282,6 +366,10 @@ func (self *Store) Delete(context contextpkg.Context, name string, deleteValidat
 			}
 		}
 	*/
+
+	if (options != nil) && (len(options.DryRun) > 0) {
+		return nil, false, nil
+	}
 
 	if err := self.DeleteFunc(context, self, id); err == nil {
 		return nil, true, nil
@@ -303,7 +391,11 @@ func (self *Store) DeleteReturnsDeletedObject() bool {
 // ([rest.CollectionDeleter] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
-	self.Log.Infof("DeleteCollection: %v", options)
+	if options == nil {
+		self.Log.Info("DeleteCollection")
+	} else {
+		self.Log.Infof("DeleteCollection: options=%+v", *options)
+	}
 
 	if listOptions == nil {
 		listOptions = new(metainternalversion.ListOptions)
@@ -313,12 +405,11 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 
 	var deletedOjects []runtime.Object
 	var deletedObjectsLock sync.Mutex
-	var errs []error
-	var errsLock sync.Mutex
 
-	executor := util.NewParallelExecutor[runtime.Object](ParallelBufferSize, func(object runtime.Object) error {
+	deleter := util.NewParallelExecutor[runtime.Object](ParallelBufferSize, func(object runtime.Object) error {
 		if accessor, err := metabase.Accessor(object); err == nil {
 			name := accessor.GetName()
+			self.Log.Infof("DeleteCollection: deleting %q", name)
 			if _, _, err := self.Delete(context, name, deleteValidation, options); err == nil {
 				deletedObjectsLock.Lock()
 				deletedOjects = append(deletedOjects, object)
@@ -326,31 +417,26 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 			} else if apierrors.IsNotFound(err) {
 				self.Log.Infof("listed item has already been deleted during DeleteCollection: %s", name)
 			} else {
-				errsLock.Lock()
-				errs = append(errs, err)
-				errsLock.Unlock()
+				return err
 			}
 		} else {
-			errsLock.Lock()
-			errs = append(errs, err)
-			errsLock.Unlock()
+			return err
 		}
 		return nil
 	})
 
-	executor.PanicAsError = "DeleteCollection"
-	executor.Start(ParallelWorkers)
+	deleter.PanicAsError = "DeleteCollection"
+	deleter.Start(ParallelWorkers)
 
+	var errs []error
 	for {
 		if list, err := self.List(context, listOptions); err == nil {
 			if objects, err := metabase.ExtractList(list); err == nil {
 				for _, object := range objects {
-					executor.Queue(object)
+					deleter.Queue(object)
 				}
 			} else {
-				errsLock.Lock()
 				errs = append(errs, err)
-				errsLock.Unlock()
 			}
 
 			if list_, err := metabase.ListAccessor(list); err == nil {
@@ -361,13 +447,11 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 				break
 			}
 		} else {
-			errsLock.Lock()
 			errs = append(errs, err)
-			errsLock.Unlock()
 		}
 	}
 
-	errs = append(executor.Wait(), errs...)
+	errs = append(deleter.Wait(), errs...)
 
 	list := self.NewList()
 	metabase.SetList(list, deletedOjects)
@@ -380,7 +464,11 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 func (self *Store) Create(context contextpkg.Context, object runtime.Object, createValidation rest.ValidateObjectFunc, options *meta.CreateOptions) (runtime.Object, error) {
 	// See: https://github.com/kubernetes/apiserver/blob/bd6de43ed55ef3094738331a1264554be65c22c9/pkg/registry/generic/registry/store.go#L399
 
-	self.Log.Infof("Creater.Create: %v", options)
+	if options == nil {
+		self.Log.Info("Creater.Create")
+	} else {
+		self.Log.Infof("Creater.Create: options=%+v", *options)
+	}
 
 	objectMeta, err := metabase.Accessor(object)
 	if err != nil {
@@ -406,6 +494,10 @@ func (self *Store) Create(context contextpkg.Context, object runtime.Object, cre
 		}
 	}
 
+	if (options != nil) && (len(options.DryRun) > 0) {
+		return nil, nil
+	}
+
 	if resource, err := self.CreateFunc(context, self, object); err == nil {
 		return resource, nil
 	} else if backendpkg.IsBadArgumentError(err) {
@@ -417,7 +509,11 @@ func (self *Store) Create(context contextpkg.Context, object runtime.Object, cre
 
 // ([rest.NamedCreater] interface)
 func (self *Store) _Create(context contextpkg.Context, name string, object runtime.Object, createValidation rest.ValidateObjectFunc, options *meta.CreateOptions) (runtime.Object, error) {
-	self.Log.Infof("NamedCreater.Create: %s, %v", name, options)
+	if options == nil {
+		self.Log.Infof("NamedCreater.Create: name=%s", name)
+	} else {
+		self.Log.Infof("NamedCreater.Create: name=%s options=%+v", name, *options)
+	}
 	return self.New(), nil
 }
 
@@ -444,7 +540,11 @@ func (self *Store) UpdatedObject(context contextpkg.Context, oldObject runtime.O
 // ([rest.Patcher] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) Update(context contextpkg.Context, name string, objectInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *meta.UpdateOptions) (runtime.Object, bool, error) {
-	self.Log.Infof("Update: %s, %v", name, options)
+	if options == nil {
+		self.Log.Infof("Update: name=%s", name)
+	} else {
+		self.Log.Infof("Update: name=%s options=%+v", name, *options)
+	}
 
 	current, err := self.Get(context, name, nil)
 	if err != nil {
@@ -458,7 +558,9 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 		return nil, false, err
 	}
 
-	self.Log.Errorf("UPDATED: %v", updated)
+	if (options != nil) && (len(options.DryRun) > 0) {
+		return nil, false, nil
+	}
 
 	var created bool
 	if current != nil {
@@ -472,11 +574,11 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 			}
 		*/
 	} else {
-		updated, err = self.Create(context, updated, createValidation, nil)
-		if err != nil {
+		if updated, err = self.Create(context, updated, createValidation, nil); err == nil {
+			created = true
+		} else {
 			return nil, false, err
 		}
-		created = true
 	}
 
 	return updated, created, nil
@@ -485,19 +587,24 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 // ([rest.Watcher] interface)
 // ([rest.StandardStorage] interface)
 func (self *Store) _Watch(context contextpkg.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
-	self.Log.Infof("Watch: %v", options)
+	if options == nil {
+		self.Log.Infof("Watch")
+	} else {
+		self.Log.Infof("Watch: options=%+v", *options)
+	}
+	// TODO: supporting this would require an event model on the backend...
 	return nil, nil
 }
 
 // ([rest.Redirector] interface)
 func (self *Store) _ResourceLocation(context contextpkg.Context, id string) (*url.URL, http.RoundTripper, error) {
-	self.Log.Infof("ResourceLocation: %s", id)
+	self.Log.Infof("ResourceLocation: id=%s", id)
 	return nil, nil, nil
 }
 
 // ([rest.Responder] interface)
-func (self *Store) _Object(statusCode int, obj runtime.Object) {
-	self.Log.Infof("Object: %d", statusCode)
+func (self *Store) _Object(statusCode int, object runtime.Object) {
+	self.Log.Infof("Object: statusCode=%d", statusCode)
 }
 
 // ([rest.Responder] interface)
@@ -507,7 +614,7 @@ func (self *Store) _Error(err error) {
 
 // ([rest.Connecter] interface)
 func (self *Store) _Connect(context contextpkg.Context, id string, options runtime.Object, responder rest.Responder) (http.Handler, error) {
-	self.Log.Infof("Connect: %s", id)
+	self.Log.Infof("Connect: id=%s", id)
 	return nil, nil
 }
 
@@ -525,19 +632,19 @@ func (self *Store) _ConnectMethods() []string {
 
 // ([rest.ResourceStreamer] interface)
 func (self *Store) _InputStream(context contextpkg.Context, apiVersion string, acceptHeader string) (io.ReadCloser, bool, string, error) {
-	self.Log.Infof("InputStream: %s, %s", apiVersion, acceptHeader)
+	self.Log.Infof("InputStream: apiVersion=%s acceptHeader=%s", apiVersion, acceptHeader)
 	return nil, false, "", nil
 }
 
 // ([rest.StorageMetadata] interface)
 func (self *Store) _ProducesMIMETypes(verb string) []string {
-	self.Log.Infof("ProducesMIMETypes: %s", verb)
+	self.Log.Infof("ProducesMIMETypes: verb=%s", verb)
 	return nil
 }
 
 // ([rest.StorageMetadata] interface)
 func (self *Store) _ProducesObject(verb string) any {
-	self.Log.Infof("ProducesObject: %s", verb)
+	self.Log.Infof("ProducesObject: verb=%s", verb)
 	return nil
 }
 
@@ -573,7 +680,7 @@ func (self *Store) ObjectKinds(object runtime.Object) ([]schema.GroupVersionKind
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) Recognizes(gvk schema.GroupVersionKind) bool {
-	self.Log.Infof("Recognizes: %s", gvk)
+	self.Log.Infof("Recognizes: gvk=%s", gvk)
 	return (gvk.Group == krmgroup.GroupName) && (gvk.Version == krm.Version) && (gvk.Kind == self.Kind)
 }
 
@@ -584,7 +691,7 @@ func (self *Store) Recognizes(gvk schema.GroupVersionKind) bool {
 // ([rest.CreateUpdateResetFieldsStrategy] interface)
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) GenerateName(base string) string {
-	self.Log.Infof("GenerateName: %s", base)
+	self.Log.Infof("GenerateName: base=%s", base)
 	return base + backendpkg.NewID()
 }
 

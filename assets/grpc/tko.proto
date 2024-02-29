@@ -65,8 +65,10 @@ message GetTemplate {
 }
 
 message ListTemplates {
-    repeated string templateIdPatterns = 1;
-    map<string, string> metadataPatterns = 2;
+	uint32 offset = 1;
+	uint32 maxCount = 2;
+    repeated string templateIdPatterns = 3;
+    map<string, string> metadataPatterns = 4;
 }
 
 // Sites
@@ -97,9 +99,11 @@ message GetSite {
 }
 
 message ListSites {
-    repeated string siteIdPatterns = 1;
-    repeated string templateIdPatterns = 2;
-    map<string, string> metadataPatterns = 3;
+	uint32 offset = 1;
+	uint32 maxCount = 2;
+    repeated string siteIdPatterns = 3;
+    repeated string templateIdPatterns = 4;
+    map<string, string> metadataPatterns = 5;
 }
 
 // Deployments
@@ -153,14 +157,16 @@ message GetDeployment {
 }
 
 message ListDeployments {
-    optional string parentDeploymentId = 1;
-    map<string, string> metadataPatterns = 2;
-    repeated string templateIdPatterns = 3;
-    map<string, string> templateMetadataPatterns = 4;
-    repeated string siteIdPatterns = 5;
-    map<string, string> siteMetadataPatterns = 6;
-    optional bool prepared = 7;
-    optional bool approved = 8;
+	uint32 offset = 1;
+	uint32 maxCount = 2;
+    optional string parentDeploymentId = 3;
+    map<string, string> metadataPatterns = 4;
+    repeated string templateIdPatterns = 5;
+    map<string, string> templateMetadataPatterns = 6;
+    repeated string siteIdPatterns = 7;
+    map<string, string> siteMetadataPatterns = 8;
+    optional bool prepared = 9;
+    optional bool approved = 10;
 }
 
 message StartDeploymentModification {
@@ -221,8 +227,10 @@ message Plugin {
 }
 
 message ListPlugins {
-    optional string type = 1;
-    repeated string namePatterns = 2;
-    optional string executor = 3;
-    optional GVK trigger = 4;
+	uint32 offset = 1;
+	uint32 maxCount = 2;
+    optional string type = 3;
+    repeated string namePatterns = 4;
+    optional string executor = 5;
+    optional GVK trigger = 6;
 }

@@ -12,7 +12,7 @@ import (
 
 // ([api.APIServer] interface)
 func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.Template) (*api.RegisterResponse, error) {
-	self.Log.Infof("registerTemplate: %s", template)
+	self.Log.Infof("registerTemplate: %+v", template)
 
 	template_, err := backend.NewTemplateFromBytes(template.TemplateId, template.Metadata, template.ResourcesFormat, template.Resources)
 	if err != nil {
@@ -32,7 +32,7 @@ func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.T
 
 // ([api.APIServer] interface)
 func (self *Server) DeleteTemplate(context contextpkg.Context, templateId *api.TemplateID) (*api.DeleteResponse, error) {
-	self.Log.Infof("deleteTemplate: %s", templateId)
+	self.Log.Infof("deleteTemplate: %+v", templateId)
 
 	if err := self.Backend.DeleteTemplate(context, templateId.TemplateId); err == nil {
 		return &api.DeleteResponse{Deleted: true}, nil
@@ -45,7 +45,7 @@ func (self *Server) DeleteTemplate(context contextpkg.Context, templateId *api.T
 
 // ([api.APIServer] interface)
 func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.GetTemplate) (*api.Template, error) {
-	self.Log.Infof("getTemplate: %s", getTemplate)
+	self.Log.Infof("getTemplate: %+v", getTemplate)
 
 	if template, err := self.Backend.GetTemplate(context, getTemplate.TemplateId); err == nil {
 		resourcesFormat := getTemplate.PreferredResourcesFormat
@@ -70,9 +70,11 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 
 // ([api.APIServer] interface)
 func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.API_ListTemplatesServer) error {
-	self.Log.Infof("listTemplates: %s", listTemplates)
+	self.Log.Infof("listTemplates: %+v", listTemplates)
 
 	if templateInfoResults, err := self.Backend.ListTemplates(server.Context(), backend.ListTemplates{
+		Offset:             uint(listTemplates.Offset),
+		MaxCount:           uint(listTemplates.MaxCount),
 		TemplateIDPatterns: listTemplates.TemplateIdPatterns,
 		MetadataPatterns:   listTemplates.MetadataPatterns,
 	}); err == nil {

@@ -76,12 +76,12 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmPluginList krm.PluginList
 			krmPluginList.APIVersion = APIVersion
 			krmPluginList.Kind = "PluginList"
 
-			if results, err := store.Backend.ListPlugins(context, backendpkg.ListPlugins{}); err == nil {
+			if results, err := store.Backend.ListPlugins(context, backendpkg.ListPlugins{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(plugin backendpkg.Plugin) error {
 					if krmPlugin, err := PluginToKRM(&plugin); err == nil {
 						krmPluginList.Items = append(krmPluginList.Items, krmPlugin)
@@ -113,14 +113,18 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 					{Name: "Type", Type: "string"},
 					{Name: "PluginID", Type: "string"},
 					{Name: "Executor", Type: "string"},
-					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmPlugins))
 			for index, krmPlugin := range krmPlugins {
 				row := meta.TableRow{
-					Cells: []any{krmPlugin.Name, krmPlugin.Spec.Type, krmPlugin.Spec.PluginID, krmPlugin.Spec.Executor},
+					Cells: []any{
+						krmPlugin.Name,
+						krmPlugin.Spec.Type,
+						krmPlugin.Spec.PluginID,
+						krmPlugin.Spec.Executor,
+					},
 				}
 				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmPlugin}

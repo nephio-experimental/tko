@@ -66,12 +66,12 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmSiteList krm.SiteList
 			krmSiteList.APIVersion = APIVersion
 			krmSiteList.Kind = "SiteList"
 
-			if results, err := store.Backend.ListSites(context, backendpkg.ListSites{}); err == nil {
+			if results, err := store.Backend.ListSites(context, backendpkg.ListSites{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(siteInfo backendpkg.SiteInfo) error {
 					if krmSite, err := SiteInfoToKRM(&siteInfo); err == nil {
 						krmSiteList.Items = append(krmSiteList.Items, krmSite)
@@ -102,14 +102,17 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 					{Name: "Name", Type: "string", Format: "name"},
 					{Name: "SiteID", Type: "string"},
 					{Name: "TemplateID", Type: "string"},
-					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmSites))
 			for index, krmSite := range krmSites {
 				row := meta.TableRow{
-					Cells: []any{krmSite.Name, krmSite.Spec.SiteId, krmSite.Spec.TemplateId},
+					Cells: []any{
+						krmSite.Name,
+						krmSite.Spec.SiteId,
+						krmSite.Spec.TemplateId,
+					},
 				}
 				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmSite}

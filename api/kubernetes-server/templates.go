@@ -65,12 +65,12 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmTemplateList krm.TemplateList
 			krmTemplateList.APIVersion = APIVersion
 			krmTemplateList.Kind = "TemplateList"
 
-			if results, err := store.Backend.ListTemplates(context, backendpkg.ListTemplates{}); err == nil {
+			if results, err := store.Backend.ListTemplates(context, backendpkg.ListTemplates{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(templateInfo backendpkg.TemplateInfo) error {
 					if krmTemplate, err := TemplateInfoToKRM(&templateInfo); err == nil {
 						krmTemplateList.Items = append(krmTemplateList.Items, krmTemplate)
@@ -100,14 +100,16 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
 					{Name: "Name", Type: "string", Format: "name"},
 					{Name: "TemplateID", Type: "string"},
-					//{Name: "Metadata", Description: descriptions["metadata"]},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmTemplates))
 			for index, krmTemplate := range krmTemplates {
 				row := meta.TableRow{
-					Cells: []any{krmTemplate.Name, krmTemplate.Spec.TemplateId},
+					Cells: []any{
+						krmTemplate.Name,
+						krmTemplate.Spec.TemplateId,
+					},
 				}
 				if withObject {
 					row.Object = runtime.RawExtension{Object: &krmTemplate}

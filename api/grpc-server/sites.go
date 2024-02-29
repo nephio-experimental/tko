@@ -12,7 +12,7 @@ import (
 
 // ([api.APIServer] interface)
 func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*api.RegisterResponse, error) {
-	self.Log.Infof("registerSite: %s", site)
+	self.Log.Infof("registerSite: %+v", site)
 
 	site_, err := backend.NewSiteFromBytes(site.SiteId, site.TemplateId, site.Metadata, site.ResourcesFormat, site.Resources)
 	if err != nil {
@@ -32,7 +32,7 @@ func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*a
 
 // ([api.APIServer] interface)
 func (self *Server) DeleteSite(context contextpkg.Context, siteId *api.SiteID) (*api.DeleteResponse, error) {
-	self.Log.Infof("deleteSite: %s", siteId)
+	self.Log.Infof("deleteSite: %+v", siteId)
 
 	if err := self.Backend.DeleteSite(context, siteId.SiteId); err == nil {
 		return &api.DeleteResponse{Deleted: true}, nil
@@ -45,7 +45,7 @@ func (self *Server) DeleteSite(context contextpkg.Context, siteId *api.SiteID) (
 
 // ([api.APIServer] interface)
 func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*api.Site, error) {
-	self.Log.Infof("getSite: %s", getSite)
+	self.Log.Infof("getSite: %+v", getSite)
 
 	if site, err := self.Backend.GetSite(context, getSite.SiteId); err == nil {
 		resourcesFormat := getSite.PreferredResourcesFormat
@@ -71,9 +71,11 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 
 // ([api.APIServer] interface)
 func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSitesServer) error {
-	self.Log.Infof("listSites: %s", listSites)
+	self.Log.Infof("listSites: %+v", listSites)
 
 	if siteInfoResults, err := self.Backend.ListSites(server.Context(), backend.ListSites{
+		Offset:             uint(listSites.Offset),
+		MaxCount:           uint(listSites.MaxCount),
 		SiteIDPatterns:     listSites.SiteIdPatterns,
 		TemplateIDPatterns: listSites.TemplateIdPatterns,
 		MetadataPatterns:   listSites.MetadataPatterns,

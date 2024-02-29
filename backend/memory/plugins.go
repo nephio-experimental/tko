@@ -45,7 +45,6 @@ func (self *MemoryBackend) DeletePlugin(context contextpkg.Context, pluginId bac
 // ([backend.Backend] interface)
 func (self *MemoryBackend) ListPlugins(context contextpkg.Context, listPlugins backend.ListPlugins) (util.Results[backend.Plugin], error) {
 	self.lock.Lock()
-	defer self.lock.Unlock()
 
 	var plugins []backend.Plugin
 	for _, plugin := range self.plugins {
@@ -81,5 +80,18 @@ func (self *MemoryBackend) ListPlugins(context contextpkg.Context, listPlugins b
 		plugins = append(plugins, *plugin)
 	}
 
-	return util.NewResultsSlice[backend.Plugin](plugins), nil
+	self.lock.Unlock()
+
+	backend.SortPlugins(plugins)
+
+	length := uint(len(plugins))
+	if listPlugins.Offset > length {
+		plugins = nil
+	} else if end := listPlugins.Offset + listPlugins.MaxCount; end > length {
+		plugins = plugins[listPlugins.Offset:]
+	} else {
+		plugins = plugins[listPlugins.Offset:end]
+	}
+
+	return util.NewResultsSlice(plugins), nil
 }

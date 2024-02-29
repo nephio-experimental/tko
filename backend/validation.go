@@ -9,6 +9,9 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
+var DefaultMaxCount uint = 100
+var MaxMaxCount uint = 1000
+
 //
 // ValidatingBackend
 //
@@ -79,6 +82,14 @@ func (self *ValidatingBackend) DeleteTemplate(context contextpkg.Context, templa
 
 // ([Backend] interface)
 func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
+	if listTemplates.MaxCount > MaxMaxCount {
+		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listTemplates.MaxCount, MaxMaxCount)
+	}
+
+	if listTemplates.MaxCount == 0 {
+		listTemplates.MaxCount = DefaultMaxCount
+	}
+
 	return self.Backend.ListTemplates(context, listTemplates)
 }
 
@@ -124,6 +135,14 @@ func (self *ValidatingBackend) DeleteSite(context contextpkg.Context, siteId str
 
 // ([Backend] interface)
 func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) (util.Results[SiteInfo], error) {
+	if listSites.MaxCount > MaxMaxCount {
+		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listSites.MaxCount, MaxMaxCount)
+	}
+
+	if listSites.MaxCount == 0 {
+		listSites.MaxCount = DefaultMaxCount
+	}
+
 	return self.Backend.ListSites(context, listSites)
 }
 
@@ -173,6 +192,14 @@ func (self *ValidatingBackend) DeleteDeployment(context contextpkg.Context, depl
 
 // ([Backend] interface)
 func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (util.Results[DeploymentInfo], error) {
+	if listDeployments.MaxCount > MaxMaxCount {
+		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listDeployments.MaxCount, MaxMaxCount)
+	}
+
+	if listDeployments.MaxCount == 0 {
+		listDeployments.MaxCount = DefaultMaxCount
+	}
+
 	return self.Backend.ListDeployments(context, listDeployments)
 }
 
@@ -277,6 +304,14 @@ func (self *ValidatingBackend) DeletePlugin(context contextpkg.Context, pluginId
 
 // ([Backend] interface)
 func (self *ValidatingBackend) ListPlugins(context contextpkg.Context, listPlugins ListPlugins) (util.Results[Plugin], error) {
+	if listPlugins.MaxCount > MaxMaxCount {
+		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listPlugins.MaxCount, MaxMaxCount)
+	}
+
+	if listPlugins.MaxCount == 0 {
+		listPlugins.MaxCount = DefaultMaxCount
+	}
+
 	if listPlugins.Type != nil {
 		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
 			return nil, NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, *listPlugins.Type)

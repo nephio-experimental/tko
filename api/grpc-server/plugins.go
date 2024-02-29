@@ -14,7 +14,7 @@ import (
 
 // ([api.APIServer] interface)
 func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugin) (*api.RegisterResponse, error) {
-	self.Log.Infof("registerPlugin: %s", plugin)
+	self.Log.Infof("registerPlugin: %+v", plugin)
 
 	if !tkoutil.IsValidPluginType(plugin.Type, false) {
 		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, plugin.Type))
@@ -31,7 +31,7 @@ func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugi
 
 // ([api.APIServer] interface)
 func (self *Server) DeletePlugin(context contextpkg.Context, pluginId *api.PluginID) (*api.DeleteResponse, error) {
-	self.Log.Infof("deletePlugin: %s", pluginId)
+	self.Log.Infof("deletePlugin: %+v", pluginId)
 
 	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
 		return new(api.DeleteResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type))
@@ -48,7 +48,7 @@ func (self *Server) DeletePlugin(context contextpkg.Context, pluginId *api.Plugi
 
 // ([api.APIServer] interface)
 func (self *Server) GetPlugin(context contextpkg.Context, pluginId *api.PluginID) (*api.Plugin, error) {
-	self.Log.Infof("getPlugin: %s", pluginId)
+	self.Log.Infof("getPlugin: %+v", pluginId)
 
 	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
 		return new(api.Plugin), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type))
@@ -70,7 +70,7 @@ func (self *Server) GetPlugin(context contextpkg.Context, pluginId *api.PluginID
 
 // ([api.APIServer] interface)
 func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_ListPluginsServer) error {
-	self.Log.Infof("listPlugins: %s", listPlugins)
+	self.Log.Infof("listPlugins: %+v", listPlugins)
 
 	if listPlugins.Type != nil {
 		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
@@ -79,6 +79,8 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 	}
 
 	if pluginResults, err := self.Backend.ListPlugins(server.Context(), backend.ListPlugins{
+		Offset:       uint(listPlugins.Offset),
+		MaxCount:     uint(listPlugins.MaxCount),
 		Type:         listPlugins.Type,
 		NamePatterns: listPlugins.NamePatterns,
 		Executor:     listPlugins.Executor,

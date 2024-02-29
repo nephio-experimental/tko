@@ -1,11 +1,8 @@
 package server
 
 import (
-	krmgroup "github.com/nephio-experimental/tko/api/krm/tko.nephio.org"
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	tkoopenapi "github.com/nephio-experimental/tko/api/openapi"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apiserver/pkg/endpoints/openapi"
 	apiserver "k8s.io/apiserver/pkg/server"
@@ -16,8 +13,6 @@ const (
 	ServerName     = "tko-apiserver"
 	OpenAPITitle   = "TKO"
 	OpenAPIVersion = "0.1"
-	EtcdServer     = "http://localhost:2379"
-	EtcdPathPrefix = "/registry/tko.nephio.org"
 )
 
 var ConfigVersion = version.Info{
@@ -62,15 +57,8 @@ func NewRecommendedConfig(port int) (*apiserver.RecommendedConfig, error) {
 }
 
 func NewRecommendedOptions(port int) (*options.RecommendedOptions, error) {
-	options := options.NewRecommendedOptions(EtcdPathPrefix, Codecs.LegacyCodec(krm.SchemeGroupVersion))
-
+	options := options.NewRecommendedOptions("", Codecs.LegacyCodec(krm.SchemeGroupVersion))
 	options.SecureServing.BindPort = port
-
-	options.Etcd.StorageConfig.Transport.ServerList = []string{EtcdServer}
-	options.Etcd.StorageConfig.EncodeVersioner = runtime.NewMultiGroupVersioner(krm.SchemeGroupVersion,
-		schema.GroupKind{Group: krmgroup.GroupName},
-	)
-
 	return options, nil
 
 	/*if err := options.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{netutils.ParseIPSloppy("127.0.0.1")}); err == nil {

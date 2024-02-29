@@ -65,7 +65,6 @@ func (self *MemoryBackend) DeleteTemplate(context contextpkg.Context, templateId
 // ([backend.Backend] interface)
 func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (util.Results[backend.TemplateInfo], error) {
 	self.lock.Lock()
-	defer self.lock.Unlock()
 
 	var templateInfos []backend.TemplateInfo
 	for _, template := range self.templates {
@@ -80,5 +79,18 @@ func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplat
 		templateInfos = append(templateInfos, template.TemplateInfo)
 	}
 
-	return util.NewResultsSlice[backend.TemplateInfo](templateInfos), nil
+	self.lock.Unlock()
+
+	backend.SortTemplateInfos(templateInfos)
+
+	length := uint(len(templateInfos))
+	if listTemplates.Offset > length {
+		templateInfos = nil
+	} else if end := listTemplates.Offset + listTemplates.MaxCount; end > length {
+		templateInfos = templateInfos[listTemplates.Offset:]
+	} else {
+		templateInfos = templateInfos[listTemplates.Offset:end]
+	}
+
+	return util.NewResultsSlice(templateInfos), nil
 }

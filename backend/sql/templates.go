@@ -62,6 +62,9 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates 
 	var where SqlWhere
 	var args SqlArgs
 
+	args.AddValue(listTemplates.Offset)
+	args.AddValue(listTemplates.MaxCount)
+
 	for _, pattern := range listTemplates.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("templates.template_id ~ " + pattern)

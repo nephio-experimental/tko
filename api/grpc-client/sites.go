@@ -30,11 +30,11 @@ func (self *Client) RegisterSite(siteId string, templateId string, metadata map[
 }
 
 func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (bool, string, error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("registerSite: %s, %s, %v, %s", siteId, templateId, metadata, resourcesFormat)
+		self.log.Infof("registerSite: siteId=%s templateId=%s metadata=%v resourcesFormat=%s", siteId, templateId, metadata, resourcesFormat)
 		if response, err := apiClient.RegisterSite(context, &api.Site{
 			SiteId:          siteId,
 			TemplateId:      templateId,
@@ -52,11 +52,11 @@ func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata m
 }
 
 func (self *Client) GetSite(siteId string) (Site, bool, error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("getSite: %s", siteId)
+		self.log.Infof("getSite: siteId=%s", siteId)
 		if site, err := apiClient.GetSite(context, &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
 			if resources, err := tkoutil.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
 				return Site{
@@ -82,11 +82,11 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 }
 
 func (self *Client) DeleteSite(siteId string) (bool, string, error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("deleteSite: %s", siteId)
+		self.log.Infof("deleteSite: siteId=%s", siteId)
 		if response, err := apiClient.DeleteSite(context, &api.SiteID{SiteId: siteId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -98,6 +98,8 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 }
 
 type ListSites struct {
+	Offset             uint
+	MaxCount           uint
 	SiteIDPatterns     []string
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
@@ -119,11 +121,13 @@ func (self ListSites) String() string {
 }
 
 func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Infof("listSites: %s", listSites)
 		if client, err := apiClient.ListSites(context, &api.ListSites{
+			Offset:             uint32(listSites.Offset),
+			MaxCount:           uint32(listSites.MaxCount),
 			SiteIdPatterns:     listSites.SiteIDPatterns,
 			TemplateIdPatterns: listSites.TemplateIDPatterns,
 			MetadataPatterns:   listSites.MetadataPatterns,

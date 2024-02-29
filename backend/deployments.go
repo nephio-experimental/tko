@@ -1,6 +1,9 @@
 package backend
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
 )
@@ -65,6 +68,12 @@ func (self *DeploymentInfo) MergeTemplateInfo(templateInfo *TemplateInfo) {
 
 func (self *DeploymentInfo) NewDeploymentResource() util.Resource {
 	return util.NewDeploymentResource(self.TemplateID, self.SiteID, self.Prepared, self.Approved)
+}
+
+func SortDeploymentInfos(deploymentInfos []DeploymentInfo) {
+	slices.SortFunc(deploymentInfos, func(a DeploymentInfo, b DeploymentInfo) int {
+		return strings.Compare(a.DeploymentID, b.DeploymentID)
+	})
 }
 
 //

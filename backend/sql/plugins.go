@@ -88,6 +88,9 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context, listPlugins back
 	var where SqlWhere
 	var args SqlArgs
 
+	args.AddValue(listPlugins.Offset)
+	args.AddValue(listPlugins.MaxCount)
+
 	if (listPlugins.Type != nil) && (*listPlugins.Type != "") {
 		type_ := args.Add(*listPlugins.Type)
 		where.Add("plugins.type = " + type_)

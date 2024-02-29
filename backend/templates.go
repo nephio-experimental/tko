@@ -1,6 +1,9 @@
 package backend
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/nephio-experimental/tko/util"
 )
 
@@ -31,6 +34,12 @@ func (self *TemplateInfo) Clone(withDeployments bool) TemplateInfo {
 
 func (self *TemplateInfo) UpdateFromResources(resources util.Resources) {
 	updateMetadataFromResources(self.Metadata, resources)
+}
+
+func SortTemplateInfos(templateInfos []TemplateInfo) {
+	slices.SortFunc(templateInfos, func(a TemplateInfo, b TemplateInfo) int {
+		return strings.Compare(a.TemplateID, b.TemplateID)
+	})
 }
 
 //

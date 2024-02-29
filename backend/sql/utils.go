@@ -28,8 +28,12 @@ type SqlArgs struct {
 }
 
 func (self *SqlArgs) Add(arg any) string {
-	self.Args = append(self.Args, arg)
+	self.AddValue(arg)
 	return "$" + strconv.Itoa(len(self.Args))
+}
+
+func (self *SqlArgs) AddValue(arg any) {
+	self.Args = append(self.Args, arg)
 }
 
 //

@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/nephio-experimental/tko/util"
@@ -81,4 +82,14 @@ func (self *Plugin) Clone() *Plugin {
 		Arguments:  util.CloneStringSet(self.Arguments),
 		Properties: util.CloneStringMap(self.Properties),
 	}
+}
+
+func SortPlugins(plugins []Plugin) {
+	slices.SortFunc(plugins, func(a Plugin, b Plugin) int {
+		if type_ := strings.Compare(a.Type, b.Type); type_ == 0 {
+			return strings.Compare(a.Name, b.Name)
+		} else {
+			return type_
+		}
+	})
 }

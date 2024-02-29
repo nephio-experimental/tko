@@ -89,6 +89,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			LEFT JOIN templates_metadata ON templates.template_id = templates_metadata.template_id
 			LEFT JOIN templates_deployments ON templates.template_id = templates_deployments.template_id
 			GROUP BY templates.template_id
+			ORDER BY templates.template_id
+			LIMIT $2 OFFSET $1
 		`),
 
 		// Sites
@@ -171,6 +173,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			LEFT JOIN sites_metadata ON sites.site_id = sites_metadata.site_id
 			LEFT JOIN sites_deployments ON sites.site_id = sites_deployments.site_id
 			GROUP BY sites.site_id
+			ORDER BY sites.site_id
+			LIMIT $2 OFFSET $1
 		`),
 
 		// Deployments
@@ -273,6 +277,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			FROM deployments
 			LEFT JOIN deployments_metadata ON deployments.deployment_id = deployments_metadata.deployment_id
 			GROUP BY deployments.deployment_id
+			ORDER BY deployments.deployment_id
+			LIMIT $2 OFFSET $1
 		`),
 
 		// Plugins
@@ -336,6 +342,8 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			FROM plugins
 			LEFT JOIN plugins_triggers ON plugins.type = plugins_triggers.plugin_type AND plugins.name = plugins_triggers.plugin_name
 			GROUP BY plugins.type, plugins.name
+			ORDER BY plugins.type, plugins.name
+			LIMIT $2 OFFSET $1
 		`),
 	}
 }

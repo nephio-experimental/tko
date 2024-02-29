@@ -21,7 +21,7 @@ type Client struct {
 	ResourcesFormat    string
 	Timeout            time.Duration
 
-	apiClient_    api.APIClient
+	apiClient     api.APIClient
 	apiClientLock sync.Mutex
 	log           commonlog.Logger
 }
@@ -43,19 +43,19 @@ func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resou
 	}
 }
 
-func (self *Client) apiClient() (api.APIClient, error) {
+func (self *Client) APIClient() (api.APIClient, error) {
 	self.apiClientLock.Lock()
 	defer self.apiClientLock.Unlock()
 
-	if self.apiClient_ == nil {
+	if self.apiClient == nil {
 		if clientConn, err := tkoutil.DialGRPCInsecure(self.GRPCAddress, self.GRPCPort); err == nil {
-			self.apiClient_ = api.NewAPIClient(clientConn)
+			self.apiClient = api.NewAPIClient(clientConn)
 		} else {
 			return nil, err
 		}
 	}
 
-	return self.apiClient_, nil
+	return self.apiClient, nil
 }
 
 // Utils

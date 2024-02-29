@@ -29,6 +29,8 @@ var siteMetadata map[string]string
 var deploymentMetadata map[string]string
 var parentDeploymentId string
 var executor string
+var offset uint
+var maxCount uint
 
 func NewClient() *clientpkg.Client {
 	client := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), clientLog)

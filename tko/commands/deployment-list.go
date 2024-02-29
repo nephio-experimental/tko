@@ -2,6 +2,7 @@ package commands
 
 import (
 	client "github.com/nephio-experimental/tko/api/grpc-client"
+	"github.com/nephio-experimental/tko/backend"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
 )
@@ -12,6 +13,8 @@ var approvedFilter string
 func init() {
 	deploymentCommand.AddCommand(deploymentListCommand)
 
+	deploymentListCommand.Flags().UintVar(&offset, "offset", 0, "fetch results starting at this offset")
+	deploymentListCommand.Flags().UintVar(&maxCount, "max-count", backend.DefaultMaxCount, "maximum number of results to fetch")
 	deploymentListCommand.Flags().StringVar(&parentDeploymentId, "parent", "", "filter by parent deployment ID")
 	deploymentListCommand.Flags().StringToStringVar(&deploymentMetadata, "metadata", nil, "filter by metadata")
 	deploymentListCommand.Flags().StringArrayVar(&templateIdPatterns, "template-id", nil, "filter by template ID pattern")
@@ -27,14 +30,14 @@ var deploymentListCommand = &cobra.Command{
 	Short: "List deployments",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		ListDeployments(parentDeploymentId, templateIdPatterns, templateMetadata, siteIdPatterns, siteMetadata, deploymentMetadata, preparedFilter, approvedFilter)
+		ListDeployments(offset, maxCount, parentDeploymentId, templateIdPatterns, templateMetadata, siteIdPatterns, siteMetadata, deploymentMetadata, preparedFilter, approvedFilter)
 	},
 }
 
 var trueBool = true
 var falseBool = false
 
-func ListDeployments(parentDemploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string, preparedFilter string, approvedFilter string) {
+func ListDeployments(offset uint, maxCount uint, parentDemploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string, preparedFilter string, approvedFilter string) {
 	var prepared *bool
 	switch preparedFilter {
 	case "true":
@@ -57,6 +60,8 @@ func ListDeployments(parentDemploymentId string, templateIdPatterns []string, te
 	}
 
 	deploymentInfos, err := NewClient().ListDeployments(client.ListDeployments{
+		Offset:                   offset,
+		MaxCount:                 maxCount,
 		ParentDeploymentID:       parentDemploymentId_,
 		TemplateIDPatterns:       templateIdPatterns,
 		TemplateMetadataPatterns: templateMetadataPatterns,

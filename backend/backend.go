@@ -87,17 +87,23 @@ type Backend interface {
 }
 
 type ListTemplates struct {
+	Offset             uint
+	MaxCount           uint
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
 
 type ListSites struct {
+	Offset             uint
+	MaxCount           uint
 	SiteIDPatterns     []string
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
 
 type ListDeployments struct {
+	Offset                   uint
+	MaxCount                 uint
 	ParentDeploymentID       *string
 	TemplateIDPatterns       []string
 	TemplateMetadataPatterns map[string]string
@@ -109,6 +115,8 @@ type ListDeployments struct {
 }
 
 type ListPlugins struct {
+	Offset       uint
+	MaxCount     uint
 	Type         *string
 	NamePatterns []string
 	Executor     *string

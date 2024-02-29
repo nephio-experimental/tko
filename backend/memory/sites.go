@@ -70,7 +70,6 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 // ([backend.Backend] interface)
 func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (util.Results[backend.SiteInfo], error) {
 	self.lock.Lock()
-	defer self.lock.Unlock()
 
 	var siteInfos []backend.SiteInfo
 	for _, site := range self.sites {
@@ -89,5 +88,18 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backe
 		siteInfos = append(siteInfos, site.SiteInfo)
 	}
 
-	return util.NewResultsSlice[backend.SiteInfo](siteInfos), nil
+	self.lock.Unlock()
+
+	backend.SortSiteInfos(siteInfos)
+
+	length := uint(len(siteInfos))
+	if listSites.Offset > length {
+		siteInfos = nil
+	} else if end := listSites.Offset + listSites.MaxCount; end > length {
+		siteInfos = siteInfos[listSites.Offset:]
+	} else {
+		siteInfos = siteInfos[listSites.Offset:end]
+	}
+
+	return util.NewResultsSlice(siteInfos), nil
 }

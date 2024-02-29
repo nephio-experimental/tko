@@ -29,11 +29,11 @@ func (self *Client) RegisterTemplate(templateId string, metadata map[string]stri
 }
 
 func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (bool, string, error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("registerTemplate: %s, %v, %s", templateId, metadata, resourcesFormat)
+		self.log.Infof("registerTemplate: templateId=%s metadata=%v resourcesFormat=%s", templateId, metadata, resourcesFormat)
 		if response, err := apiClient.RegisterTemplate(context, &api.Template{
 			TemplateId:      templateId,
 			Metadata:        metadata,
@@ -50,11 +50,11 @@ func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]s
 }
 
 func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("getTemplate: %s", templateId)
+		self.log.Infof("getTemplate: templateId=%s", templateId)
 		if template, err := apiClient.GetTemplate(context, &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
 			if resources, err := tkoutil.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
 				return Template{
@@ -79,11 +79,11 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 }
 
 func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("deleteTemplate: %s", templateId)
+		self.log.Infof("deleteTemplate: templateId=%s", templateId)
 		if response, err := apiClient.DeleteTemplate(context, &api.TemplateID{TemplateId: templateId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -95,6 +95,8 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 }
 
 type ListTemplates struct {
+	Offset             uint
+	MaxCount           uint
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
@@ -112,11 +114,13 @@ func (self ListTemplates) String() string {
 }
 
 func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
-	if apiClient, err := self.apiClient(); err == nil {
+	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Infof("listTemplates: %s", listTemplates)
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
+			Offset:             uint32(listTemplates.Offset),
+			MaxCount:           uint32(listTemplates.MaxCount),
 			TemplateIdPatterns: listTemplates.TemplateIDPatterns,
 			MetadataPatterns:   listTemplates.MetadataPatterns,
 		}); err == nil {
