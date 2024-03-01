@@ -148,10 +148,6 @@ func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites L
 
 // ([Backend] interface)
 func (self *ValidatingBackend) CreateDeployment(context contextpkg.Context, deployment *Deployment) error {
-	if deployment.DeploymentID == "" {
-		return NewBadArgumentError("deploymentId is empty")
-	}
-
 	if (deployment.TemplateID != "") && !IsValidID(deployment.TemplateID) {
 		return NewBadArgumentError("invalid templateId")
 	}

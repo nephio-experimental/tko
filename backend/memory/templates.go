@@ -2,6 +2,7 @@ package memory
 
 import (
 	contextpkg "context"
+	"time"
 
 	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/kutil/util"
@@ -17,6 +18,7 @@ func (self *MemoryBackend) SetTemplate(context contextpkg.Context, template *bac
 		template.DeploymentIDs = originalTemplate.DeploymentIDs
 	}
 
+	template.Updated = time.Now().UTC()
 	self.templates[template.TemplateID] = template
 
 	return nil

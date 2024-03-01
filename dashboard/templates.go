@@ -21,12 +21,13 @@ func (self *Application) UpdateTemplates(table *tview.Table) {
 
 			table.Clear()
 
-			SetTableHeader(table, "ID", "Deployments")
+			SetTableHeader(table, "ID", "Deployments", "Updated")
 
 			for row, templateInfo := range templateInfos_ {
 				row++
 				table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
 				table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
+				table.SetCellSimple(row, 2, templateInfo.Updated.In(self.Timezone).Format(TimeFormat))
 			}
 		}
 	}

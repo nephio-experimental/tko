@@ -17,8 +17,9 @@ func (self *Server) ListTemplates(writer http.ResponseWriter, request *http.Requ
 			slices.Sort(templateInfo.DeploymentIDs)
 			templates = append(templates, ard.StringMap{
 				"id":          templateInfo.TemplateID,
-				"metadata":    templateInfo.Metadata,
 				"deployments": templateInfo.DeploymentIDs,
+				"metadata":    templateInfo.Metadata,
+				"updated":     templateInfo.Updated.In(self.Timezone).Format(TimeFormat),
 			})
 			return nil
 		}); err != nil {

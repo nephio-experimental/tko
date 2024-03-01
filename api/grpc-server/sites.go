@@ -8,6 +8,7 @@ import (
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ([api.APIServer] interface)
@@ -57,6 +58,7 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 				SiteId:          site.SiteID,
 				TemplateId:      site.TemplateID,
 				Metadata:        site.Metadata,
+				Updated:         timestamppb.New(site.Updated),
 				ResourcesFormat: resourcesFormat,
 				Resources:       resources,
 				DeploymentIds:   site.DeploymentIDs,
@@ -85,6 +87,7 @@ func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSites
 				SiteId:        siteInfo.SiteID,
 				TemplateId:    siteInfo.TemplateID,
 				Metadata:      siteInfo.Metadata,
+				Updated:       timestamppb.New(siteInfo.Updated),
 				DeploymentIds: siteInfo.DeploymentIDs,
 			})
 		}); err != nil {

@@ -45,12 +45,13 @@ type Store struct {
 	Backend backendpkg.Backend
 	Log     commonlog.Logger
 
-	TypeKind       string
-	TypeListKind   string
-	TypeSingular   string
-	TypePlural     string
-	TypeShortNames []string
-	ObjectTyper    runtime.ObjectTyper
+	TypeKind          string
+	TypeListKind      string
+	TypeSingular      string
+	TypePlural        string
+	TypeShortNames    []string
+	CanCreateOnUpdate bool
+	ObjectTyper       runtime.ObjectTyper
 
 	NewObjectFunc     func() runtime.Object
 	NewListObjectFunc func() runtime.Object
@@ -530,15 +531,16 @@ func (self *Store) PreserveRequestObjectMetaSystemFieldsOnSubresourceCreate() bo
 // ([rest.StandardStorage] interface)
 func (self *Store) Update(context contextpkg.Context, name string, objectInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *meta.UpdateOptions) (runtime.Object, bool, error) {
 	if options == nil {
-		self.Log.Infof("Update: name=%s", name)
+		self.Log.Infof("Update: name=%s forceAllowCreate=%t", name, forceAllowCreate)
 	} else {
-		self.Log.Infof("Update: name=%s options=%+v", name, *options)
+		self.Log.Infof("Update: name=%s forceAllowCreate=%t options=%+v", name, forceAllowCreate, *options)
 	}
 
 	currentObject, err := self.Get(context, name, nil)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			if forceAllowCreate || self.AllowCreateOnUpdate() {
+			// Note: We are purposefully ignoring forceAllowCreate
+			if self.AllowCreateOnUpdate() {
 				self.Log.Infof("Update: will create name=%s", name)
 				currentObject = nil // just making sure
 			} else {
@@ -705,7 +707,7 @@ func (self *Store) GenerateName(base string) string {
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) AllowCreateOnUpdate() bool {
 	self.Log.Info("AllowCreateOnUpdate")
-	return true
+	return self.CanCreateOnUpdate
 }
 
 // ([rest.RESTUpdateStrategy] interface)

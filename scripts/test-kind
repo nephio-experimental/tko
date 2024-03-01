@@ -32,6 +32,8 @@ m 'waiting for TKO...'
 
 m 'creating KRM...'
 
-"$HERE/kubectl-kind" apply -f "$ROOT/examples/kubernetes/"
+"$HERE/kubectl-kind" apply -f "$ROOT/examples/kubernetes/templates.yaml"
+"$HERE/kubectl-kind" apply -f "$ROOT/examples/kubernetes/sites.yaml"
+"$HERE/kubectl-kind" create -f "$ROOT/examples/kubernetes/deployments.yaml"
 
 "$HERE/test-scenario" remote "$HERE/tko-kind"

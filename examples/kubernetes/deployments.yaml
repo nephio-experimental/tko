@@ -1,0 +1,9 @@
+apiVersion: tko.nephio.org/v1alpha1
+kind: Deployment
+
+metadata:
+  name: placeholder
+
+spec:
+  templateId: k8s/hello:v1.0.0
+  siteId: k8s/lab:v1.0.0

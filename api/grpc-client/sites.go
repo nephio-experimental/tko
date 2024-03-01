@@ -3,6 +3,7 @@ package client
 import (
 	contextpkg "context"
 	"strings"
+	"time"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -13,6 +14,7 @@ type SiteInfo struct {
 	SiteID        string            `json:"siteId" yaml:"siteId"`
 	TemplateID    string            `json:"templateId,omitempty" yaml:"templateId,omitempty"`
 	Metadata      map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Updated       time.Time         `json:"updated" yaml:"updated"`
 	DeploymentIDs []string          `json:"deploymentIds,omitempty" yaml:"deploymentIds,omitempty"`
 }
 
@@ -64,6 +66,7 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 						SiteID:        site.SiteId,
 						TemplateID:    site.TemplateId,
 						Metadata:      site.Metadata,
+						Updated:       self.toTime(site.Updated),
 						DeploymentIDs: site.DeploymentIds,
 					},
 					Resources: resources,
@@ -136,12 +139,13 @@ func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], erro
 
 			go func() {
 				for {
-					if response, err := client.Recv(); err == nil {
+					if listedSite, err := client.Recv(); err == nil {
 						stream.Send(SiteInfo{
-							SiteID:        response.SiteId,
-							TemplateID:    response.TemplateId,
-							Metadata:      response.Metadata,
-							DeploymentIDs: response.DeploymentIds,
+							SiteID:        listedSite.SiteId,
+							TemplateID:    listedSite.TemplateId,
+							Metadata:      listedSite.Metadata,
+							Updated:       self.toTime(listedSite.Updated),
+							DeploymentIDs: listedSite.DeploymentIds,
 						})
 					} else {
 						stream.Close(err) // special handling for io.EOF

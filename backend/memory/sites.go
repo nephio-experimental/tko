@@ -2,6 +2,7 @@ package memory
 
 import (
 	contextpkg "context"
+	"time"
 
 	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/kutil/util"
@@ -29,6 +30,7 @@ func (self *MemoryBackend) SetSite(context contextpkg.Context, site *backend.Sit
 	// Restore associated deployments
 	site.DeploymentIDs = originalDeploymentIds
 
+	site.Updated = time.Now().UTC()
 	self.sites[site.SiteID] = site
 
 	return nil

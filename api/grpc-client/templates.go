@@ -3,6 +3,7 @@ package client
 import (
 	contextpkg "context"
 	"strings"
+	"time"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -12,6 +13,7 @@ import (
 type TemplateInfo struct {
 	TemplateID    string            `json:"templateId" yaml:"templateId"`
 	Metadata      map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Updated       time.Time         `json:"updated" yaml:"updated"`
 	DeploymentIDs []string          `json:"deploymentIds,omitempty" yaml:"deploymentIds,omitempty"`
 }
 
@@ -61,6 +63,7 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 					TemplateInfo: TemplateInfo{
 						TemplateID:    template.TemplateId,
 						Metadata:      template.Metadata,
+						Updated:       self.toTime(template.Updated),
 						DeploymentIDs: template.DeploymentIds,
 					},
 					Resources: resources,
@@ -128,11 +131,12 @@ func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[Tem
 
 			go func() {
 				for {
-					if response, err := client.Recv(); err == nil {
+					if listedTemplate, err := client.Recv(); err == nil {
 						stream.Send(TemplateInfo{
-							TemplateID:    response.TemplateId,
-							Metadata:      response.Metadata,
-							DeploymentIDs: response.DeploymentIds,
+							TemplateID:    listedTemplate.TemplateId,
+							Metadata:      listedTemplate.Metadata,
+							Updated:       self.toTime(listedTemplate.Updated),
+							DeploymentIDs: listedTemplate.DeploymentIds,
 						})
 					} else {
 						stream.Close(err) // special handling for io.EOF

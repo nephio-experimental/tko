@@ -13,6 +13,8 @@ built-in deployments:
 
     kubectl get deployment.tko
 
+See the [examples](examples/kubernetes/).
+
 Names
 -----
 
@@ -42,6 +44,24 @@ wrap the it in quotes so that your shell won't interpret the `|`:
 
     tko name to 'validate|free5gc/smf'
     > validate-007cfree5gc-002fsmf
+
+Finally, deployment names have special semantics. When you create a new deployment, e.g. with
+`kubectl create`, the KRM name is discarded, because the backend will generate a UUID for the
+name. So, simply write in a placeholder name, e.g. `placeholder-1`. However, note that every time
+you create it, it will create a brand new deployment, even though you are using the same placeholder
+name!
+
+`kubectl apply` will *never* create new deployments and is *only* used for updates, in which case
+you *do* need to specify the correct name and *also* the correct `metadata.resourceVersion`, which
+TKO will use to verify that other changes haven't been made before yours. These are in fact the
+proper KRM update semantics. Thus, the update workflow is to first retrieve (this will get you the
+latest `resourceVersion`), then edit, then apply:
+
+    kubectl get deployment.tko/2d4fkjPFRYDKnvNGgKpuZs7kwGQ -o yaml > d.yaml
+    (edit d.yaml)
+    kubectl apply -f d.yaml
+
+Or, do it all in one step using `kubectl edit`.
 
 Template Type
 -------------

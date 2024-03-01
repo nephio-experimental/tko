@@ -166,13 +166,13 @@ func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], 
 
 			go func() {
 				for {
-					if response, err := client.Recv(); err == nil {
+					if plugin, err := client.Recv(); err == nil {
 						stream.Send(Plugin{
-							PluginID:   NewPluginID(response.Type, response.Name),
-							Executor:   response.Executor,
-							Arguments:  response.Arguments,
-							Properties: response.Properties,
-							Triggers:   tkoutil.TriggersFromAPI(response.Triggers),
+							PluginID:   NewPluginID(plugin.Type, plugin.Name),
+							Executor:   plugin.Executor,
+							Arguments:  plugin.Arguments,
+							Properties: plugin.Properties,
+							Triggers:   tkoutil.TriggersFromAPI(plugin.Triggers),
 						})
 					} else {
 						stream.Close(err) // special handling for io.EOF

@@ -20,11 +20,12 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		TypeKind:     "Plugin",
-		TypeListKind: "PluginList",
-		TypeSingular: "plugin",
-		TypePlural:   "plugins",
-		ObjectTyper:  Scheme,
+		TypeKind:          "Plugin",
+		TypeListKind:      "PluginList",
+		TypeSingular:      "plugin",
+		TypePlural:        "plugins",
+		CanCreateOnUpdate: true,
+		ObjectTyper:       Scheme,
 
 		NewObjectFunc: func() runtime.Object {
 			return new(krm.Plugin)
@@ -36,7 +37,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
 			if krmPlugin, ok := object.(*krm.Plugin); ok {
-				if plugin, err := KRMToPlugin(krmPlugin); err == nil {
+				if plugin, err := PluginFromKRM(krmPlugin); err == nil {
 					if err := store.Backend.SetPlugin(context, plugin); err == nil {
 						return krmPlugin, nil
 					} else {
@@ -182,7 +183,7 @@ func PluginToKRM(plugin *backendpkg.Plugin) (*krm.Plugin, error) {
 	return &krmPlugin, nil
 }
 
-func KRMToPlugin(object runtime.Object) (*backendpkg.Plugin, error) {
+func PluginFromKRM(object runtime.Object) (*backendpkg.Plugin, error) {
 	var krmPlugin *krm.Plugin
 	var ok bool
 	if krmPlugin, ok = object.(*krm.Plugin); !ok {

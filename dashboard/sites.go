@@ -21,7 +21,7 @@ func (self *Application) UpdateSites(table *tview.Table) {
 
 			table.Clear()
 
-			SetTableHeader(table, "ID", "Template", "Deployments")
+			SetTableHeader(table, "ID", "Template", "Deployments", "Updated")
 
 			for row, siteInfo := range siteInfos_ {
 				row++
@@ -32,6 +32,7 @@ func (self *Application) UpdateSites(table *tview.Table) {
 					table.SetCellSimple(row, 1, "")
 				}
 				table.SetCellSimple(row, 2, strconv.Itoa(len(siteInfo.DeploymentIDs)))
+				table.SetCellSimple(row, 3, siteInfo.Updated.In(self.Timezone).Format(TimeFormat))
 			}
 		}
 	}

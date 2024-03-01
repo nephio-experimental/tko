@@ -29,6 +29,11 @@ func (self *SQLBackend) CreateDeployment(context contextpkg.Context, deployment 
 			return err
 		}
 
+		deployment.DeploymentID = backend.NewID()
+		now := time.Now().UTC()
+		deployment.Created = now
+		deployment.Updated = now
+
 		insertDeployment := tx.StmtContext(context, self.statements.PreparedInsertDeployment)
 		if _, err := insertDeployment.ExecContext(context, deployment.DeploymentID, nilIfEmptyString(deployment.ParentDeploymentID), nilIfEmptyString(deployment.TemplateID), nilIfEmptyString(deployment.SiteID), deployment.Created, deployment.Updated, deployment.Prepared, deployment.Approved, resources); err != nil {
 			self.rollback(tx)

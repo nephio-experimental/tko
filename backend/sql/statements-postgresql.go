@@ -18,6 +18,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		CreateTemplates: CleanSQL(`
 			CREATE TABLE IF NOT EXISTS templates (
 				template_id TEXT NOT NULL PRIMARY KEY,
+				updated TIMESTAMP,
 				resources BYTEA
 			)
 		`),
@@ -52,11 +53,11 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DropTemplatesDeployments: `DROP TABLE IF EXISTS templates_deployments`,
 
 		UpsertTemplate: CleanSQL(`
-			INSERT INTO templates (template_id, resources)
-			VALUES ($1, $2)
+			INSERT INTO templates (template_id, updated, resources)
+			VALUES ($1, $2, $3)
 			ON CONFLICT (template_id)
 				DO UPDATE SET
-				resources = $2
+				updated = $2, resources = $3
 		`),
 		UpsertTemplateMetadata: CleanSQL(`
 			INSERT INTO templates_metadata (template_id, key, value)
@@ -73,7 +74,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				template_id = $1
 		`),
 		SelectTemplate: CleanSQL(`
-			SELECT resources, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
+			SELECT updated, resources, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM templates
 			LEFT JOIN templates_metadata ON templates.template_id = templates_metadata.template_id
 			LEFT JOIN templates_deployments ON templates.template_id = templates_deployments.template_id
@@ -84,7 +85,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DeleteTemplateMetadata:   `DELETE FROM templates_metadata WHERE template_id = $1`,
 		DeleteTemplateDeployment: `DELETE FROM templates_deployments WHERE deployment_id = $1`,
 		SelectTemplates: CleanSQL(`
-			SELECT templates.template_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
+			SELECT templates.template_id, updated, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM templates
 			LEFT JOIN templates_metadata ON templates.template_id = templates_metadata.template_id
 			LEFT JOIN templates_deployments ON templates.template_id = templates_deployments.template_id
@@ -98,8 +99,9 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		CreateSites: CleanSQL(`
 			CREATE TABLE IF NOT EXISTS sites (
 				site_id TEXT NOT NULL PRIMARY KEY,
-				resources BYTEA,
 				template_id TEXT,
+				updated TIMESTAMP,
+				resources BYTEA,
 				CONSTRAINT fk_template_id
 					FOREIGN KEY (template_id)
 					REFERENCES templates (template_id) ON DELETE SET NULL
@@ -136,11 +138,11 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DropSitesDeployments: `DROP TABLE IF EXISTS sites_deployments`,
 
 		UpsertSite: CleanSQL(`
-			INSERT INTO sites (site_id, template_id, resources)
-			VALUES ($1, $2, $3)
+			INSERT INTO sites (site_id, template_id, updated, resources)
+			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (site_id)
 				DO UPDATE SET
-				template_id = $2, resources = $3
+				template_id = $2, updated = $3, resources = $4
 		`),
 		UpsertSiteMetadata: CleanSQL(`
 			INSERT INTO sites_metadata (site_id, key, value)
@@ -157,7 +159,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				site_id = $1
 		`),
 		SelectSite: CleanSQL(`
-			SELECT resources, template_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
+			SELECT template_id, updated, resources, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM sites
 			LEFT JOIN sites_metadata ON sites.site_id = sites_metadata.site_id
 			LEFT JOIN sites_deployments ON sites.site_id = sites_deployments.site_id
@@ -168,7 +170,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DeleteSiteMetadata:   `DELETE FROM sites_metadata WHERE site_id = $1`,
 		DeleteSiteDeployment: `DELETE FROM sites_deployments WHERE deployment_id = $1`,
 		SelectSites: CleanSQL(`
-			SELECT sites.site_id, template_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
+			SELECT sites.site_id, template_id, updated, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM sites
 			LEFT JOIN sites_metadata ON sites.site_id = sites_metadata.site_id
 			LEFT JOIN sites_deployments ON sites.site_id = sites_deployments.site_id
@@ -182,7 +184,6 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		CreateDeployments: CleanSQL(`
 			CREATE TABLE IF NOT EXISTS deployments (
 				deployment_id TEXT NOT NULL PRIMARY KEY,
-				resources BYTEA,
 				parent_deployment_id TEXT,
 				template_id TEXT,
 				site_id TEXT,
@@ -190,6 +191,7 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 				updated TIMESTAMP,
 				prepared BOOLEAN,
 				approved BOOLEAN,
+				resources BYTEA,
 				modification_token TEXT,
 				modification_timestamp BIGINT,
 				CONSTRAINT fk_parent_deployment_id

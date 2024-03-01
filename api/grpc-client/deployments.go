@@ -177,17 +177,17 @@ func (self *Client) ListDeployments(listDeployments ListDeployments) (util.Resul
 
 			go func() {
 				for {
-					if response, err := client.Recv(); err == nil {
+					if listedDeployment, err := client.Recv(); err == nil {
 						stream.Send(DeploymentInfo{
-							DeploymentID:       response.DeploymentId,
-							ParentDeploymentID: response.ParentDeploymentId,
-							TemplateID:         response.TemplateId,
-							SiteID:             response.SiteId,
-							Metadata:           response.Metadata,
-							Created:            self.toTime(response.Created),
-							Updated:            self.toTime(response.Updated),
-							Prepared:           response.Prepared,
-							Approved:           response.Approved,
+							DeploymentID:       listedDeployment.DeploymentId,
+							ParentDeploymentID: listedDeployment.ParentDeploymentId,
+							TemplateID:         listedDeployment.TemplateId,
+							SiteID:             listedDeployment.SiteId,
+							Metadata:           listedDeployment.Metadata,
+							Created:            self.toTime(listedDeployment.Created),
+							Updated:            self.toTime(listedDeployment.Updated),
+							Prepared:           listedDeployment.Prepared,
+							Approved:           listedDeployment.Approved,
 						})
 					} else {
 						stream.Close(err) // special handling for io.EOF

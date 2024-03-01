@@ -50,15 +50,17 @@ message TemplateID {
 message Template {
     string templateId = 1;
     map<string, string> metadata = 2;
-    string resourcesFormat = 3;
-    bytes resources = 4; // TODO: stream
-    repeated string deploymentIds = 5;
+    google.protobuf.Timestamp updated = 3;
+    string resourcesFormat = 4;
+    bytes resources = 5; // TODO: stream
+    repeated string deploymentIds = 6;
 }
 
 message ListedTemplate {
     string templateId = 1;
     map<string, string> metadata = 2;
-    repeated string deploymentIds = 3;
+    google.protobuf.Timestamp updated = 3;
+    repeated string deploymentIds = 4;
 }
 
 message GetTemplate {
@@ -83,16 +85,18 @@ message Site {
     string siteId = 1;
     string templateId = 2;
     map<string, string> metadata = 3;
-    string resourcesFormat = 4;
-    bytes resources = 5; // TODO: stream
-    repeated string deploymentIds = 6;
+    google.protobuf.Timestamp updated = 4;
+    string resourcesFormat = 5;
+    bytes resources = 6; // TODO: stream
+    repeated string deploymentIds = 7;
 }
 
 message ListedSite {
     string siteId = 1;
     string templateId = 2;
     map<string, string> metadata = 3;
-    repeated string deploymentIds = 4;
+    google.protobuf.Timestamp updated = 4;
+    repeated string deploymentIds = 5;
 }
 
 message GetSite {

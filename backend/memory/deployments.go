@@ -59,6 +59,10 @@ func (self *MemoryBackend) CreateDeployment(context contextpkg.Context, deployme
 		site.AddDeployment(deployment.DeploymentID)
 	}
 
+	now := time.Now().UTC()
+	deployment.DeploymentID = backend.NewID()
+	deployment.Created = now
+	deployment.Updated = now
 	self.deployments[deployment.DeploymentID] = &Deployment{Deployment: deployment}
 
 	return nil
@@ -213,9 +217,9 @@ func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Contex
 			deployment.CurrentModificationToken = backend.NewID()
 			deployment.CurrentModificationTimestamp = time.Now().UnixMicro()
 			return deployment.CurrentModificationToken, deployment.Deployment, nil
+		} else {
+			return "", nil, backend.NewBusyErrorf("deployment: %s", deploymentId)
 		}
-
-		return "", nil, backend.NewBusyErrorf("deployment: %s", deploymentId)
 	} else {
 		return "", nil, backend.NewNotFoundErrorf("deployment: %s", deploymentId)
 	}

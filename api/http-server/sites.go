@@ -18,8 +18,9 @@ func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request)
 			sites = append(sites, ard.StringMap{
 				"id":          siteInfo.SiteID,
 				"template":    siteInfo.TemplateID,
-				"metadata":    siteInfo.Metadata,
 				"deployments": siteInfo.DeploymentIDs,
+				"metadata":    siteInfo.Metadata,
+				"updated":     siteInfo.Updated.In(self.Timezone).Format(TimeFormat),
 			})
 			return nil
 		}); err != nil {

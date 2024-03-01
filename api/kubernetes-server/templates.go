@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"time"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	backendpkg "github.com/nephio-experimental/tko/backend"
@@ -18,11 +19,12 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		TypeKind:     "Template",
-		TypeListKind: "TemplateList",
-		TypeSingular: "template",
-		TypePlural:   "templates",
-		ObjectTyper:  Scheme,
+		TypeKind:          "Template",
+		TypeListKind:      "TemplateList",
+		TypeSingular:      "template",
+		TypePlural:        "templates",
+		CanCreateOnUpdate: true,
+		ObjectTyper:       Scheme,
 
 		NewObjectFunc: func() runtime.Object {
 			return new(krm.Template)
@@ -33,7 +35,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
-			if template, err := KRMToTemplate(object); err == nil {
+			if template, err := TemplateFromKRM(object); err == nil {
 				if err := store.Backend.SetTemplate(context, template); err == nil {
 					return object, nil
 				} else {
@@ -142,6 +144,7 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (*krm.Template, er
 	krmTemplate.Kind = "Template"
 	krmTemplate.Name = name
 	krmTemplate.UID = types.UID("tko|template|" + templateInfo.TemplateID)
+	krmTemplate.ResourceVersion = ToResourceVersion(templateInfo.Updated)
 
 	templateId := templateInfo.TemplateID
 	krmTemplate.Spec.TemplateId = &templateId
@@ -169,7 +172,7 @@ func TemplateToKRM(template *backendpkg.Template) (*krm.Template, error) {
 	}
 }
 
-func KRMToTemplate(object runtime.Object) (*backendpkg.Template, error) {
+func TemplateFromKRM(object runtime.Object) (*backendpkg.Template, error) {
 	var krmTemplate *krm.Template
 	var ok bool
 	if krmTemplate, ok = object.(*krm.Template); !ok {
@@ -182,10 +185,16 @@ func KRMToTemplate(object runtime.Object) (*backendpkg.Template, error) {
 		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
+	var updated time.Time
+	if updated, err = FromResourceVersion(krmTemplate.ResourceVersion); err != nil {
+		return nil, err
+	}
+
 	template := backendpkg.Template{
 		TemplateInfo: backendpkg.TemplateInfo{
 			TemplateID: templateId,
 			Metadata:   krmTemplate.Spec.Metadata,
+			Updated:    updated,
 		},
 	}
 

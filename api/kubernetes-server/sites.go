@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"time"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	"github.com/nephio-experimental/tko/backend"
@@ -19,11 +20,12 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 		Backend: backend,
 		Log:     log,
 
-		TypeKind:     "Site",
-		TypeListKind: "SiteList",
-		TypeSingular: "site",
-		TypePlural:   "sites",
-		ObjectTyper:  Scheme,
+		TypeKind:          "Site",
+		TypeListKind:      "SiteList",
+		TypeSingular:      "site",
+		TypePlural:        "sites",
+		CanCreateOnUpdate: true,
+		ObjectTyper:       Scheme,
 
 		NewObjectFunc: func() runtime.Object {
 			return new(krm.Site)
@@ -34,7 +36,7 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
-			if site, err := KRMToSite(object); err == nil {
+			if site, err := SiteFromKRM(object); err == nil {
 				if err := store.Backend.SetSite(context, site); err == nil {
 					return object, nil
 				} else {
@@ -145,6 +147,7 @@ func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (*krm.Site, error) {
 	krmSite.Kind = "Site"
 	krmSite.Name = name
 	krmSite.UID = types.UID("tko|site|" + siteInfo.SiteID)
+	krmSite.ResourceVersion = ToResourceVersion(siteInfo.Updated)
 
 	siteId := siteInfo.SiteID
 	krmSite.Spec.SiteId = &siteId
@@ -166,7 +169,7 @@ func SiteToKRM(site *backendpkg.Site) (*krm.Site, error) {
 	}
 }
 
-func KRMToSite(object runtime.Object) (*backendpkg.Site, error) {
+func SiteFromKRM(object runtime.Object) (*backendpkg.Site, error) {
 	var krmSite *krm.Site
 	var ok bool
 	if krmSite, ok = object.(*krm.Site); !ok {
@@ -179,10 +182,16 @@ func KRMToSite(object runtime.Object) (*backendpkg.Site, error) {
 		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
+	var updated time.Time
+	if updated, err = FromResourceVersion(krmSite.ResourceVersion); err != nil {
+		return nil, err
+	}
+
 	site := backendpkg.Site{
 		SiteInfo: backendpkg.SiteInfo{
 			SiteID:   siteId,
 			Metadata: krmSite.Spec.Metadata,
+			Updated:  updated,
 		},
 	}
 

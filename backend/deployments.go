@@ -95,16 +95,12 @@ func NewDeploymentFromBytes(parentDemploymentId string, templateId string, siteI
 		if metadata == nil {
 			metadata = make(map[string]string)
 		}
-		now := time.Now().UTC()
 		return &Deployment{
 			DeploymentInfo: DeploymentInfo{
-				DeploymentID:       NewID(),
 				ParentDeploymentID: parentDemploymentId,
 				TemplateID:         templateId,
 				SiteID:             siteId,
 				Metadata:           metadata,
-				Created:            now,
-				Updated:            now,
 				Prepared:           prepared,
 				Approved:           approved,
 			},

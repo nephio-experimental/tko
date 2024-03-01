@@ -3,6 +3,7 @@ package sql
 import (
 	contextpkg "context"
 	"database/sql"
+	"time"
 
 	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/commonlog"
@@ -14,7 +15,8 @@ func (self *SQLBackend) SetTemplate(context contextpkg.Context, template *backen
 	if resources, err := self.encodeResources(template.Resources); err == nil {
 		if tx, err := self.db.BeginTx(context, nil); err == nil {
 			upsertTemplate := tx.StmtContext(context, self.statements.PreparedUpsertTemplate)
-			if _, err := upsertTemplate.ExecContext(context, template.TemplateID, resources); err == nil {
+			template.Updated = time.Now().UTC()
+			if _, err := upsertTemplate.ExecContext(context, template.TemplateID, template.Updated, resources); err == nil {
 				if err := self.updateTemplateMetadata(context, tx, template); err != nil {
 					self.rollback(tx)
 					return err
@@ -95,9 +97,10 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates 
 	go func() {
 		for rows.Next() {
 			var templateId string
+			var updated time.Time
 			var metadataJson, deploymentIdsJson []byte
-			if err := rows.Scan(&templateId, &metadataJson, &deploymentIdsJson); err == nil {
-				if templateInfo, err := self.newTemplateInfo(templateId, metadataJson, deploymentIdsJson); err == nil {
+			if err := rows.Scan(&templateId, &updated, &metadataJson, &deploymentIdsJson); err == nil {
+				if templateInfo, err := self.newTemplateInfo(templateId, updated, metadataJson, deploymentIdsJson); err == nil {
 					stream.Send(templateInfo)
 				} else {
 					stream.Close(err)
@@ -117,10 +120,11 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates 
 
 // Utils
 
-func (self *SQLBackend) newTemplateInfo(templateId string, metadataJson []byte, deploymentIdsJson []byte) (backend.TemplateInfo, error) {
+func (self *SQLBackend) newTemplateInfo(templateId string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte) (backend.TemplateInfo, error) {
 	templateInfo := backend.TemplateInfo{
 		TemplateID: templateId,
 		Metadata:   make(map[string]string),
+		Updated:    updated,
 	}
 
 	if err := jsonUnmarshallStringMapEntries(metadataJson, templateInfo.Metadata); err != nil {
@@ -134,8 +138,8 @@ func (self *SQLBackend) newTemplateInfo(templateId string, metadataJson []byte, 
 	return templateInfo, nil
 }
 
-func (self *SQLBackend) newTemplate(templateId string, metadataJson []byte, deploymentIdsJson []byte, resources []byte) (*backend.Template, error) {
-	if templateInfo, err := self.newTemplateInfo(templateId, metadataJson, deploymentIdsJson); err == nil {
+func (self *SQLBackend) newTemplate(templateId string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte, resources []byte) (*backend.Template, error) {
+	if templateInfo, err := self.newTemplateInfo(templateId, updated, metadataJson, deploymentIdsJson); err == nil {
 		template := backend.Template{TemplateInfo: templateInfo}
 		if template.Resources, err = self.decodeResources(resources); err == nil {
 			return &template, nil
@@ -160,9 +164,10 @@ func (self *SQLBackend) getTemplateStmt(context contextpkg.Context, selectTempla
 	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
 
 	if rows.Next() {
+		var updated time.Time
 		var resources, metadataJson, deploymentIdsJson []byte
-		if err := rows.Scan(&resources, &metadataJson, &deploymentIdsJson); err == nil {
-			return self.newTemplate(templateId, metadataJson, deploymentIdsJson, resources)
+		if err := rows.Scan(&updated, &resources, &metadataJson, &deploymentIdsJson); err == nil {
+			return self.newTemplate(templateId, updated, metadataJson, deploymentIdsJson, resources)
 		} else {
 			return nil, err
 		}

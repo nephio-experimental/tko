@@ -10,6 +10,8 @@ import (
 	"github.com/tliron/go-transcribe"
 )
 
+const TimeFormat = "2006/01/02 15:04:05"
+
 func sortById(info []ard.StringMap) {
 	slices.SortFunc(info, func(a ard.StringMap, b ard.StringMap) int {
 		return strings.Compare(a["id"].(string), b["id"].(string))

@@ -3,6 +3,7 @@ package sql
 import (
 	contextpkg "context"
 	"database/sql"
+	"time"
 
 	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/commonlog"
@@ -18,8 +19,9 @@ func (self *SQLBackend) SetSite(context contextpkg.Context, site *backend.Site) 
 		}
 
 		if resources, err := self.encodeResources(site.Resources); err == nil {
+			site.Updated = time.Now().UTC()
 			upsertSite := tx.StmtContext(context, self.statements.PreparedUpsertSite)
-			if _, err := upsertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), resources); err == nil {
+			if _, err := upsertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), site.Updated, resources); err == nil {
 				if err := self.updateSiteMetadata(context, tx, site); err != nil {
 					self.rollback(tx)
 					return err
@@ -48,9 +50,10 @@ func (self *SQLBackend) GetSite(context contextpkg.Context, siteId string) (*bac
 
 	if rows.Next() {
 		var templateId *string
+		var updated time.Time
 		var resources, metadataJson, deploymentIdsJson []byte
-		if err := rows.Scan(&resources, &templateId, &metadataJson, &deploymentIdsJson); err == nil {
-			return self.newSite(siteId, templateId, metadataJson, deploymentIdsJson, resources)
+		if err := rows.Scan(&templateId, &updated, &resources, &metadataJson, &deploymentIdsJson); err == nil {
+			return self.newSite(siteId, templateId, updated, metadataJson, deploymentIdsJson, resources)
 		} else {
 			return nil, err
 		}
@@ -122,9 +125,10 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 		for rows.Next() {
 			var siteId string
 			var templateId *string
+			var updated time.Time
 			var metadataJson, deploymentIdsJson []byte
-			if err := rows.Scan(&siteId, &templateId, &metadataJson, &deploymentIdsJson); err == nil {
-				if siteInfo, err := self.newSiteInfo(siteId, templateId, metadataJson, deploymentIdsJson); err == nil {
+			if err := rows.Scan(&siteId, &templateId, &updated, &metadataJson, &deploymentIdsJson); err == nil {
+				if siteInfo, err := self.newSiteInfo(siteId, templateId, updated, metadataJson, deploymentIdsJson); err == nil {
 					stream.Send(siteInfo)
 				} else {
 					stream.Close(err)
@@ -144,10 +148,11 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 
 // Utils
 
-func (self *SQLBackend) newSiteInfo(siteId string, templateId *string, metadataJson []byte, deploymentIdsJson []byte) (backend.SiteInfo, error) {
+func (self *SQLBackend) newSiteInfo(siteId string, templateId *string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte) (backend.SiteInfo, error) {
 	siteInfo := backend.SiteInfo{
 		SiteID:   siteId,
 		Metadata: make(map[string]string),
+		Updated:  updated,
 	}
 
 	if templateId != nil {
@@ -165,8 +170,8 @@ func (self *SQLBackend) newSiteInfo(siteId string, templateId *string, metadataJ
 	return siteInfo, nil
 }
 
-func (self *SQLBackend) newSite(siteId string, templateId *string, metadataJson []byte, deploymentIdsJson []byte, resources []byte) (*backend.Site, error) {
-	if siteInfo, err := self.newSiteInfo(siteId, templateId, metadataJson, deploymentIdsJson); err == nil {
+func (self *SQLBackend) newSite(siteId string, templateId *string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte, resources []byte) (*backend.Site, error) {
+	if siteInfo, err := self.newSiteInfo(siteId, templateId, updated, metadataJson, deploymentIdsJson); err == nil {
 		site := backend.Site{SiteInfo: siteInfo}
 		if site.Resources, err = self.decodeResources(resources); err == nil {
 			return &site, nil

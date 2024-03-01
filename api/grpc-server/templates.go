@@ -8,6 +8,7 @@ import (
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ([api.APIServer] interface)
@@ -56,6 +57,7 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 			return &api.Template{
 				TemplateId:      template.TemplateID,
 				Metadata:        template.Metadata,
+				Updated:         timestamppb.New(template.Updated),
 				ResourcesFormat: resourcesFormat,
 				Resources:       resources,
 				DeploymentIds:   template.DeploymentIDs,
@@ -82,6 +84,7 @@ func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.A
 			return server.Send(&api.ListedTemplate{
 				TemplateId:    templateInfo.TemplateID,
 				Metadata:      templateInfo.Metadata,
+				Updated:       timestamppb.New(templateInfo.Updated),
 				DeploymentIds: templateInfo.DeploymentIDs,
 			})
 		}); err != nil {

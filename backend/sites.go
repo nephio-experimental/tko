@@ -3,6 +3,7 @@ package backend
 import (
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/nephio-experimental/tko/util"
 )
@@ -15,6 +16,7 @@ type SiteInfo struct {
 	SiteID        string
 	TemplateID    string
 	Metadata      map[string]string
+	Updated       time.Time
 	DeploymentIDs []string
 }
 
@@ -24,6 +26,7 @@ func (self *SiteInfo) Clone(withDeployments bool) SiteInfo {
 			SiteID:        self.SiteID,
 			TemplateID:    self.TemplateID,
 			Metadata:      util.CloneStringMap(self.Metadata),
+			Updated:       self.Updated,
 			DeploymentIDs: util.CloneStringSet(self.DeploymentIDs),
 		}
 	} else {
@@ -31,6 +34,7 @@ func (self *SiteInfo) Clone(withDeployments bool) SiteInfo {
 			SiteID:     self.SiteID,
 			TemplateID: self.TemplateID,
 			Metadata:   util.CloneStringMap(self.Metadata),
+			Updated:    self.Updated,
 		}
 	}
 }

@@ -17,13 +17,15 @@ $(document).ready(function () {
     ['id', 'api/site?id=', 'sites'],
     ['template', 'api/template?id=', 'templates'],
     ['metadata'],
-    ['deployments', 'api/deployment?id=', 'deployments']
+    ['deployments', 'api/deployment?id=', 'deployments'],
+    ['updated']
   ]);
 
   syncTable('templates', 'api/template/list', [
     ['id', 'api/template?id=', 'templates'],
     ['metadata'],
-    ['deployments', 'api/deployment?id=', 'deployments']
+    ['deployments', 'api/deployment?id=', 'deployments'],
+    ['updated']
   ]);
 
   syncTable('plugins', 'api/plugin/list', [
