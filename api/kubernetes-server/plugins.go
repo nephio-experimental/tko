@@ -26,11 +26,11 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 		TypePlural:   "plugins",
 		ObjectTyper:  Scheme,
 
-		NewResourceFunc: func() runtime.Object {
+		NewObjectFunc: func() runtime.Object {
 			return new(krm.Plugin)
 		},
 
-		NewResourceListFunc: func() runtime.Object {
+		NewListObjectFunc: func() runtime.Object {
 			return new(krm.PluginList)
 		},
 
@@ -67,7 +67,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 			if plugin, err := store.Backend.GetPlugin(context, pluginId); err == nil {
 				if krmPlugin, err := PluginToKRM(plugin); err == nil {
-					return &krmPlugin, nil
+					return krmPlugin, nil
 				} else {
 					return nil, err
 				}
@@ -84,7 +84,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			if results, err := store.Backend.ListPlugins(context, backendpkg.ListPlugins{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(plugin backendpkg.Plugin) error {
 					if krmPlugin, err := PluginToKRM(&plugin); err == nil {
-						krmPluginList.Items = append(krmPluginList.Items, krmPlugin)
+						krmPluginList.Items = append(krmPluginList.Items, *krmPlugin)
 						return nil
 					} else {
 						return err
@@ -147,15 +147,15 @@ func ToPluginsKRM(object runtime.Object) ([]krm.Plugin, error) {
 	case *krm.Plugin:
 		return []krm.Plugin{*object_}, nil
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", object)
+		return nil, backendpkg.NewBadArgumentErrorf("unsupported type: %T", object)
 	}
 }
 
-func PluginToKRM(plugin *backendpkg.Plugin) (krm.Plugin, error) {
+func PluginToKRM(plugin *backendpkg.Plugin) (*krm.Plugin, error) {
 	pluginIdString := plugin.PluginID.String()
 	name, err := tkoutil.ToKubernetesName(pluginIdString)
 	if err != nil {
-		return krm.Plugin{}, err
+		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
 	var krmPlugin krm.Plugin
@@ -179,18 +179,24 @@ func PluginToKRM(plugin *backendpkg.Plugin) (krm.Plugin, error) {
 		}
 	}
 
-	return krmPlugin, nil
+	return &krmPlugin, nil
 }
 
-func KRMToPlugin(krmPlugin *krm.Plugin) (*backendpkg.Plugin, error) {
+func KRMToPlugin(object runtime.Object) (*backendpkg.Plugin, error) {
+	var krmPlugin *krm.Plugin
+	var ok bool
+	if krmPlugin, ok = object.(*krm.Plugin); !ok {
+		return nil, backendpkg.NewBadArgumentErrorf("not a Plugin: %T", object)
+	}
+
 	var pluginId backendpkg.PluginID
 	if pluginId_, err := tkoutil.FromKubernetesName(krmPlugin.Name); err == nil {
 		var ok bool
 		if pluginId, ok = backendpkg.ParsePluginID(pluginId_); !ok {
-			return nil, fmt.Errorf("malformed plugin name: %s", pluginId_)
+			return nil, backendpkg.NewBadArgumentErrorf("malformed plugin name: %s", pluginId_)
 		}
 	} else {
-		return nil, err
+		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
 	plugin := backendpkg.Plugin{

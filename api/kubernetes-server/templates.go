@@ -2,7 +2,6 @@ package server
 
 import (
 	contextpkg "context"
-	"fmt"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
 	backendpkg "github.com/nephio-experimental/tko/backend"
@@ -25,27 +24,23 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		TypePlural:   "templates",
 		ObjectTyper:  Scheme,
 
-		NewResourceFunc: func() runtime.Object {
+		NewObjectFunc: func() runtime.Object {
 			return new(krm.Template)
 		},
 
-		NewResourceListFunc: func() runtime.Object {
+		NewListObjectFunc: func() runtime.Object {
 			return new(krm.TemplateList)
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
-			if krmTemplate, ok := object.(*krm.Template); ok {
-				if template, err := KRMToTemplate(krmTemplate); err == nil {
-					if err := store.Backend.SetTemplate(context, template); err == nil {
-						return krmTemplate, nil
-					} else {
-						return nil, err
-					}
+			if template, err := KRMToTemplate(object); err == nil {
+				if err := store.Backend.SetTemplate(context, template); err == nil {
+					return object, nil
 				} else {
-					return nil, backendpkg.NewBadArgumentError(err.Error())
+					return nil, err
 				}
 			} else {
-				return nil, backendpkg.NewBadArgumentErrorf("not a Template: %T", object)
+				return nil, err
 			}
 		},
 
@@ -56,7 +51,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if template, err := store.Backend.GetTemplate(context, id); err == nil {
 				if krmTemplate, err := TemplateToKRM(template); err == nil {
-					return &krmTemplate, nil
+					return krmTemplate, nil
 				} else {
 					return nil, err
 				}
@@ -73,7 +68,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			if results, err := store.Backend.ListTemplates(context, backendpkg.ListTemplates{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(templateInfo backendpkg.TemplateInfo) error {
 					if krmTemplate, err := TemplateInfoToKRM(&templateInfo); err == nil {
-						krmTemplateList.Items = append(krmTemplateList.Items, krmTemplate)
+						krmTemplateList.Items = append(krmTemplateList.Items, *krmTemplate)
 						return nil
 					} else {
 						return err
@@ -132,14 +127,14 @@ func ToTemplatesKRM(object runtime.Object) ([]krm.Template, error) {
 	case *krm.Template:
 		return []krm.Template{*object_}, nil
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", object)
+		return nil, backendpkg.NewBadArgumentErrorf("unsupported type: %T", object)
 	}
 }
 
-func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, error) {
+func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (*krm.Template, error) {
 	name, err := tkoutil.ToKubernetesName(templateInfo.TemplateID)
 	if err != nil {
-		return krm.Template{}, err
+		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
 	var krmTemplate krm.Template
@@ -147,18 +142,16 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (krm.Template, err
 	krmTemplate.Kind = "Template"
 	krmTemplate.Name = name
 	krmTemplate.UID = types.UID("tko|template|" + templateInfo.TemplateID)
-	//template.GenerateName = "tko-template-"
-	//template.CreationTimestamp = meta.Now()
 
 	templateId := templateInfo.TemplateID
 	krmTemplate.Spec.TemplateId = &templateId
 	krmTemplate.Spec.Metadata = templateInfo.Metadata
 	krmTemplate.Status.DeploymentIds = templateInfo.DeploymentIDs
 
-	return krmTemplate, nil
+	return &krmTemplate, nil
 }
 
-func TemplateToKRM(template *backendpkg.Template) (krm.Template, error) {
+func TemplateToKRM(template *backendpkg.Template) (*krm.Template, error) {
 	if krmTemplate, err := TemplateInfoToKRM(&template.TemplateInfo); err == nil {
 		krmTemplate.Spec.Package = ResourcesToKRM(template.Resources)
 		return krmTemplate, nil
@@ -172,15 +165,21 @@ func TemplateToKRM(template *backendpkg.Template) (krm.Template, error) {
 			}
 		*/
 	} else {
-		return krm.Template{}, err
+		return nil, err
 	}
 }
 
-func KRMToTemplate(krmTemplate *krm.Template) (*backendpkg.Template, error) {
+func KRMToTemplate(object runtime.Object) (*backendpkg.Template, error) {
+	var krmTemplate *krm.Template
+	var ok bool
+	if krmTemplate, ok = object.(*krm.Template); !ok {
+		return nil, backendpkg.NewBadArgumentErrorf("not a Template: %T", object)
+	}
+
 	var templateId string
 	var err error
 	if templateId, err = tkoutil.FromKubernetesName(krmTemplate.Name); err != nil {
-		return nil, err
+		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
 	template := backendpkg.Template{

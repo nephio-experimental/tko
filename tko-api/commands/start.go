@@ -135,9 +135,8 @@ func Serve() {
 
 	// Kubernetes
 	if kubernetes {
-		kubernetesServer, err := kubernetesserver.NewServer(backend, int(kubernetesPort), commonlog.GetLogger("kubernetes"))
-		util.FailOnError(err)
-		kubernetesServer.Start()
+		kubernetesServer := kubernetesserver.NewServer(backend, int(kubernetesPort), commonlog.GetLogger("kubernetes"))
+		util.FailOnError(kubernetesServer.Start())
 		util.OnExit(kubernetesServer.Stop)
 	}
 

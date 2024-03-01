@@ -41,11 +41,7 @@ func ExecuteCommand(arguments []string, input any, output any) error {
 		return withStderr(err, stderr.String())
 	}
 
-	if err := yaml.Unmarshal(output_.Bytes(), output); err != nil {
-		return err
-	}
-
-	return nil
+	return yaml.Unmarshal(output_.Bytes(), output)
 }
 
 func ExecuteKpt(image string, properties map[string]string, resource Resource, resources Resources) (Resources, error) {

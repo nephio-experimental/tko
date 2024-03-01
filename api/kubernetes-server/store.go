@@ -52,12 +52,12 @@ type Store struct {
 	TypeShortNames []string
 	ObjectTyper    runtime.ObjectTyper
 
-	NewResourceFunc     func() runtime.Object
-	NewResourceListFunc func() runtime.Object
+	NewObjectFunc     func() runtime.Object
+	NewListObjectFunc func() runtime.Object
 
 	// These can return backend errors
 	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
-	UpdateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) // optional
+	UpdateFunc func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) // optional
 	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
 	ListFunc   func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error)
@@ -120,7 +120,7 @@ var (
 // ([rest.NamedCreater] interface)
 func (self *Store) New() runtime.Object {
 	self.Log.Info("New")
-	return self.NewResourceFunc()
+	return self.NewObjectFunc()
 }
 
 // ([rest.Storage] interface)
@@ -179,7 +179,7 @@ func (self *Store) AcceptsGroupVersion(gv schema.GroupVersion) bool {
 // ([rest.StandardStorage] interface)
 func (self *Store) NewList() runtime.Object {
 	self.Log.Info("NewList")
-	return self.NewResourceListFunc()
+	return self.NewListObjectFunc()
 }
 
 // ([rest.Lister] interface)
@@ -556,7 +556,7 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 	// server's Scheme (see scheme.go). Is this is a bug in kubectl? In apiserver? If not,
 	// why this odd bevavior?
 
-	updatedObject, err := objectInfo.UpdatedObject(context, currentObject)
+	updatedOrNewObject, err := objectInfo.UpdatedObject(context, currentObject)
 	if err != nil {
 		return nil, false, apierrors.NewInternalError(err)
 	}
@@ -573,12 +573,16 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 		updateOrCreate = self.CreateFunc
 	}
 
-	if updatedObject, err = updateOrCreate(context, self, updatedObject); err == nil {
-		return updatedObject, currentObject == nil, nil
+	if updatedOrNewObject, err = updateOrCreate(context, self, updatedOrNewObject); err == nil {
+		return updatedOrNewObject, currentObject == nil, nil
 	} else if backendpkg.IsBadArgumentError(err) {
 		return nil, false, apierrors.NewBadRequest(err.Error())
 	} else if backendpkg.IsNotFoundError(err) {
 		return nil, false, apierrors.NewNotFound(self.groupResource, name)
+	} else if backendpkg.IsNotDoneError(err) {
+		return nil, false, apierrors.NewConflict(self.groupResource, name, err)
+	} else if backendpkg.IsBusyError(err) {
+		return nil, false, apierrors.NewResourceExpired(err.Error())
 	} else {
 		return nil, false, apierrors.NewInternalError(err)
 	}

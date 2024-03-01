@@ -22,6 +22,7 @@ import (
 
 type Server struct {
 	Backend backend.Backend
+	Port    int
 	Log     commonlog.Logger
 
 	apiServer *server.GenericAPIServer
@@ -29,42 +30,44 @@ type Server struct {
 	stopped   chan struct{}
 }
 
-func NewServer(backend backend.Backend, port int, log commonlog.Logger) (*Server, error) {
-	server := Server{
+func NewServer(backend backend.Backend, port int, log commonlog.Logger) *Server {
+	return &Server{
 		Backend: backend,
+		Port:    port,
 		Log:     log,
 		stop:    make(chan struct{}),
 		stopped: make(chan struct{}),
 	}
-
-	if config, err := NewConfig(port); err == nil {
-		if server.apiServer, err = config.New(ServerName, serverpkg.NewEmptyDelegate()); err == nil {
-			if err := server.apiServer.InstallAPIGroup(NewAPIGroupInfo(config.RESTOptionsGetter, backend, log)); err == nil {
-				return &server, nil
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-	} else {
-		return nil, err
-	}
 }
 
-func (self *Server) Start() {
+func (self *Server) Start() error {
 	self.Log.Notice("starting Kubernetes server")
+
+	if config, err := NewConfig(self.Port); err == nil {
+		if self.apiServer, err = config.New(ServerName, serverpkg.NewEmptyDelegate()); err == nil {
+			if err := self.apiServer.InstallAPIGroup(NewAPIGroupInfo(config.RESTOptionsGetter, self.Backend, self.Log)); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	} else {
+		return err
+	}
+
 	go func() {
 		if err := self.apiServer.PrepareRun().Run(self.stop); err != nil {
 			self.Log.Error(err.Error())
 		}
 		self.stopped <- struct{}{}
 	}()
+
+	return nil
 }
 
 func (self *Server) Stop() {
 	self.Log.Notice("stopping Kubernetes server")
-	self.stop <- struct{}{}
+	close(self.stop)
 	<-self.stopped
 	self.Log.Notice("stopped Kubernetes server")
 }

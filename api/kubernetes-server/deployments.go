@@ -2,7 +2,6 @@ package server
 
 import (
 	contextpkg "context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -28,27 +27,47 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 		TypePlural:   "deployments",
 		ObjectTyper:  Scheme,
 
-		NewResourceFunc: func() runtime.Object {
+		NewObjectFunc: func() runtime.Object {
 			return new(krm.Deployment)
 		},
 
-		NewResourceListFunc: func() runtime.Object {
+		NewListObjectFunc: func() runtime.Object {
 			return new(krm.DeploymentList)
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
-			if krmDeployment, ok := object.(*krm.Deployment); ok {
-				if deployment, err := KRMToDeployment(krmDeployment); err == nil {
-					if err := store.Backend.CreateDeployment(context, deployment); err == nil {
-						return krmDeployment, nil
+			if deployment, err := KRMToDeployment(object); err == nil {
+				if err := store.Backend.CreateDeployment(context, deployment); err == nil {
+					return object, nil
+				} else {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		},
+
+		UpdateFunc: func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) {
+			if updatedDeployment, err := KRMToDeployment(updatedObject); err == nil {
+				if modificationToken, deployment, err := store.Backend.StartDeploymentModification(context, updatedDeployment.DeploymentID); err == nil {
+					timestamp := deployment.Updated.Truncate(time.Millisecond)
+					updatedTimestamp := updatedDeployment.Updated.Truncate(time.Millisecond)
+					if updatedTimestamp.Equal(timestamp) {
+						if _, err := store.Backend.EndDeploymentModification(context, modificationToken, updatedDeployment.Resources, nil); err == nil {
+							return updatedObject, nil
+						} else {
+							return nil, err
+						}
+					} else if err := store.Backend.CancelDeploymentModification(context, modificationToken); err == nil {
+						return nil, backendpkg.NewNotDoneErrorf("deployment has been modified before the proposed update: %s, was %s", timestamp, updatedTimestamp)
 					} else {
 						return nil, err
 					}
 				} else {
-					return nil, backendpkg.NewBadArgumentError(err.Error())
+					return nil, err
 				}
 			} else {
-				return nil, backendpkg.NewBadArgumentErrorf("not a Deployment: %T", object)
+				return nil, err
 			}
 		},
 
@@ -59,7 +78,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if deployment, err := store.Backend.GetDeployment(context, id); err == nil {
 				if krmDeployment, err := DeploymentToKRM(deployment); err == nil {
-					return &krmDeployment, nil
+					return krmDeployment, nil
 				} else {
 					return nil, err
 				}
@@ -76,7 +95,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			if results, err := store.Backend.ListDeployments(context, backendpkg.ListDeployments{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(deploymentInfo backendpkg.DeploymentInfo) error {
 					if krmDeployment, err := DeploymentInfoToKRM(&deploymentInfo); err == nil {
-						krmDeploymentList.Items = append(krmDeploymentList.Items, krmDeployment)
+						krmDeploymentList.Items = append(krmDeploymentList.Items, *krmDeployment)
 						return nil
 					} else {
 						return err
@@ -155,14 +174,14 @@ func ToDeploymentsKRM(object runtime.Object) ([]krm.Deployment, error) {
 	case *krm.Deployment:
 		return []krm.Deployment{*object_}, nil
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", object)
+		return nil, backendpkg.NewBadArgumentErrorf("unsupported type: %T", object)
 	}
 }
 
-func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (krm.Deployment, error) {
+func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (*krm.Deployment, error) {
 	name, err := tkoutil.ToKubernetesName(deploymentInfo.DeploymentID)
 	if err != nil {
-		return krm.Deployment{}, err
+		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
 	var krmDeployment krm.Deployment
@@ -190,29 +209,44 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (krm.Deploym
 	approved := deploymentInfo.Approved
 	krmDeployment.Status.Approved = &approved
 
-	return krmDeployment, nil
+	return &krmDeployment, nil
 }
 
-func DeploymentToKRM(deployment *backendpkg.Deployment) (krm.Deployment, error) {
+func DeploymentToKRM(deployment *backendpkg.Deployment) (*krm.Deployment, error) {
 	if krmDeployment, err := DeploymentInfoToKRM(&deployment.DeploymentInfo); err == nil {
 		krmDeployment.Spec.Package = ResourcesToKRM(deployment.Resources)
 		return krmDeployment, nil
 	} else {
-		return krm.Deployment{}, err
+		return nil, err
 	}
 }
 
-func KRMToDeployment(krmDeployment *krm.Deployment) (*backendpkg.Deployment, error) {
+func KRMToDeployment(object runtime.Object) (*backendpkg.Deployment, error) {
+	var krmDeployment *krm.Deployment
+	var ok bool
+	if krmDeployment, ok = object.(*krm.Deployment); !ok {
+		return nil, backendpkg.NewBadArgumentErrorf("not a Deployment: %T", object)
+	}
+
 	var deploymentId string
 	var err error
 	if deploymentId, err = tkoutil.FromKubernetesName(krmDeployment.Name); err != nil {
-		return nil, err
+		return nil, backendpkg.NewBadArgumentError(err.Error())
+	}
+
+	var updated time.Time
+	if updated_, err := strconv.ParseInt(krmDeployment.ResourceVersion, 10, 64); err == nil {
+		updated = time.UnixMicro(updated_)
+	} else {
+		return nil, backendpkg.NewBadArgumentError(err.Error())
 	}
 
 	deployment := backendpkg.Deployment{
 		DeploymentInfo: backendpkg.DeploymentInfo{
 			DeploymentID: deploymentId,
 			Metadata:     krmDeployment.Spec.Metadata,
+			Created:      krmDeployment.CreationTimestamp.Time,
+			Updated:      updated,
 		},
 	}
 

@@ -14,13 +14,13 @@ m 'creating cluster...'
 
 kind create cluster --config="$ROOT/assets/kubernetes/kind/tko.yaml" || true
 
-m 'deploying TKO...'
-
 if [ "$1" == -d ]; then
 	m 'deleting TKO...'
 	"$HERE/kubectl-kind" delete -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml" || true
 	"$HERE/kubectl-kind" delete -f "$ROOT/assets/kubernetes/admin/" || true
 fi
+
+m 'deploying TKO...'
 
 "$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/admin/"
 "$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
