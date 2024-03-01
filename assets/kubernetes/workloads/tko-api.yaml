@@ -23,6 +23,12 @@ spec:
         env:
         - name: TKO_kubernetes
           value: "true"
+        - name: TKO_name
+          value: Local Kubernetes
+        - name: TKO_description
+          value: Kind cluster
+        - name: TKO_web-timezone
+          value: America/Chicago
         #- name: TKO_backend
         #  value: postgresql
         #- name: TKO_backend-clean

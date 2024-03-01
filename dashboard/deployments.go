@@ -6,11 +6,8 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/rivo/tview"
-	"github.com/tliron/go-transcribe"
 	"github.com/tliron/kutil/util"
 )
-
-const TimeFormat = "2006/01/02 15:04:05"
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateDeployments(table *tview.Table) {
@@ -44,8 +41,8 @@ func (self *Application) UpdateDeployments(table *tview.Table) {
 				}
 				table.SetCell(row, 4, BoolTableCell(deploymentInfo.Prepared))
 				table.SetCell(row, 5, BoolTableCell(deploymentInfo.Approved))
-				table.SetCellSimple(row, 6, deploymentInfo.Created.In(self.Timezone).Format(TimeFormat))
-				table.SetCellSimple(row, 7, deploymentInfo.Updated.In(self.Timezone).Format(TimeFormat))
+				table.SetCellSimple(row, 6, self.timestamp(deploymentInfo.Created))
+				table.SetCellSimple(row, 7, self.timestamp(deploymentInfo.Updated))
 			}
 		}
 	}
@@ -69,7 +66,7 @@ func (self *DeploymentDetails) GetTitle() string {
 func (self *DeploymentDetails) GetText() string {
 	if deployment, ok, err := self.client.GetDeployment(self.deploymentId); err == nil {
 		if ok {
-			if s, err := transcribe.NewTranscriber().Stringify(ToSliceAny(deployment.Resources)); err == nil {
+			if s, err := transcriber.Stringify(ToSliceAny(deployment.Resources)); err == nil {
 				return s
 			} else {
 				return err.Error()

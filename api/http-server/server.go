@@ -18,13 +18,15 @@ import (
 //
 
 type Server struct {
-	Backend  backend.Backend
-	Timeout  time.Duration
-	IPStack  util.IPStack
-	Address  string
-	Port     int
-	Timezone *time.Location
-	Log      commonlog.Logger
+	InstanceName        string
+	InstanceDescription string
+	Backend             backend.Backend
+	Timeout             time.Duration
+	IPStack             util.IPStack
+	Address             string
+	Port                int
+	Timezone            *time.Location
+	Log                 commonlog.Logger
 
 	httpServers []*http.Server
 	mux         *http.ServeMux
@@ -48,6 +50,7 @@ func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPSt
 
 	self.mux.Handle("/", http.FileServer(http.FS(web.FS)))
 
+	self.mux.HandleFunc("/api/about", self.About)
 	self.mux.HandleFunc("/api/deployment/list", self.ListDeployments)
 	self.mux.HandleFunc("/api/deployment", self.GetDeployment)
 	self.mux.HandleFunc("/api/site/list", self.ListSites)

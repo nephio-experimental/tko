@@ -16,7 +16,7 @@ type SiteInfo struct {
 	SiteID        string
 	TemplateID    string
 	Metadata      map[string]string
-	Updated       time.Time
+	Updated       time.Time // millisecond precision
 	DeploymentIDs []string
 }
 

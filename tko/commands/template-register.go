@@ -20,7 +20,10 @@ var templateRegisterCommand = &cobra.Command{
 	Short: "Register template",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		RegisterTemplate(contextpkg.TODO(), args[0], templateMetadata, url, stdin)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		util.OnExit(cancel)
+
+		RegisterTemplate(context, args[0], templateMetadata, url, stdin)
 	},
 }
 

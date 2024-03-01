@@ -9,8 +9,12 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var DefaultMaxCount uint = 100
-var MaxMaxCount uint = 1000
+var (
+	DefaultMaxCount uint = 100
+	MaxMaxCount     uint = 1000
+
+	_ Backend = new(ValidatingBackend)
+)
 
 //
 // ValidatingBackend
@@ -38,6 +42,12 @@ func (self *ValidatingBackend) Connect(context contextpkg.Context) error {
 // ([Backend] interface)
 func (self *ValidatingBackend) Release(context contextpkg.Context) error {
 	return self.Backend.Release(context)
+}
+
+// ([fmt.Stringer] interface)
+// ([Backend] interface)
+func (self *ValidatingBackend) String() string {
+	return self.Backend.String()
 }
 
 // ([Backend] interface)

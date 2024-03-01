@@ -19,8 +19,8 @@ type DeploymentInfo struct {
 	TemplateID         string
 	SiteID             string
 	Metadata           map[string]string
-	Created            time.Time
-	Updated            time.Time
+	Created            time.Time // millisecond precision
+	Updated            time.Time // millisecond precision
 	Prepared           bool
 	Approved           bool
 }

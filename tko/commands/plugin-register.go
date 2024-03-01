@@ -7,8 +7,10 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var properties map[string]string
-var triggers []string
+var (
+	properties map[string]string
+	triggers   []string
+)
 
 func init() {
 	pluginCommand.AddCommand(pluginRegisterCommand)

@@ -7,8 +7,10 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var preparedFilter string
-var approvedFilter string
+var (
+	preparedFilter string
+	approvedFilter string
+)
 
 func init() {
 	deploymentCommand.AddCommand(deploymentListCommand)

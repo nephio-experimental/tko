@@ -8,6 +8,8 @@ import (
 	"github.com/tliron/commonlog"
 )
 
+var _ backend.Backend = new(MemoryBackend)
+
 //
 // MemoryBackend
 //
@@ -46,4 +48,10 @@ func (self *MemoryBackend) Connect(context contextpkg.Context) error {
 func (self *MemoryBackend) Release(context contextpkg.Context) error {
 	self.log.Notice("release")
 	return nil
+}
+
+// ([fmt.Stringer] interface)
+// ([backend.Backend] interface)
+func (self *MemoryBackend) String() string {
+	return "Memory"
 }

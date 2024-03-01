@@ -10,10 +10,12 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var logTo string
-var verbose int
-var colorize string
-var journald bool
+var (
+	logTo    string
+	verbose  int
+	colorize string
+	journald bool
+)
 
 func init() {
 	rootCommand.PersistentFlags().BoolVarP(&terminal.Quiet, "quiet", "q", false, "suppress output")

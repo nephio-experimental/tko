@@ -50,6 +50,12 @@
                     <i class="fa fa-lg fa-plug" aria-hidden="true"></i>
                     Plugins
                 </button>
+
+                <div class="section">Management</div>
+                <button id="about-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab" aria-controls="about" aria-selected="false">
+                    <i class="fa fa-lg fa-circle-info" aria-hidden="true"></i>
+                    About
+                </button>
             </nav>
 
             <div id="content" class="tab-content w-100">
@@ -154,6 +160,13 @@
                         <tbody class="table-group-divider">
                         </tbody>
                     </table>
+
+                </div>
+
+                <div id="about" class="tab-pane fade" role="tabpanel" aria-labelledby="about-tab">
+
+                    <h2>About</h2>
+                    <pre><code id="about-json" class="hljs"></code></pre>
 
                 </div>
 

@@ -37,6 +37,8 @@ $(document).ready(function () {
     ['triggers']
   ]);
 
+  syncJson('about', 'api/about');
+
   closeButton('deployments');
   closeButton('sites');
   closeButton('templates');
@@ -49,11 +51,23 @@ const INTERVAL = 2000;
 
 var intervals = {};
 
+function syncJson(tab, url) {
+  const tabControl = $('#'+tab+'-tab');
+
+  tabControl.on('show.bs.tab', function () {
+    showJsonTab(tab, url);
+  });
+
+  tabControl.on('hide.bs.tab', function () {
+    hideTab(tab);
+  });
+};
+
 function syncTable(tab, url, columns) {
   const tabControl = $('#'+tab+'-tab');
 
   tabControl.on('show.bs.tab', function () {
-    showTab(tab, url, columns);
+    showTableTab(tab, url, columns);
   });
 
   tabControl.on('hide.bs.tab', function () {
@@ -68,7 +82,27 @@ function closeButton(tab) {
   });
 }
 
-function showTab(tab, url, columns) {
+function showJsonTab(tab, url) {
+  const json = $('#'+tab+'-json');
+
+  function tick() {
+    $.get({
+      url: url,
+      dataType: 'json',
+      success: function (content) {
+        content = hljs.highlight(JSON.stringify(content, null, '  '), {language: 'json'}).value;
+        json.html(content);
+      }
+    }).fail(function () {
+      tbody.empty();
+    });
+  }
+
+  tick();
+  intervals[tab] = setInterval(tick, INTERVAL);
+}
+
+function showTableTab(tab, url, columns) {
   const tbody = $('#'+tab+' table tbody');
 
   function tick() {
@@ -176,11 +210,11 @@ function newLink(value, urlPrefix, tab) {
     $.get({
       url: urlPrefix + value,
       dataType: 'text',
-      success: function(yaml) {
+      success: function(content) {
         // Show details tab
-        yaml = hljs.highlight(yaml, {language: 'yaml'}).value;
+        content = hljs.highlight(yaml, {language: 'yaml'}).value;
         $('#'+tab+'-title').html(value);
-        $('#'+tab+'-yaml').html(yaml);
+        $('#'+tab+'-yaml').html(content);
         $('#'+tab+'-list').hide();
         $('#'+tab+'-details').show();
         $('#'+tab+'-tab').tab('show');

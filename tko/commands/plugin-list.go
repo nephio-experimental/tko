@@ -8,9 +8,11 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var type_ string
-var namePatterns []string
-var trigger string
+var (
+	type_        string
+	namePatterns []string
+	trigger      string
+)
 
 func init() {
 	pluginCommand.AddCommand(pluginListCommand)

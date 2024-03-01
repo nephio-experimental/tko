@@ -19,7 +19,7 @@ func (self *Server) ListTemplates(writer http.ResponseWriter, request *http.Requ
 				"id":          templateInfo.TemplateID,
 				"deployments": templateInfo.DeploymentIDs,
 				"metadata":    templateInfo.Metadata,
-				"updated":     templateInfo.Updated.In(self.Timezone).Format(TimeFormat),
+				"updated":     self.timestamp(templateInfo.Updated),
 			})
 			return nil
 		}); err != nil {

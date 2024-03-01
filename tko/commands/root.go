@@ -8,20 +8,22 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var logTo string
-var verbose int
-var maxWidth int
-var format string
-var colorize string
-var strict bool
-var pretty bool
+var (
+	logTo    string
+	verbose  int
+	maxWidth int
+	format   string
+	colorize string
+	strict   bool
+	pretty   bool
 
-var grpcIpStackString string
-var grpcIpStack util.IPStack
-var grpcAddress string
-var grpcPort uint
-var grpcFormat string
-var grpcTimeout float64
+	grpcIpStackString string
+	grpcIpStack       util.IPStack
+	grpcAddress       string
+	grpcPort          uint
+	grpcFormat        string
+	grpcTimeout       float64
+)
 
 func init() {
 	rootCommand.PersistentFlags().BoolVarP(&terminal.Quiet, "quiet", "q", false, "suppress output")

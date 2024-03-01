@@ -2,6 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 from tko import tko_pb2 as tko_dot_tko__pb2
 
 
@@ -14,6 +15,11 @@ class APIStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.about = channel.unary_unary(
+                '/tko.API/about',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=tko_dot_tko__pb2.AboutResponse.FromString,
+                )
         self.registerTemplate = channel.unary_unary(
                 '/tko.API/registerTemplate',
                 request_serializer=tko_dot_tko__pb2.Template.SerializeToString,
@@ -113,6 +119,12 @@ class APIStub(object):
 
 class APIServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def about(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def registerTemplate(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -231,6 +243,11 @@ class APIServicer(object):
 
 def add_APIServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'about': grpc.unary_unary_rpc_method_handler(
+                    servicer.about,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=tko_dot_tko__pb2.AboutResponse.SerializeToString,
+            ),
             'registerTemplate': grpc.unary_unary_rpc_method_handler(
                     servicer.registerTemplate,
                     request_deserializer=tko_dot_tko__pb2.Template.FromString,
@@ -335,6 +352,23 @@ def add_APIServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class API(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def about(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tko.API/about',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            tko_dot_tko__pb2.AboutResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def registerTemplate(request,

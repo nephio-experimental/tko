@@ -18,6 +18,8 @@ import (
 type Server struct {
 	api.UnimplementedAPIServer
 
+	InstanceName           string
+	InstanceDescription    string
 	Backend                backend.Backend
 	IPStack                util.IPStack
 	Address                string

@@ -9,8 +9,10 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var dashboardFrequency float64
-var timezone string
+var (
+	dashboardFrequency float64
+	timezone           string
+)
 
 func init() {
 	rootCommand.AddCommand(dashboardCommand)

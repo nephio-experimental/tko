@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	API_About_FullMethodName                        = "/tko.API/about"
 	API_RegisterTemplate_FullMethodName             = "/tko.API/registerTemplate"
 	API_DeleteTemplate_FullMethodName               = "/tko.API/deleteTemplate"
 	API_GetTemplate_FullMethodName                  = "/tko.API/getTemplate"
@@ -44,6 +46,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
+	About(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AboutResponse, error)
 	RegisterTemplate(ctx context.Context, in *Template, opts ...grpc.CallOption) (*RegisterResponse, error)
 	DeleteTemplate(ctx context.Context, in *TemplateID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetTemplate(ctx context.Context, in *GetTemplate, opts ...grpc.CallOption) (*Template, error)
@@ -71,6 +74,15 @@ type aPIClient struct {
 
 func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 	return &aPIClient{cc}
+}
+
+func (c *aPIClient) About(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AboutResponse, error) {
+	out := new(AboutResponse)
+	err := c.cc.Invoke(ctx, API_About_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *aPIClient) RegisterTemplate(ctx context.Context, in *Template, opts ...grpc.CallOption) (*RegisterResponse, error) {
@@ -340,6 +352,7 @@ func (x *aPIListPluginsClient) Recv() (*Plugin, error) {
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
+	About(context.Context, *emptypb.Empty) (*AboutResponse, error)
 	RegisterTemplate(context.Context, *Template) (*RegisterResponse, error)
 	DeleteTemplate(context.Context, *TemplateID) (*DeleteResponse, error)
 	GetTemplate(context.Context, *GetTemplate) (*Template, error)
@@ -366,6 +379,9 @@ type APIServer interface {
 type UnimplementedAPIServer struct {
 }
 
+func (UnimplementedAPIServer) About(context.Context, *emptypb.Empty) (*AboutResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method About not implemented")
+}
 func (UnimplementedAPIServer) RegisterTemplate(context.Context, *Template) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterTemplate not implemented")
 }
@@ -434,6 +450,24 @@ type UnsafeAPIServer interface {
 
 func RegisterAPIServer(s grpc.ServiceRegistrar, srv APIServer) {
 	s.RegisterService(&API_ServiceDesc, srv)
+}
+
+func _API_About_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).About(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: API_About_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).About(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _API_RegisterTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -797,6 +831,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "tko.API",
 	HandlerType: (*APIServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "about",
+			Handler:    _API_About_Handler,
+		},
 		{
 			MethodName: "registerTemplate",
 			Handler:    _API_RegisterTemplate_Handler,

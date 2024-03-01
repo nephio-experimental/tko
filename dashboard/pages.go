@@ -5,12 +5,47 @@ import (
 	"github.com/rivo/tview"
 )
 
+type UpdateTextFunc func(textView *tview.TextView)
+type UpdateTableFunc func(table *tview.Table)
+
 type Details interface {
 	GetTitle() string
 	GetText() string
 }
 
-func (self *Application) AddPage(name string, title string, key rune, updateTable UpdateTableFunc) {
+func (self *Application) AddTextPage(name string, title string, key rune, updateText UpdateTextFunc) {
+	text := tview.NewTextView().
+		SetDoneFunc(func(key tcell.Key) {
+			self.application.SetFocus(self.menu)
+		})
+
+	view := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(text, 0, 1, true)
+	view.
+		SetBorder(true).
+		SetTitle(title).
+		SetBlurFunc(func() {
+			if self.ticker != nil {
+				self.ticker.Stop()
+				self.ticker = nil
+			}
+		})
+
+	self.pages.AddPage(name, view, true, false)
+	self.menu.AddItem(title, "", key, func() {
+		self.pages.SwitchToPage(name)
+		self.application.SetFocus(text)
+		if updateText != nil {
+			self.ticker = NewTicker(self.application, self.frequency, func() {
+				updateText(text)
+			})
+			self.ticker.Start()
+		}
+	})
+}
+
+func (self *Application) AddTablePage(name string, title string, key rune, updateTable UpdateTableFunc) {
 	table := tview.NewTable()
 
 	openDetails := func(row int, column int) {

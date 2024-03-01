@@ -8,10 +8,12 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var mergeUrl string
-var siteId string
-var prepared bool
-var approved bool
+var (
+	mergeUrl string
+	siteId   string
+	prepared bool
+	approved bool
+)
 
 func init() {
 	deploymentCommand.AddCommand(deploymentCreateCommand)
@@ -30,7 +32,10 @@ var deploymentCreateCommand = &cobra.Command{
 	Short: "Create deployment",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		CreateDeployment(contextpkg.TODO(), parentDeploymentId, args[0], siteId, deploymentMetadata, prepared, approved, url, stdin)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		util.OnExit(cancel)
+
+		CreateDeployment(context, parentDeploymentId, args[0], siteId, deploymentMetadata, prepared, approved, url, stdin)
 	},
 }
 

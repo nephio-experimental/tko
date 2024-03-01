@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
@@ -17,20 +18,23 @@ import (
 
 const toolName = "tko"
 
-var log = commonlog.GetLogger(toolName)
-var clientLog = commonlog.NewScopeLogger(log, "client")
+var (
+	log                  = commonlog.GetLogger(toolName)
+	clientLog            = commonlog.NewScopeLogger(log, "client")
+	readResourcesTimeout = 10 * time.Second
 
-var url string
-var stdin bool
-var templateIdPatterns []string
-var siteIdPatterns []string
-var templateMetadata map[string]string
-var siteMetadata map[string]string
-var deploymentMetadata map[string]string
-var parentDeploymentId string
-var executor string
-var offset uint
-var maxCount uint
+	url                string
+	stdin              bool
+	templateIdPatterns []string
+	siteIdPatterns     []string
+	templateMetadata   map[string]string
+	siteMetadata       map[string]string
+	deploymentMetadata map[string]string
+	parentDeploymentId string
+	executor           string
+	offset             uint
+	maxCount           uint
+)
 
 func NewClient() *clientpkg.Client {
 	client := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), clientLog)

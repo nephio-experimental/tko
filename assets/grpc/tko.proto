@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 package tko;
@@ -7,6 +8,8 @@ package tko;
 option go_package = "github.com/nephio-experimental/tko/api/grpc";
 
 service API {
+    rpc about(google.protobuf.Empty) returns (AboutResponse);
+
     rpc registerTemplate(Template) returns (RegisterResponse);
     rpc deleteTemplate(TemplateID) returns (DeleteResponse);
     rpc getTemplate(GetTemplate) returns (Template);
@@ -29,6 +32,17 @@ service API {
     rpc deletePlugin(PluginID) returns (DeleteResponse);
     rpc getPlugin(PluginID) returns (Plugin);
     rpc listPlugins(ListPlugins) returns (stream Plugin);
+}
+
+message AboutResponse {
+    string instanceName = 1;
+    string instanceDescription = 2;
+    string tkoVersion = 3;
+    string backend = 4;
+    string ipStack = 5;
+    string address = 6;
+    uint32 port = 7;
+    string defaultResourcesFormat = 8;
 }
 
 message RegisterResponse {

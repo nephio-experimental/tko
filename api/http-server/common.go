@@ -4,6 +4,7 @@ import (
 	"io"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
@@ -24,4 +25,8 @@ func writeResources(writer io.Writer, resources util.Resources) {
 		content[index] = resource
 	}
 	transcribe.NewTranscriber().SetWriter(writer).SetIndentSpaces(2).WriteYAML(content)
+}
+
+func (self *Server) timestamp(timestamp time.Time) string {
+	return timestamp.In(self.Timezone).Format(TimeFormat)
 }

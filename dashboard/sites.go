@@ -7,7 +7,6 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/rivo/tview"
-	"github.com/tliron/go-transcribe"
 	"github.com/tliron/kutil/util"
 )
 
@@ -32,7 +31,7 @@ func (self *Application) UpdateSites(table *tview.Table) {
 					table.SetCellSimple(row, 1, "")
 				}
 				table.SetCellSimple(row, 2, strconv.Itoa(len(siteInfo.DeploymentIDs)))
-				table.SetCellSimple(row, 3, siteInfo.Updated.In(self.Timezone).Format(TimeFormat))
+				table.SetCellSimple(row, 3, self.timestamp(siteInfo.Updated))
 			}
 		}
 	}
@@ -56,7 +55,7 @@ func (self *SiteDetails) GetTitle() string {
 func (self *SiteDetails) GetText() string {
 	if site, ok, err := self.client.GetSite(self.siteId); err == nil {
 		if ok {
-			if s, err := transcribe.NewTranscriber().Stringify(ToSliceAny(site.Resources)); err == nil {
+			if s, err := transcriber.Stringify(ToSliceAny(site.Resources)); err == nil {
 				return s
 			} else {
 				return err.Error()

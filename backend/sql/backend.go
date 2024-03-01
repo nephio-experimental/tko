@@ -3,10 +3,14 @@ package sql
 import (
 	contextpkg "context"
 	"database/sql"
+	"fmt"
 
+	"github.com/nephio-experimental/tko/backend"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 )
+
+var _ backend.Backend = new(SQLBackend)
 
 //
 // SQLBackend
@@ -77,6 +81,12 @@ func (self *SQLBackend) Release(context contextpkg.Context) error {
 	} else {
 		return nil
 	}
+}
+
+// ([fmt.Stringer] interface)
+// ([backend.Backend] interface)
+func (self *SQLBackend) String() string {
+	return fmt.Sprintf("SQL driver=%s dataSource=%s resourcesFormat=%s", self.driver, self.dataSource, self.resourcesFormat)
 }
 
 // Utils

@@ -19,7 +19,10 @@ var deploymentModEndCommand = &cobra.Command{
 	Short: "End modification of a deployment",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		EndDeploymentModification(contextpkg.TODO(), args[0], url, stdin)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		util.OnExit(cancel)
+
+		EndDeploymentModification(context, args[0], url, stdin)
 	},
 }
 

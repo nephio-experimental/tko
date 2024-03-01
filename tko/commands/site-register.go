@@ -21,10 +21,13 @@ var siteRegisterCommand = &cobra.Command{
 	Short: "Register site",
 	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		util.OnExit(cancel)
+
 		if len(args) == 2 {
-			RegisterSite(contextpkg.TODO(), args[0], args[1], siteMetadata, url, stdin)
+			RegisterSite(context, args[0], args[1], siteMetadata, url, stdin)
 		} else {
-			RegisterSite(contextpkg.TODO(), args[0], "", siteMetadata, url, stdin)
+			RegisterSite(context, args[0], "", siteMetadata, url, stdin)
 		}
 	},
 }

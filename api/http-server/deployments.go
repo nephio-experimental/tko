@@ -19,8 +19,8 @@ func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Re
 				"parent":   deploymentInfo.ParentDeploymentID,
 				"site":     deploymentInfo.SiteID,
 				"metadata": deploymentInfo.Metadata,
-				"created":  deploymentInfo.Created.In(self.Timezone).Format(TimeFormat),
-				"updated":  deploymentInfo.Updated.In(self.Timezone).Format(TimeFormat),
+				"created":  self.timestamp(deploymentInfo.Created),
+				"updated":  self.timestamp(deploymentInfo.Updated),
 				"prepared": deploymentInfo.Prepared,
 				"approved": deploymentInfo.Approved,
 			})

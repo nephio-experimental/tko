@@ -20,7 +20,7 @@ func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request)
 				"template":    siteInfo.TemplateID,
 				"deployments": siteInfo.DeploymentIDs,
 				"metadata":    siteInfo.Metadata,
-				"updated":     siteInfo.Updated.In(self.Timezone).Format(TimeFormat),
+				"updated":     self.timestamp(siteInfo.Updated),
 			})
 			return nil
 		}); err != nil {

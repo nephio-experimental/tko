@@ -15,6 +15,7 @@ import (
 type Backend interface {
 	Connect(context contextpkg.Context) error
 	Release(context contextpkg.Context) error
+	String() string
 
 	// Owns and may change the contents of the template argument.
 	// Ignores template DeploymentIDs.

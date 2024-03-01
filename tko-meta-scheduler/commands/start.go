@@ -12,14 +12,16 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-var interval float64
-var grpcIpStackString string
-var grpcIpStack util.IPStack
-var grpcAddress string
-var grpcPort uint
-var grpcFormat string
-var grpcTimeout float64
-var schedulerTimeout float64
+var (
+	interval          float64
+	grpcIpStackString string
+	grpcIpStack       util.IPStack
+	grpcAddress       string
+	grpcPort          uint
+	grpcFormat        string
+	grpcTimeout       float64
+	schedulerTimeout  float64
+)
 
 func init() {
 	rootCommand.AddCommand(startCommand)

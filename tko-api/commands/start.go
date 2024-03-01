@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"context"
+	contextpkg "context"
 	"os"
 	"time"
 
@@ -23,36 +23,55 @@ import (
 
 const maxModificationDuration = 10 // seconds
 
-var backendName string
-var backendConnection string
-var backendClean bool
-var grpcIpStackString string
-var grpcIpStack util.IPStack
-var grpcAddress string
-var grpcPort uint
-var grpcFormat string
-var grpcTimeout float64
-var webTimeout float64
-var webIpStackString string
-var webIpStack util.IPStack
-var webAddress string
-var webPort uint
-var webTimezone string
-var kubernetes bool
-var kubernetesPort uint
-var validatorTimeout float64
+var (
+	instanceName        string
+	instanceDescription string
+
+	backendName       string
+	backendConnection string
+	backendClean      bool
+
+	grpc              bool
+	grpcIpStackString string
+	grpcIpStack       util.IPStack
+	grpcAddress       string
+	grpcPort          uint
+	grpcFormat        string
+	grpcTimeout       float64
+
+	web              bool
+	webTimeout       float64
+	webIpStackString string
+	webIpStack       util.IPStack
+	webAddress       string
+	webPort          uint
+	webTimezone      string
+
+	kubernetes     bool
+	kubernetesPort uint
+
+	validatorTimeout float64
+
+	ResetValidationPluginCacheFrequency = 10 * time.Second
+	BackendConnectTimeout               = 10 * time.Second
+	BackendReleaseTimeout               = 10 * time.Second
+)
 
 func init() {
 	rootCommand.AddCommand(startCommand)
 
+	startCommand.Flags().StringVar(&instanceName, "name", "Local", "instance name")
+	startCommand.Flags().StringVar(&instanceDescription, "description", "", "instance description")
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
 	startCommand.Flags().StringVar(&backendConnection, "backend-connection", "postgresql://tko:tko@localhost:5432/tko", "backend connection")
 	startCommand.Flags().BoolVar(&backendClean, "backend-clean", false, "clean backend data on startup")
+	startCommand.Flags().BoolVar(&grpc, "grpc", true, "start gRPC server")
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "bind IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "bind address for gRPC server")
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "bind HTTP/2 port for gRPC server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources over gRPC (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 5.0, "gRPC timeout in seconds")
+	startCommand.Flags().BoolVar(&web, "web", true, "start web server")
 	startCommand.Flags().Float64Var(&webTimeout, "web-timeout", 5.0, "web read/write timeout in seconds")
 	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
@@ -113,27 +132,38 @@ func Serve() {
 	// Wrap backend with validation
 	validation, err := validationpkg.NewValidation(client, tkoutil.SecondsToDuration(validatorTimeout), commonlog.GetLogger("validation"))
 	util.FailOnError(err)
-	validationTicker := tkoutil.NewTicker(10*time.Second, validation.ResetPluginCache)
+	validationTicker := tkoutil.NewTicker(ResetValidationPluginCacheFrequency, validation.ResetPluginCache)
 	util.OnExit(validationTicker.Stop)
 	backend = backendpkg.NewValidatingBackend(backend, validation)
 
-	util.FailOnError(backend.Connect(context.TODO()))
+	util.FailOnError(func() error {
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), BackendConnectTimeout)
+		defer cancel()
+		return backend.Connect(context)
+	}())
 	util.OnExitError(func() error {
-		return backend.Release(context.TODO())
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), BackendReleaseTimeout)
+		defer cancel()
+		return backend.Release(context)
 	})
 
-	// gRPC
-	grpcServer := grpcserver.NewServer(backend, grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("grpc"))
-	util.FailOnError(grpcServer.Start())
-	util.OnExit(grpcServer.Stop)
+	if grpc {
+		grpcServer := grpcserver.NewServer(backend, grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, commonlog.GetLogger("grpc"))
+		grpcServer.InstanceName = instanceName
+		grpcServer.InstanceDescription = instanceDescription
+		util.FailOnError(grpcServer.Start())
+		util.OnExit(grpcServer.Stop)
+	}
 
-	// HTTP
-	httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), webTimezone_, commonlog.GetLogger("http"))
-	util.FailOnError(err)
-	util.FailOnError(httpServer.Start())
-	util.OnExit(httpServer.Stop)
+	if web {
+		httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), webTimezone_, commonlog.GetLogger("http"))
+		util.FailOnError(err)
+		httpServer.InstanceName = instanceName
+		httpServer.InstanceDescription = instanceDescription
+		util.FailOnError(httpServer.Start())
+		util.OnExit(httpServer.Stop)
+	}
 
-	// Kubernetes
 	if kubernetes {
 		kubernetesServer := kubernetesserver.NewServer(backend, int(kubernetesPort), commonlog.GetLogger("kubernetes"))
 		util.FailOnError(kubernetesServer.Start())

@@ -8,9 +8,9 @@ import (
 	"github.com/rivo/tview"
 )
 
-type UpdateTableFunc func(*tview.Table)
-
 type GetYAMLFunc func(id any) (string, string, error)
+
+const TimeFormat = "2006/01/02 15:04:05"
 
 //
 // Application
@@ -61,10 +61,11 @@ func NewApplication(client *clientpkg.Client, frequency time.Duration, timezone 
 		SetBorder(true).
 		SetTitle("TKO (PoC)")
 
-	self.AddPage("deployments", "Deployments", 'd', self.UpdateDeployments)
-	self.AddPage("sites", "Sites", 's', self.UpdateSites)
-	self.AddPage("templates", "Templates", 't', self.UpdateTemplates)
-	self.AddPage("plugins", "Plugins", 'p', self.UpdatePlugins)
+	self.AddTextPage("about", "About", 'a', self.UpdateAbout)
+	self.AddTablePage("deployments", "Deployments", 'd', self.UpdateDeployments)
+	self.AddTablePage("sites", "Sites", 's', self.UpdateSites)
+	self.AddTablePage("templates", "Templates", 't', self.UpdateTemplates)
+	self.AddTablePage("plugins", "Plugins", 'p', self.UpdatePlugins)
 	self.menu.AddItem("Quit", "", 'q', self.application.Stop)
 	self.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, 'd', tcell.ModNone))
 
@@ -79,4 +80,8 @@ func NewApplication(client *clientpkg.Client, frequency time.Duration, timezone 
 		SetFocus(layout)
 
 	return &self
+}
+
+func (self *Application) timestamp(timestamp time.Time) string {
+	return timestamp.In(self.Timezone).Format(TimeFormat)
 }

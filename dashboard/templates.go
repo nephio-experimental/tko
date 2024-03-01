@@ -7,7 +7,6 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/rivo/tview"
-	"github.com/tliron/go-transcribe"
 	"github.com/tliron/kutil/util"
 )
 
@@ -27,7 +26,7 @@ func (self *Application) UpdateTemplates(table *tview.Table) {
 				row++
 				table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
 				table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
-				table.SetCellSimple(row, 2, templateInfo.Updated.In(self.Timezone).Format(TimeFormat))
+				table.SetCellSimple(row, 2, self.timestamp(templateInfo.Updated))
 			}
 		}
 	}
@@ -51,7 +50,7 @@ func (self *TemplateDetails) GetTitle() string {
 func (self *TemplateDetails) GetText() string {
 	if template, ok, err := self.client.GetTemplate(self.templateId); err == nil {
 		if ok {
-			if s, err := transcribe.NewTranscriber().Stringify(ToSliceAny(template.Resources)); err == nil {
+			if s, err := transcriber.Stringify(ToSliceAny(template.Resources)); err == nil {
 				return s
 			} else {
 				return err.Error()

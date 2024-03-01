@@ -4,7 +4,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/rivo/tview"
+	"github.com/tliron/go-transcribe"
 )
+
+var transcriber = transcribe.NewTranscriber().SetIndentSpaces(2)
 
 func GetListMinSize(list *tview.List) (int, int) {
 	w := 0

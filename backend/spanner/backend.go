@@ -5,8 +5,11 @@ import (
 
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
+	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/commonlog"
 )
+
+var _ backend.Backend = new(SpannerBackend)
 
 //
 // SpannerBackend
@@ -55,4 +58,10 @@ func (self *SpannerBackend) Release(context contextpkg.Context) error {
 		return self.admin.Close()
 	}
 	return nil
+}
+
+// ([fmt.Stringer] interface)
+// ([backend.Backend] interface)
+func (self *SpannerBackend) String() string {
+	return "Spanner"
 }
