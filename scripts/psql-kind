@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+"$HERE/kubectl-kind" exec deployment/postgresql --stdin --tty --namespace=tko -- psql =h localhost -d tko -U tko "$@"

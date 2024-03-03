@@ -4,6 +4,8 @@ set -e
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
+not_root
+
 git_version
 
 function build () {

@@ -42,7 +42,7 @@ func NewSQLBackend(driver string, dataSource string, resourcesFormat string, max
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) Connect(context contextpkg.Context) error {
-	self.log.Notice("connect")
+	self.log.Noticef("connect: driver=%s dataSource=%s", self.driver, self.dataSource)
 	var err error
 	if self.db, err = sql.Open(self.driver, self.dataSource); err == nil {
 		self.statements = NewStatements(self.driver, self.db, self.log)
@@ -72,7 +72,7 @@ func (self *SQLBackend) Connect(context contextpkg.Context) error {
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) Release(context contextpkg.Context) error {
-	self.log.Notice("release")
+	self.log.Noticef("release: driver=%s dataSource=%s", self.driver, self.dataSource)
 	if self.statements != nil {
 		self.statements.Release()
 	}

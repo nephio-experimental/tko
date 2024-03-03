@@ -3,6 +3,9 @@ kind: APIService
 
 metadata:
   name: v1alpha1.tko.nephio.org
+  labels:
+    app.kubernetes.io/name: tko-api
+    app.kubernetes.io/part-of: tko
 
 spec:
   group: tko.nephio.org

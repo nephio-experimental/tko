@@ -4,4 +4,6 @@ set -e
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
+not_root
+
 tko --grpc-port=30050 --grpc-ip-stack=ipv4 "$@"

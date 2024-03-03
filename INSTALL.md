@@ -47,10 +47,7 @@ Kubernetes Cluster
 
 TKO can run in a Kubernetes cluster with a rich KRM aggregated API. We provide a quick
 setup on top of [Kind](https://kind.sigs.k8s.io/) using TKO container images published
-on [Docker Hub](https://hub.docker.com/u/tliron).
-
-Our Kind setup is currenbtly minimal. It uses the memory backend, rather than PostgreSQL,
-and will not provision new local clusters (to avoid running Kind inside Kind).
+on [Docker Hub](https://hub.docker.com/u/tliron) with a simple PostgreSQL instance.
 
 To create the Kind cluster:
 

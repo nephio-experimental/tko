@@ -4,20 +4,25 @@ kind: Deployment
 metadata:
   name: tko-meta-scheduler
   namespace: tko
+  labels:
+    app.kubernetes.io/name: tko-meta-scheduler
+    app.kubernetes.io/part-of: tko
 
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: tko-meta-scheduler
+      app.kubernetes.io/part-of: tko
   template:
     metadata:
       labels:
         app.kubernetes.io/name: tko-meta-scheduler
+        app.kubernetes.io/part-of: tko
     spec:
       containers:
       - name: tko-meta-scheduler
-        image: tliron/tko-meta-scheduler:latest
+        image: tko-meta-scheduler
         imagePullPolicy: Always
         env:
         - name: TKO_grpc-address

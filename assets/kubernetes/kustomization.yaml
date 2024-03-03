@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tko
+
+resources:
+- admin/namespace.yaml
+- admin/rbac.yaml
+- admin/api.yaml
+- workloads/tko-api.yaml
+- workloads/tko-preparer.yaml
+- workloads/tko-meta-scheduler.yaml
+- workloads/tko-runner.yaml
+- workloads/postgresql.yaml
+
+images:
+- name: tko-api
+  newName: tliron/tko-api
+  newTag: latest
+- name: tko-preparer
+  newName: tliron/tko-preparer
+  newTag: latest
+- name: tko-meta-scheduler
+  newName: tliron/tko-meta-scheduler
+  newTag: latest
+- name: tko-runner
+  newName: tliron/tko-runner
+  newTag: latest
+- name: postgresql
+  newName: postgres # see: https://hub.docker.com/_/postgres
+  newTag: "16.2-alpine"

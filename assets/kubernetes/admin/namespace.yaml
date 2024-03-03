@@ -3,3 +3,5 @@ kind: Namespace
 
 metadata:
   name: tko
+  labels:
+    app.kubernetes.io/part-of: tko

@@ -4,6 +4,9 @@ kind: Cluster
 name: tko
 nodes:
 - role: control-plane
+  extraMounts:
+  - containerPath: /mnt/postgresql
+    hostPath: /tmp/postgresql # will be owned by root user
   extraPortMappings:
   - containerPort: 30050
     hostPort: 30050

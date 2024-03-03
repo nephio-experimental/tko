@@ -5,10 +5,18 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 . "$HERE/_trap"
 
+not_root
+
 if [ "$1" == -c ]; then
 	m 'deleting cluster...'
 	kind delete cluster --name=tko || true
 fi
+
+# if [ ! -d /var/local-path-provisioner ]; then
+# 	m 'setting up Kind local path provisioner for "standard" storage class (via sudo)...'
+# 	sudo mkdir --parents /var/local-path-provisioner
+# 	sudo chown "$SUDO_USER" /var/local-path-provisioner
+# fi
 
 m 'creating cluster...'
 
@@ -16,24 +24,27 @@ kind create cluster --config="$ROOT/assets/kubernetes/kind/tko.yaml" || true
 
 if [ "$1" == -d ]; then
 	m 'deleting TKO...'
-	"$HERE/kubectl-kind" delete -f "$ROOT/assets/kubernetes/workloads/tko-api.yaml" || true
-	"$HERE/kubectl-kind" delete -f "$ROOT/assets/kubernetes/admin/" || true
+	"$HERE/kubectl-kind" delete --kustomize="$ROOT/assets/kubernetes/" || true
+	#"$HERE/kubectl-kind" delete --filename="$ROOT/assets/kubernetes/workloads/" || true
+	#"$HERE/kubectl-kind" delete --filename="$ROOT/assets/kubernetes/admin/" || true
 fi
 
 m 'deploying TKO...'
 
-"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/admin/"
-"$HERE/kubectl-kind" apply -f "$ROOT/assets/kubernetes/workloads/"
+"$HERE/kubectl-kind" apply --kustomize="$ROOT/assets/kubernetes/"
+#"$HERE/kubectl-kind" apply --filename="$ROOT/assets/kubernetes/admin/"
+#"$HERE/kubectl-kind" apply --filename="$ROOT/assets/kubernetes/workloads/"
 
 m 'waiting for TKO...'
 
-"$HERE/kubectl-kind" wait --for=condition=available --timeout=60s --namespace=tko deployment/tko-api
-"$HERE/kubectl-kind" wait --for=condition=available --timeout=60s apiservice/v1alpha1.tko.nephio.org
+"$HERE/kubectl-kind" wait deployment/postgresql --for=condition=available --timeout=60s --namespace=tko
+"$HERE/kubectl-kind" wait deployment/tko-api --for=condition=available --timeout=60s --namespace=tko
+"$HERE/kubectl-kind" wait apiservice/v1alpha1.tko.nephio.org --for=condition=available --timeout=60s
 
 m 'creating KRM...'
 
-"$HERE/kubectl-kind" apply -f "$ROOT/examples/kubernetes/templates.yaml"
-"$HERE/kubectl-kind" apply -f "$ROOT/examples/kubernetes/sites.yaml"
-"$HERE/kubectl-kind" create -f "$ROOT/examples/kubernetes/deployments.yaml"
+"$HERE/kubectl-kind" apply --filename="$ROOT/examples/kubernetes/templates.yaml"
+"$HERE/kubectl-kind" apply --filename="$ROOT/examples/kubernetes/sites.yaml"
+"$HERE/kubectl-kind" create --filename="$ROOT/examples/kubernetes/deployments.yaml"
 
 "$HERE/test-scenario" remote "$HERE/tko-kind"

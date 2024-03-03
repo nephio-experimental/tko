@@ -1,0 +1,117 @@
+# See:
+#   https://www.digitalocean.com/community/tutorials/how-to-deploy-postgres-to-kubernetes-cluster#create-a-persistentvolume-pv-and-a-persistentvolumeclaim-pvc
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: postgresql
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/part-of: tko
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/part-of: tko
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/part-of: tko
+    spec:
+      containers:
+      - name: postgresql
+        image: postgresql
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: "2"
+        env:
+        - name: POSTGRES_DB
+          value: tko
+        - name: POSTGRES_USER
+          value: tko
+        - name: POSTGRES_PASSWORD
+          value: tko
+        - name: POSTGRES_INITDB_ARGS
+          value: --no-instructions --no-sync
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        ports:
+        - name: postgresql
+          containerPort: 5432
+      volumes:
+      - name: postgresql-data
+        persistentVolumeClaim:
+          claimName: postgresql-data
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: postgresql
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/part-of: tko
+
+spec:
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/part-of: tko
+  ports:
+  - name: postgresql
+    port: 5432
+    targetPort: postgresql
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: postgresql-data
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/part-of: tko
+
+spec:
+  storageClassName: manual
+  #storageClassName: standard # this is the rancher.io/local-path provisioner in Kind
+  accessModes:
+  - ReadWriteMany # rancher.io/local-path only supports ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+
+metadata:
+  name: postgresql-data
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/part-of: tko
+
+spec:
+  claimRef:
+    name: postgresql-data
+    namespace: tko
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: /mnt/postgresql # see kind.yaml

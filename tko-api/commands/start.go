@@ -27,9 +27,10 @@ var (
 	instanceName        string
 	instanceDescription string
 
-	backendName       string
-	backendConnection string
-	backendClean      bool
+	backendName           string
+	backendConnection     string
+	backendConnectTimeout float64
+	backendClean          bool
 
 	grpc              bool
 	grpcIpStackString string
@@ -53,7 +54,6 @@ var (
 	validatorTimeout float64
 
 	ResetValidationPluginCacheFrequency = 10 * time.Second
-	BackendConnectTimeout               = 10 * time.Second
 	BackendReleaseTimeout               = 10 * time.Second
 )
 
@@ -64,6 +64,7 @@ func init() {
 	startCommand.Flags().StringVar(&instanceDescription, "description", "", "instance description")
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
 	startCommand.Flags().StringVar(&backendConnection, "backend-connection", "postgresql://tko:tko@localhost:5432/tko", "backend connection")
+	startCommand.Flags().Float64Var(&backendConnectTimeout, "backend-connection-timeout", 30.0, "backend connection timeout in seconds")
 	startCommand.Flags().BoolVar(&backendClean, "backend-clean", false, "clean backend data on startup")
 	startCommand.Flags().BoolVar(&grpc, "grpc", true, "start gRPC server")
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "bind IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
@@ -137,7 +138,7 @@ func Serve() {
 	backend = backendpkg.NewValidatingBackend(backend, validation)
 
 	util.FailOnError(func() error {
-		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), BackendConnectTimeout)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), tkoutil.SecondsToDuration(backendConnectTimeout))
 		defer cancel()
 		return backend.Connect(context)
 	}())

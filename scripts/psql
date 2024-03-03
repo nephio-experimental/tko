@@ -4,4 +4,6 @@ set -e
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
+not_root
+
 PGPASSWORD=tko psql -h localhost -d tko -U tko "$@"

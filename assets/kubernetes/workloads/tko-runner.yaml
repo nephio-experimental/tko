@@ -4,20 +4,25 @@ kind: Deployment
 metadata:
   name: tko-runner
   namespace: tko
+  labels:
+    app.kubernetes.io/name: tko-runner
+    app.kubernetes.io/part-of: tko
 
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: tko-runner
+      app.kubernetes.io/part-of: tko
   template:
     metadata:
       labels:
         app.kubernetes.io/name: tko-runner
+        app.kubernetes.io/part-of: tko
     spec:
       containers:
       - name: tko-runner
-        image: tliron/tko-runner:latest
+        image: tko-runner
         imagePullPolicy: Always
         ports:
         - name: grpc
@@ -31,11 +36,15 @@ kind: Service
 metadata:
   name: tko-runner
   namespace: tko
+  labels:
+    app.kubernetes.io/name: tko-runner
+    app.kubernetes.io/part-of: tko
 
 spec:
   type: NodePort
   selector:
     app.kubernetes.io/name: tko-runner
+    app.kubernetes.io/part-of: tko
   ports:
   - name: grpc
     port: 50050
