@@ -19,9 +19,9 @@ var _ backend.Backend = new(SQLBackend)
 type SQLBackend struct {
 	DropTablesFirst bool
 
-	driver          string
-	dataSource      string
-	resourcesFormat string
+	driver        string
+	dataSource    string
+	packageFormat string
 
 	statements *Statements
 	db         *sql.DB
@@ -30,11 +30,11 @@ type SQLBackend struct {
 	maxModificationDuration int64 // microseconds
 }
 
-func NewSQLBackend(driver string, dataSource string, resourcesFormat string, maxModificationDurationSeconds float64, log commonlog.Logger) *SQLBackend {
+func NewSQLBackend(driver string, dataSource string, packageFormat string, maxModificationDurationSeconds float64, log commonlog.Logger) *SQLBackend {
 	return &SQLBackend{
 		driver:                  driver,
 		dataSource:              dataSource,
-		resourcesFormat:         resourcesFormat,
+		packageFormat:           packageFormat,
 		log:                     log,
 		maxModificationDuration: int64(maxModificationDurationSeconds * 1_000_000.0),
 	}
@@ -86,7 +86,7 @@ func (self *SQLBackend) Release(context contextpkg.Context) error {
 // ([fmt.Stringer] interface)
 // ([backend.Backend] interface)
 func (self *SQLBackend) String() string {
-	return fmt.Sprintf("SQL driver=%s dataSource=%s resourcesFormat=%s", self.driver, self.dataSource, self.resourcesFormat)
+	return fmt.Sprintf("SQL driver=%s dataSource=%s packageFormat=%s", self.driver, self.dataSource, self.packageFormat)
 }
 
 // Utils
@@ -103,10 +103,10 @@ func (self *SQLBackend) closeRows(rows *sql.Rows) {
 	}
 }
 
-func (self *SQLBackend) encodeResources(resources util.Resources) ([]byte, error) {
-	return util.EncodeResources(self.resourcesFormat, resources)
+func (self *SQLBackend) encodePackage(package_ util.Package) ([]byte, error) {
+	return util.EncodePackage(self.packageFormat, package_)
 }
 
-func (self *SQLBackend) decodeResources(content []byte) (util.Resources, error) {
-	return util.DecodeResources(self.resourcesFormat, content)
+func (self *SQLBackend) decodePackage(content []byte) (util.Package, error) {
+	return util.DecodePackage(self.packageFormat, content)
 }

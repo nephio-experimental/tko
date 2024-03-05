@@ -13,28 +13,28 @@ type Context struct {
 	Preparation             *Preparation
 	Log                     commonlog.Logger
 	DeploymentID            string
-	DeploymentResources     util.Resources
+	DeploymentPackage       util.Package
 	TargetResourceIdentifer util.ResourceIdentifier
 }
 
-func (self *Preparation) NewContext(deploymentId string, deploymentResources util.Resources, targetResourceIdentifer util.ResourceIdentifier, log commonlog.Logger) *Context {
+func (self *Preparation) NewContext(deploymentId string, deploymentPackage util.Package, targetResourceIdentifer util.ResourceIdentifier, log commonlog.Logger) *Context {
 	return &Context{
 		Preparation:             self,
 		Log:                     log,
 		DeploymentID:            deploymentId,
-		DeploymentResources:     deploymentResources,
+		DeploymentPackage:       deploymentPackage,
 		TargetResourceIdentifer: targetResourceIdentifer,
 	}
 }
 
-func (self *Context) GetResource() (util.Resource, bool) {
-	return self.TargetResourceIdentifer.GetResource(self.DeploymentResources)
+func (self *Context) GetTargetResource() (util.Resource, bool) {
+	return self.TargetResourceIdentifer.GetResource(self.DeploymentPackage)
 }
 
-func (self *Context) GetMergeResources(objectReferences []any) (bool, util.Resources, error) {
-	if resources, err := util.GetReferentResources(objectReferences, self.DeploymentResources); err == nil {
+func (self *Context) GetMergePackage(objectReferences []any) (bool, util.Package, error) {
+	if package_, err := util.GetReferentPackage(objectReferences, self.DeploymentPackage); err == nil {
 		// Ensure that all mergeable resources have been prepared if they must be prepared
-		for _, resource := range resources {
+		for _, resource := range package_ {
 			if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 				if shouldPrepare, _ := self.Preparation.IsResourcePreparable(resourceIdentifier, resource, nil); shouldPrepare {
 					self.Log.Info("aborting merge due to uprepared resource",
@@ -44,7 +44,7 @@ func (self *Context) GetMergeResources(objectReferences []any) (bool, util.Resou
 			}
 		}
 
-		return true, util.PrepareResourcesForMerge(resources), nil
+		return true, util.PreparePackageForMerge(package_), nil
 	} else {
 		return false, nil, err
 	}

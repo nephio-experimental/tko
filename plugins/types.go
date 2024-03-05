@@ -1,4 +1,4 @@
-package util
+package plugins
 
 func IsValidPluginType(type_ string, allowEmpty bool) bool {
 	switch type_ {

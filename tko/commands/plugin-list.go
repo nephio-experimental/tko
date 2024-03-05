@@ -3,6 +3,7 @@ package commands
 import (
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/nephio-experimental/tko/backend"
+	"github.com/nephio-experimental/tko/plugins"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
@@ -35,8 +36,8 @@ var pluginListCommand = &cobra.Command{
 }
 
 func ListPlugins(offset uint, maxCount uint, type_ string, namePatterns []string, executor string, trigger *tkoutil.GVK) {
-	if !tkoutil.IsValidPluginType(type_, true) {
-		util.Failf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, type_)
+	if !plugins.IsValidPluginType(type_, true) {
+		util.Failf("plugin type must be %s: %s", plugins.PluginTypesDescription, type_)
 	}
 
 	pluginInfos, err := NewClient().ListPlugins(client.ListPlugins{

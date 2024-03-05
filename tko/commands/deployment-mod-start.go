@@ -12,7 +12,7 @@ import (
 func init() {
 	deploymentModCommand.AddCommand(deploymentModStartCommand)
 
-	deploymentModStartCommand.Flags().StringVarP(&url, "url", "u", "", "URL for YAML content output (can be a local directory or file)")
+	deploymentModStartCommand.Flags().StringVarP(&url, "url", "u", "", "URL for package YAML manifests output (can be a local directory or file)")
 }
 
 var deploymentModStartCommand = &cobra.Command{
@@ -25,7 +25,7 @@ var deploymentModStartCommand = &cobra.Command{
 }
 
 func StartDeploymentModification(deploymentId string, url string) {
-	ok, reason, modificationToken, resources, err := NewClient().StartDeploymentModification(deploymentId)
+	ok, reason, modificationToken, package_, err := NewClient().StartDeploymentModification(deploymentId)
 	FailOnGRPCError(err)
 	if ok {
 		log.Noticef("started modification: %s", deploymentId)
@@ -44,9 +44,9 @@ func StartDeploymentModification(deploymentId string, url string) {
 		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		util.FailOnError(err)
 		util.OnExitError(file.Close)
-		WriteResources(file, resources)
+		WritePackage(file, package_)
 		util.FailOnError(err)
 	} else {
-		PrintResources(resources)
+		PrintPackage(package_)
 	}
 }

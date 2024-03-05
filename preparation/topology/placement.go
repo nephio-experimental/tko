@@ -13,15 +13,15 @@ import (
 var PlacementGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Placement")
 
 type Deployment struct {
-	TemplateID     string
-	MergeResources tkoutil.Resources
-	SiteID         string
-	Site           tkoutil.Resource
+	TemplateID   string
+	MergePackage tkoutil.Package
+	SiteID       string
+	Site         tkoutil.Resource
 }
 
 // ([preparation.PrepareFunc] signature)
-func PreparePlacement(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Resources, error) {
-	if placement, ok := preparationContext.GetResource(); ok {
+func PreparePlacement(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Package, error) {
+	if placement, ok := preparationContext.GetTargetResource(); ok {
 		prepared := true
 		var deployments []Deployment
 
@@ -32,7 +32,7 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 			if templateName, ok := template_.Get("template").String(); ok {
 				if templateId, ok := GetTemplateID(preparationContext, templateName); ok {
 					merge, _ := template_.Get("merge").List()
-					_, mergeResources, err := preparationContext.GetMergeResources(merge)
+					_, mergePackage, err := preparationContext.GetMergePackage(merge)
 					if err != nil {
 						return false, nil, err
 					}
@@ -41,13 +41,13 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 					for _, siteName := range siteNames {
 						if siteIds, ok := GetSiteIDs(preparationContext, siteName); ok {
 							for _, siteId := range siteIds {
-								deployments = append(deployments, Deployment{templateId, mergeResources, siteId, nil})
+								deployments = append(deployments, Deployment{templateId, mergePackage, siteId, nil})
 							}
 							continue
 						}
 
 						if siteId, ok := GetSiteID(preparationContext, siteName); ok {
-							deployments = append(deployments, Deployment{templateId, mergeResources, siteId, nil})
+							deployments = append(deployments, Deployment{templateId, mergePackage, siteId, nil})
 							continue
 						}
 
@@ -94,7 +94,7 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 
 		if prepared {
 			for _, deployment := range deployments {
-				if ok, reason, deploymentId, err := preparationContext.Preparation.Client.CreateDeployment(preparationContext.DeploymentID, deployment.TemplateID, deployment.SiteID, nil, false, false, deployment.MergeResources); err == nil {
+				if ok, reason, deploymentId, err := preparationContext.Preparation.Client.CreateDeployment(preparationContext.DeploymentID, deployment.TemplateID, deployment.SiteID, nil, false, false, deployment.MergePackage); err == nil {
 					if ok {
 						preparationContext.Log.Infof("created deployment %s (%s) for site %s", deploymentId, deployment.TemplateID, deployment.SiteID)
 						/*AppendStatusDeploymentID(placement, deploymentId)
@@ -114,7 +114,7 @@ func PreparePlacement(context contextpkg.Context, preparationContext *preparatio
 			}
 		}
 
-		return true, preparationContext.DeploymentResources, nil
+		return true, preparationContext.DeploymentPackage, nil
 	}
 
 	return false, nil, nil

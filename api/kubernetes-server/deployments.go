@@ -52,7 +52,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			if updatedDeployment, err := DeploymentFromKRM(updatedObject); err == nil {
 				if modificationToken, deployment, err := store.Backend.StartDeploymentModification(context, updatedDeployment.DeploymentID); err == nil {
 					if ResourceVersionsEqual(deployment.Updated, updatedDeployment.Updated) {
-						if _, err := store.Backend.EndDeploymentModification(context, modificationToken, updatedDeployment.Resources, nil); err == nil {
+						if _, err := store.Backend.EndDeploymentModification(context, modificationToken, updatedDeployment.Package, nil); err == nil {
 							return updatedObject, nil
 						} else {
 							return nil, err
@@ -213,7 +213,7 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (*krm.Deploy
 
 func DeploymentToKRM(deployment *backendpkg.Deployment) (*krm.Deployment, error) {
 	if krmDeployment, err := DeploymentInfoToKRM(&deployment.DeploymentInfo); err == nil {
-		krmDeployment.Spec.Package = ResourcesToKRM(deployment.Resources)
+		krmDeployment.Spec.Package = PackageToKRM(deployment.Package)
 		return krmDeployment, nil
 	} else {
 		return nil, err
@@ -267,7 +267,7 @@ func DeploymentFromKRM(object runtime.Object) (*backendpkg.Deployment, error) {
 		deployment.Approved = *krmDeployment.Status.Approved
 	}
 
-	deployment.Resources = ResourcesFromKRM(krmDeployment.Spec.Package)
+	deployment.Package = PackageFromKRM(krmDeployment.Spec.Package)
 
 	return &deployment, nil
 }

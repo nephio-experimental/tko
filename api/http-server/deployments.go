@@ -40,7 +40,7 @@ func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Re
 func (self *Server) GetDeployment(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if deploymentInfo, err := self.Backend.GetDeployment(request.Context(), id); err == nil {
-		writeResources(writer, deploymentInfo.Resources)
+		writePackage(writer, deploymentInfo.Package)
 	} else {
 		writer.WriteHeader(500)
 	}

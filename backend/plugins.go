@@ -79,7 +79,7 @@ func (self *Plugin) Clone() *Plugin {
 	return &Plugin{
 		PluginID:   self.PluginID,
 		Executor:   self.Executor,
-		Arguments:  util.CloneStringSet(self.Arguments),
+		Arguments:  util.CloneStringList(self.Arguments),
 		Properties: util.CloneStringMap(self.Properties),
 	}
 }

@@ -39,12 +39,12 @@ func (self *DeploymentInfo) Clone() DeploymentInfo {
 	}
 }
 
-func (self *DeploymentInfo) UpdateFromResources(resources util.Resources, withMetadata bool) {
+func (self *DeploymentInfo) UpdateFromPackage(package_ util.Package, withMetadata bool) {
 	if withMetadata {
-		updateMetadataFromResources(self.Metadata, resources)
+		updateMetadataFromPackage(self.Metadata, package_)
 	}
 
-	if deployment, ok := util.DeploymentResourceIdentifier.GetResource(resources); ok {
+	if deployment, ok := util.DeploymentResourceIdentifier.GetResource(package_); ok {
 		self.Prepared = util.IsPreparedAnnotation(deployment)
 		self.Approved = util.IsApprovedAnnotation(deployment)
 		spec := ard.With(deployment).Get("spec")
@@ -87,11 +87,11 @@ func SortDeploymentInfos(deploymentInfos []DeploymentInfo) {
 
 type Deployment struct {
 	DeploymentInfo
-	Resources util.Resources
+	Package util.Package
 }
 
-func NewDeploymentFromBytes(parentDemploymentId string, templateId string, siteId string, metadata map[string]string, prepared bool, approved bool, resourcesFormat string, resources []byte) (*Deployment, error) {
-	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
+func NewDeploymentFromBytes(parentDemploymentId string, templateId string, siteId string, metadata map[string]string, prepared bool, approved bool, packageFormat string, package_ []byte) (*Deployment, error) {
+	if package__, err := util.DecodePackage(packageFormat, package_); err == nil {
 		if metadata == nil {
 			metadata = make(map[string]string)
 		}
@@ -104,18 +104,18 @@ func NewDeploymentFromBytes(parentDemploymentId string, templateId string, siteI
 				Prepared:           prepared,
 				Approved:           approved,
 			},
-			Resources: resources,
+			Package: package__,
 		}, nil
 	} else {
 		return nil, err
 	}
 }
 
-func (self *Deployment) Clone(withResources bool) *Deployment {
-	if withResources {
+func (self *Deployment) Clone(withPackage bool) *Deployment {
+	if withPackage {
 		return &Deployment{
 			DeploymentInfo: self.DeploymentInfo.Clone(),
-			Resources:      util.CloneResources(self.Resources),
+			Package:        util.ClonePackage(self.Package),
 		}
 	} else {
 		return &Deployment{
@@ -124,22 +124,22 @@ func (self *Deployment) Clone(withResources bool) *Deployment {
 	}
 }
 
-func (self *Deployment) EncodeResources(format string) ([]byte, error) {
-	return util.EncodeResources(format, self.Resources)
+func (self *Deployment) EncodePackage(format string) ([]byte, error) {
+	return util.EncodePackage(format, self.Package)
 }
 
-func (self *Deployment) UpdateFromResources(withMetadata bool) {
-	self.DeploymentInfo.UpdateFromResources(self.Resources, withMetadata)
+func (self *Deployment) UpdateFromPackage(withMetadata bool) {
+	self.DeploymentInfo.UpdateFromPackage(self.Package, withMetadata)
 }
 
 func (self *Deployment) MergeTemplate(template *Template) {
 	self.MergeTemplateInfo(&template.TemplateInfo)
 
-	resources := util.CloneResources(template.Resources)
-	resources = util.MergeResources(resources, self.Resources...)
-	self.Resources = resources
+	package_ := util.ClonePackage(template.Package)
+	package_ = util.MergePackage(package_, self.Package...)
+	self.Package = package_
 }
 
 func (self *Deployment) MergeDeploymentResource() {
-	self.Resources = util.MergeResources(self.Resources, self.NewDeploymentResource())
+	self.Package = util.MergePackage(self.Package, self.NewDeploymentResource())
 }

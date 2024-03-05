@@ -10,8 +10,8 @@ import (
 func init() {
 	deploymentModCommand.AddCommand(deploymentModEndCommand)
 
-	deploymentModEndCommand.Flags().StringVarP(&url, "url", "u", "", "URL for YAML content (can be a local directory or file)")
-	deploymentModEndCommand.Flags().BoolVarP(&stdin, "stdin", "s", false, "use YAML content from stdin")
+	deploymentModEndCommand.Flags().StringVarP(&url, "url", "u", "", "URL for package YAML manifests (can be a local directory or file)")
+	deploymentModEndCommand.Flags().BoolVarP(&stdin, "stdin", "s", false, "read package YAML manifests from stdin")
 }
 
 var deploymentModEndCommand = &cobra.Command{
@@ -19,7 +19,7 @@ var deploymentModEndCommand = &cobra.Command{
 	Short: "End modification of a deployment",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readPackageTimeout)
 		util.OnExit(cancel)
 
 		EndDeploymentModification(context, args[0], url, stdin)
@@ -27,10 +27,10 @@ var deploymentModEndCommand = &cobra.Command{
 }
 
 func EndDeploymentModification(context contextpkg.Context, modificationToken string, url string, stdin bool) {
-	resources, err := readResources(context, url, stdin)
+	package_, err := readPackage(context, url, stdin)
 	util.FailOnError(err)
 
-	ok, reason, deploymentId, err := NewClient().EndDeploymentModification(modificationToken, resources)
+	ok, reason, deploymentId, err := NewClient().EndDeploymentModification(modificationToken, package_)
 	FailOnGRPCError(err)
 	if ok {
 		log.Noticef("modified deployment: %s", deploymentId)

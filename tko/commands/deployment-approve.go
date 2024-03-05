@@ -63,10 +63,10 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 	empty := true
 	util.FailOnError(util.IterateResults(deploymentInfos, func(deploymentInfo client.DeploymentInfo) error {
 		empty = false
-		if approved, err := NewClient().ModifyDeployment(deploymentInfo.DeploymentID, func(resources tkoutil.Resources) (bool, tkoutil.Resources, error) {
-			if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(resources); ok {
+		if approved, err := NewClient().ModifyDeployment(deploymentInfo.DeploymentID, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
+			if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(package_); ok {
 				if tkoutil.SetApprovedAnnotation(deployment, true) {
-					return true, resources, nil
+					return true, package_, nil
 				} else {
 					return false, nil, nil
 				}

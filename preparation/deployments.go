@@ -35,7 +35,7 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 		"template", deploymentInfo.TemplateID)
 	if deployment, ok, err := self.Client.GetDeployment(deploymentInfo.DeploymentID); err == nil {
 		if ok {
-			if _, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Resources, log); err != nil {
+			if _, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Package, log); err != nil {
 				log.Error(err.Error())
 			}
 		} else {
@@ -46,9 +46,9 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 	}
 }
 
-func (self *Preparation) IsDeploymentFullyPrepared(resources tkoutil.Resources) bool {
+func (self *Preparation) IsDeploymentFullyPrepared(package_ tkoutil.Package) bool {
 	prepared := true
-	for _, resource := range resources {
+	for _, resource := range package_ {
 		if resourceIdentifier, ok := tkoutil.NewResourceIdentifierForResource(resource); ok {
 			if resourceIdentifier == tkoutil.DeploymentResourceIdentifier {
 				continue
@@ -65,18 +65,18 @@ func (self *Preparation) IsDeploymentFullyPrepared(resources tkoutil.Resources) 
 	return prepared
 }
 
-func (self *Preparation) prepareDeployment(deploymentId string, deploymentResources tkoutil.Resources, log commonlog.Logger) (bool, error) {
+func (self *Preparation) prepareDeployment(deploymentId string, deploymentPackage tkoutil.Package, log commonlog.Logger) (bool, error) {
 	deploymentModified := false
 
 	// Are we already fully prepared?
-	if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(deploymentResources); ok {
+	if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(deploymentPackage); ok {
 		if tkoutil.IsPreparedAnnotation(deployment) {
 			log.Info("already prepared")
 			return false, nil
 		}
 	}
 
-	preparableResources := self.GetPreparableResources(deploymentResources, log)
+	preparableResources := self.GetPreparableResources(deploymentPackage, log)
 	for {
 		if resourceIdentifier, ok := preparableResources.Pop(); ok {
 			if self.prepareResource(deploymentId, resourceIdentifier, log) {
@@ -88,8 +88,8 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 	}
 
 	// If we're fully prepared then update annotations
-	if resourcesModified, err := self.finalizeDeploymentPreparation(deploymentId, log); err == nil {
-		if resourcesModified {
+	if packageModified, err := self.finalizeDeploymentPreparation(deploymentId, log); err == nil {
+		if packageModified {
 			deploymentModified = true
 		}
 	} else {
@@ -100,12 +100,12 @@ func (self *Preparation) prepareDeployment(deploymentId string, deploymentResour
 }
 
 func (self *Preparation) finalizeDeploymentPreparation(deploymentId string, log commonlog.Logger) (bool, error) {
-	return self.Client.ModifyDeployment(deploymentId, func(resources tkoutil.Resources) (bool, tkoutil.Resources, error) {
-		if self.IsDeploymentFullyPrepared(resources) {
+	return self.Client.ModifyDeployment(deploymentId, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
+		if self.IsDeploymentFullyPrepared(package_) {
 			log.Info("fully prepared")
 
 			var modified bool
-			if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(resources); ok {
+			if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(package_); ok {
 				if tkoutil.SetPreparedAnnotation(deployment, true) {
 					modified = true
 				}
@@ -126,7 +126,7 @@ func (self *Preparation) finalizeDeploymentPreparation(deploymentId string, log 
 					}
 				}
 
-				return modified, resources, nil
+				return modified, package_, nil
 			} else {
 				return false, nil, errors.New("missing Deployment resource")
 			}

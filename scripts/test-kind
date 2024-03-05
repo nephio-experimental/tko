@@ -27,6 +27,7 @@ if [ "$1" == -d ]; then
 	"$HERE/kubectl-kind" delete --kustomize="$ROOT/assets/kubernetes/" || true
 	#"$HERE/kubectl-kind" delete --filename="$ROOT/assets/kubernetes/workloads/" || true
 	#"$HERE/kubectl-kind" delete --filename="$ROOT/assets/kubernetes/admin/" || true
+	kubectl wait --for=delete namespace/tko
 fi
 
 m 'deploying TKO...'
@@ -39,6 +40,7 @@ m 'waiting for TKO...'
 
 "$HERE/kubectl-kind" wait deployment/postgresql --for=condition=available --timeout=60s --namespace=tko
 "$HERE/kubectl-kind" wait deployment/tko-api --for=condition=available --timeout=60s --namespace=tko
+"$HERE/kubectl-kind" wait pod/tko-runner --for=condition=ready --timeout=60s --namespace=tko
 "$HERE/kubectl-kind" wait apiservice/v1alpha1.tko.nephio.org --for=condition=available --timeout=60s
 
 m 'creating KRM...'

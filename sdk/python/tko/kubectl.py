@@ -4,8 +4,8 @@ import subprocess
 env = {'PATH': '/usr/bin'}
 
 
-def apply(resources, context=None):
-  manifest = str(resources)
+def apply(package, context=None):
+  manifest = str(package)
   if manifest:
     args = ['/usr/bin/kubectl', 'apply', '-f', '-']
     if context is not None:

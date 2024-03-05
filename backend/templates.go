@@ -25,7 +25,7 @@ func (self *TemplateInfo) Clone(withDeployments bool) TemplateInfo {
 			TemplateID:    self.TemplateID,
 			Metadata:      util.CloneStringMap(self.Metadata),
 			Updated:       self.Updated,
-			DeploymentIDs: util.CloneStringSet(self.DeploymentIDs),
+			DeploymentIDs: util.CloneStringList(self.DeploymentIDs),
 		}
 	} else {
 		return TemplateInfo{
@@ -36,8 +36,8 @@ func (self *TemplateInfo) Clone(withDeployments bool) TemplateInfo {
 	}
 }
 
-func (self *TemplateInfo) UpdateFromResources(resources util.Resources) {
-	updateMetadataFromResources(self.Metadata, resources)
+func (self *TemplateInfo) UpdateFromPackage(package_ util.Package) {
+	updateMetadataFromPackage(self.Metadata, package_)
 }
 
 func SortTemplateInfos(templateInfos []TemplateInfo) {
@@ -52,11 +52,11 @@ func SortTemplateInfos(templateInfos []TemplateInfo) {
 
 type Template struct {
 	TemplateInfo
-	Resources util.Resources
+	Package util.Package
 }
 
-func NewTemplateFromBytes(templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (*Template, error) {
-	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
+func NewTemplateFromBytes(templateId string, metadata map[string]string, packageFormat string, package_ []byte) (*Template, error) {
+	if package__, err := util.DecodePackage(packageFormat, package_); err == nil {
 		if metadata == nil {
 			metadata = make(map[string]string)
 		}
@@ -65,7 +65,7 @@ func NewTemplateFromBytes(templateId string, metadata map[string]string, resourc
 				TemplateID: templateId,
 				Metadata:   metadata,
 			},
-			Resources: resources,
+			Package: package__,
 		}, nil
 	} else {
 		return nil, err
@@ -75,16 +75,16 @@ func NewTemplateFromBytes(templateId string, metadata map[string]string, resourc
 func (self *Template) Clone(withDeployments bool) *Template {
 	return &Template{
 		TemplateInfo: self.TemplateInfo.Clone(withDeployments),
-		Resources:    util.CloneResources(self.Resources),
+		Package:      util.ClonePackage(self.Package),
 	}
 }
 
-func (self *Template) UpdateFromResources() {
-	self.TemplateInfo.UpdateFromResources(self.Resources)
+func (self *Template) UpdateFromPackage() {
+	self.TemplateInfo.UpdateFromPackage(self.Package)
 }
 
-func (self *Template) EncodeResources(format string) ([]byte, error) {
-	return util.EncodeResources(format, self.Resources)
+func (self *Template) EncodePackage(format string) ([]byte, error) {
+	return util.EncodePackage(format, self.Package)
 }
 
 func (self *Template) AddDeployment(deploymentId string) bool {

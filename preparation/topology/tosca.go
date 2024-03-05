@@ -15,8 +15,8 @@ import (
 var TOSCAGVK = util.NewGVK("topology.nephio.org", "v1alpha1", "TOSCA")
 
 // ([preparation.PrepareFunc] signature)
-func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Resources, error) {
-	if tosca, ok := preparationContext.GetResource(); ok {
+func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Context) (bool, util.Package, error) {
+	if tosca, ok := preparationContext.GetTargetResource(); ok {
 		if url, ok := ard.With(tosca).Get("spec", "url").ConvertSimilar().String(); ok {
 			parser := util.NewTOSCAParser()
 			defer parser.Release()
@@ -38,11 +38,11 @@ func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Co
 					return false, nil, err
 				}
 
-				var resources util.Resources
+				var package_ util.Package
 
 				for _, toscaResource := range toscaResources {
 					toscaResource.FillPropertyValues(parser.Clout)
-					resources = append(resources, toscaResource.ToResources()...)
+					package_ = append(package_, toscaResource.ToPackage()...)
 				}
 
 				var placementTemplates ard.List
@@ -59,13 +59,13 @@ func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Co
 					placementTemplates = append(placementTemplates, ard.Map{
 						"template": toscaResource.TemplateName,
 						"sites":    sites,
-						"merge":    toscaResource.Merge,
+						"merge":    toscaResource.MergePackage,
 					})
 				}
 
-				resources = util.MergeResources(preparationContext.DeploymentResources, resources...)
+				package_ = util.MergePackage(preparationContext.DeploymentPackage, package_...)
 
-				resources = append(resources, util.Resource{
+				package_ = append(package_, util.Resource{
 					"apiVersion": "topology.nephio.org/v1alpha1",
 					"kind":       "Placement",
 					"metadata": ard.Map{
@@ -80,7 +80,7 @@ func PrepareTOSCA(context contextpkg.Context, preparationContext *preparation.Co
 					return false, nil, errors.New("malformed TOSCA resource")
 				}
 
-				return true, resources, nil
+				return true, package_, nil
 			} else {
 				return false, nil, err
 			}
@@ -100,7 +100,7 @@ type TOSCAResource struct {
 	TemplateName string
 	SiteName     string
 	Properties   map[string]*TOSCAProperty
-	Merge        util.Resources
+	MergePackage util.Package
 }
 
 func NewTOSCAResource(vertex *clout.Vertex) *TOSCAResource {
@@ -130,8 +130,8 @@ func (self *TOSCAResource) FillPropertyValues(clout *clout.Clout) {
 	}
 }
 
-func (self *TOSCAResource) ToResources() util.Resources {
-	resources := make(map[string]util.Resource)
+func (self *TOSCAResource) ToPackage() util.Package {
+	package_ := make(map[string]util.Resource)
 
 	for _, property := range self.Properties {
 		var resource util.Resource
@@ -145,7 +145,7 @@ func (self *TOSCAResource) ToResources() util.Resources {
 		}
 
 		key := property.GVK.String() + "/" + resourceName
-		if resource, ok = resources[key]; !ok {
+		if resource, ok = package_[key]; !ok {
 			resource = util.Resource{
 				"apiVersion": property.GVK.APIVersion(),
 				"kind":       property.GVK.Kind,
@@ -161,14 +161,14 @@ func (self *TOSCAResource) ToResources() util.Resources {
 				}
 			}
 
-			resources[key] = resource
+			package_[key] = resource
 
 			if property.GVK.Equals(TemplateGVK) {
 				self.TemplateName = resourceName
 			} else if property.GVK.Equals(SiteGVK) || property.GVK.Equals(SitesGVK) {
 				self.SiteName = resourceName
 			} else {
-				self.Merge = append(self.Merge, util.Resource{
+				self.MergePackage = append(self.MergePackage, util.Resource{
 					"apiVersion": property.GVK.APIVersion(),
 					"kind":       property.GVK.Kind,
 					"name":       resourceName,
@@ -179,11 +179,11 @@ func (self *TOSCAResource) ToResources() util.Resources {
 		ard.With(resource["spec"]).ForceGetPath(property.Target, ".").Set(property.Value)
 	}
 
-	resources_ := make(util.Resources, 0, len(resources))
-	for _, resource := range resources {
-		resources_ = append(resources_, resource)
+	package__ := make(util.Package, 0, len(package_))
+	for _, resource := range package_ {
+		package__ = append(package__, resource)
 	}
-	return resources_
+	return package__
 }
 
 //

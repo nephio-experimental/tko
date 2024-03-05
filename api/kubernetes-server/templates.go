@@ -156,7 +156,7 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (*krm.Template, er
 
 func TemplateToKRM(template *backendpkg.Template) (*krm.Template, error) {
 	if krmTemplate, err := TemplateInfoToKRM(&template.TemplateInfo); err == nil {
-		krmTemplate.Spec.Package = ResourcesToKRM(template.Resources)
+		krmTemplate.Spec.Package = PackageToKRM(template.Package)
 		return krmTemplate, nil
 		/*
 			if resourcesYaml, err := tkoutil.EncodeResources("yaml", template.Resources); err == nil {
@@ -198,7 +198,7 @@ func TemplateFromKRM(object runtime.Object) (*backendpkg.Template, error) {
 		},
 	}
 
-	template.Resources = ResourcesFromKRM(krmTemplate.Spec.Package)
+	template.Package = PackageFromKRM(krmTemplate.Spec.Package)
 
 	/*
 		if krmTemplate.Spec.ResourcesYaml != nil {

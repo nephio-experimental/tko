@@ -1,42 +1,102 @@
 package util
 
 import (
-	"fmt"
-
 	"github.com/tliron/go-ard"
 )
 
-type Resource = ard.Map
+//
+// ResourceIdentifier
+//
 
-type Resources = []Resource
+type ResourceIdentifier struct {
+	GVK  GVK    `json:",inline" yaml:",inline"`
+	Name string `json:"name" yaml:"name"`
+}
+
+func (self GVK) NewResourceIdentifier(name string) ResourceIdentifier {
+	return ResourceIdentifier{self, name}
+}
+
+func NewResourceIdentifierForResource(resource Resource) (ResourceIdentifier, bool) {
+	var self ResourceIdentifier
+	var ok bool
+	if self.GVK, ok = GetGVK(resource); ok {
+		if self.Name, ok = ard.With(resource).ConvertSimilar().Get("metadata", "name").String(); ok {
+			return self, true
+		}
+	}
+	return self, false
+}
+
+func NewResourceIdentifierForObjectReference(objectReference ard.Map) (ResourceIdentifier, bool) {
+	var self ResourceIdentifier
+	var ok bool
+	if self.GVK, ok = GetGVK(objectReference); ok {
+		if self.Name, ok = ard.With(objectReference).ConvertSimilar().Get("name").String(); ok {
+			return self, true
+		}
+	}
+	return self, false
+}
+
+func (self ResourceIdentifier) GetResource(package_ Package) (Resource, bool) {
+	for _, resource := range package_ {
+		if self.Is(resource) {
+			return resource, true
+		}
+	}
+	return nil, false
+}
+
+func (self ResourceIdentifier) Is(resource Resource) bool {
+	if self.GVK.Is(resource) {
+		if name, ok := ard.With(resource).ConvertSimilar().Get("metadata", "name").String(); ok {
+			return name == self.Name
+		}
+	}
+	return false
+}
+
+// ([fmt.Stringer] interface)
+func (self ResourceIdentifier) String() string {
+	return self.GVK.String() + ", name: " + self.Name
+}
+
+//
+// ResourceIdentifiers
+//
+
+type ResourceIdentifiers struct {
+	list []ResourceIdentifier
+}
+
+func (self *ResourceIdentifiers) Empty() bool {
+	return len(self.list) == 0
+}
+
+func (self *ResourceIdentifiers) Push(resourceIdentifier ResourceIdentifier) {
+	self.list = append(self.list, resourceIdentifier)
+}
+
+func (self *ResourceIdentifiers) Pop() (ResourceIdentifier, bool) {
+	if !self.Empty() {
+		todo := self.list[0]
+		self.list = self.list[1:]
+		return todo, true
+	} else {
+		return ResourceIdentifier{}, false
+	}
+}
+
+//
+// Resource
+//
+
+type Resource = ard.Map
 
 var DeploymentGVK = NewGVK("deployment.nephio.org", "v1alpha1", "Deployment")
 
 var DeploymentResourceIdentifier = DeploymentGVK.NewResourceIdentifier("deployment")
-
-func CloneResources(resources Resources) Resources {
-	return ard.Copy(resources).(Resources)
-}
-
-func GetReferentResources(objectReferences ard.List, resources Resources) (Resources, error) {
-	var referentResources Resources
-	for _, objectReference := range objectReferences {
-		if objectReference_, ok := objectReference.(ard.Map); ok {
-			if resourceIdentifier, ok := NewResourceIdentifierForObjectReference(objectReference_); ok {
-				if resource, ok := resourceIdentifier.GetResource(resources); ok {
-					referentResources = append(referentResources, resource)
-				} else {
-					return nil, fmt.Errorf("object reference not found: %s", resourceIdentifier)
-				}
-			} else {
-				return nil, fmt.Errorf("malformed object reference: %s", objectReference_)
-			}
-		} else {
-			return nil, fmt.Errorf("object reference not a map: %s", objectReference)
-		}
-	}
-	return referentResources, nil
-}
 
 func NewDeploymentResource(templateId string, siteId string, prepared bool, approved bool) Resource {
 	spec := ard.Map{

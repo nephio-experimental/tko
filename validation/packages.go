@@ -8,14 +8,14 @@ import (
 	"github.com/nephio-experimental/tko/util"
 )
 
-func (self *Validation) ValidateResources(resources util.Resources, complete bool) error {
+func (self *Validation) ValidatePackage(package_ util.Package, complete bool) error {
 	var errs []error
 
-	for _, resource := range resources {
+	for _, resource := range package_ {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 			if validators, err := self.GetValidators(resourceIdentifier.GVK, complete); err == nil {
 				if len(validators) > 0 {
-					validationContext := self.NewContext(resources, resourceIdentifier, complete)
+					validationContext := self.NewContext(package_, resourceIdentifier, complete)
 
 					for _, validate := range validators {
 						context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)

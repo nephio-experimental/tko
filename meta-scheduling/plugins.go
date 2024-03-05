@@ -7,16 +7,19 @@ import (
 	"strings"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
+	pluginspkg "github.com/nephio-experimental/tko/plugins"
 	"github.com/nephio-experimental/tko/util"
 )
 
+const FIFOPrefix = "tko-meta-scheduling-"
+
 type PluginInput struct {
-	GRPC                    PluginInputGRPC           `yaml:"grpc"`
-	LogFile                 string                    `yaml:"logFile"`
-	SiteID                  string                    `yaml:"siteId"`
-	SiteResources           util.Resources            `yaml:"siteResources"`
-	TargetResourceIdentifer util.ResourceIdentifier   `yaml:"targetResourceIdentifier"`
-	Deployments             map[string]util.Resources `yaml:"deployments"`
+	GRPC                    PluginInputGRPC         `yaml:"grpc"`
+	LogFile                 string                  `yaml:"logFile"`
+	SiteID                  string                  `yaml:"siteId"`
+	SitePackage             util.Package            `yaml:"sitePackage"`
+	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
+	Deployments             map[string]util.Package `yaml:"deployments"`
 }
 
 type PluginInputGRPC struct {
@@ -38,7 +41,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 		},
 		LogFile:                 logFile,
 		SiteID:                  self.SiteID,
-		SiteResources:           self.SiteResources,
+		SitePackage:             self.SitePackage,
 		TargetResourceIdentifer: self.TargetResourceIdentifer,
 		Deployments:             self.Deployments,
 	}
@@ -46,7 +49,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 
 func NewPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 	switch plugin.Executor {
-	case "command":
+	case pluginspkg.Command:
 		return NewCommandPluginScheduler(plugin)
 	default:
 		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
@@ -54,8 +57,9 @@ func NewPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 }
 
 func NewCommandPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
-	if len(plugin.Arguments) < 1 {
-		return nil, errors.New("plugin of type \"command\" must have at least one argument")
+	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
+	if err != nil {
+		return nil, err
 	}
 
 	return func(context contextpkg.Context, schedulingContext *Context) error {
@@ -63,14 +67,16 @@ func NewCommandPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 			"resource", schedulingContext.TargetResourceIdentifer,
 			"arguments", strings.Join(plugin.Arguments, " "))
 
-		logFifo := util.NewLogFIFO("tko-meta-scheduling", schedulingContext.Log)
-		if err := logFifo.Start(); err != nil {
+		var input PluginInput
+		var output PluginOutput
+
+		if logFifo, err := executor.GetLogFIFO(FIFOPrefix, schedulingContext.Log); err == nil {
+			input = schedulingContext.ToPluginInput(logFifo)
+		} else {
 			return err
 		}
 
-		input := schedulingContext.ToPluginInput(logFifo.Path)
-		var output PluginOutput
-		if err := util.ExecuteCommand(plugin.Arguments, input, &output); err == nil {
+		if err := executor.Execute(context, input, &output); err == nil {
 			if output.Error == "" {
 				return nil
 			} else {

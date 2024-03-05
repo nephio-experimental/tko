@@ -13,13 +13,13 @@ func (self *Server) About(context contextpkg.Context, _ *emptypb.Empty) (*api.Ab
 	self.Log.Info("about")
 
 	return &api.AboutResponse{
-		InstanceName:           self.InstanceName,
-		InstanceDescription:    self.InstanceDescription,
-		TkoVersion:             version.GitVersion,
-		Backend:                self.Backend.String(),
-		IpStack:                string(self.IPStack),
-		Address:                self.Address,
-		Port:                   uint32(self.Port),
-		DefaultResourcesFormat: self.DefaultResourcesFormat,
+		InstanceName:         self.InstanceName,
+		InstanceDescription:  self.InstanceDescription,
+		TkoVersion:           version.GitVersion,
+		Backend:              self.Backend.String(),
+		IpStack:              string(self.IPStack),
+		Address:              self.Address,
+		Port:                 uint32(self.Port),
+		DefaultPackageFormat: self.DefaultPackageFormat,
 	}, nil
 }

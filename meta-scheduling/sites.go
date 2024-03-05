@@ -28,7 +28,7 @@ func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 
 	if site, ok, err := self.Client.GetSite(siteInfo.SiteID); err == nil {
 		if ok {
-			self.scheduleSite(siteInfo.SiteID, site.Resources, siteInfo.DeploymentIDs, log)
+			self.scheduleSite(siteInfo.SiteID, site.Package, siteInfo.DeploymentIDs, log)
 		} else {
 			log.Info("site disappeared")
 		}
@@ -37,23 +37,23 @@ func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 	}
 }
 
-func (self *MetaScheduling) scheduleSite(siteId string, siteResources tkoutil.Resources, deploymentIds []string, log commonlog.Logger) {
-	for _, resource := range siteResources {
+func (self *MetaScheduling) scheduleSite(siteId string, sitePackage tkoutil.Package, deploymentIds []string, log commonlog.Logger) {
+	for _, resource := range sitePackage {
 		if resourceIdentifier, ok := tkoutil.NewResourceIdentifierForResource(resource); ok {
 			if schedulers, err := self.GetSchedulers(resourceIdentifier.GVK); err == nil {
 				if len(schedulers) > 0 {
-					deployments := make(map[string]tkoutil.Resources)
+					deployments := make(map[string]tkoutil.Package)
 					for _, deploymentId := range deploymentIds {
 						if deployment, ok, err := self.Client.GetDeployment(deploymentId); err == nil {
 							if ok {
 								if deployment.Prepared && deployment.Approved {
-									deployments[deploymentId] = deployment.Resources
+									deployments[deploymentId] = deployment.Package
 								}
 							}
 						}
 					}
 
-					schedulingContext := self.NewContext(siteId, siteResources, resourceIdentifier, deployments, log)
+					schedulingContext := self.NewContext(siteId, sitePackage, resourceIdentifier, deployments, log)
 
 					for _, schedule := range schedulers {
 						context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)

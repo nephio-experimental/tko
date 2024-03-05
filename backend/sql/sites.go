@@ -18,10 +18,10 @@ func (self *SQLBackend) SetSite(context contextpkg.Context, site *backend.Site) 
 			return err
 		}
 
-		if resources, err := self.encodeResources(site.Resources); err == nil {
+		if package_, err := self.encodePackage(site.Package); err == nil {
 			site.Updated = time.Now().UTC()
 			upsertSite := tx.StmtContext(context, self.statements.PreparedUpsertSite)
-			if _, err := upsertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), site.Updated, resources); err == nil {
+			if _, err := upsertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), site.Updated, package_); err == nil {
 				if err := self.updateSiteMetadata(context, tx, site); err != nil {
 					self.rollback(tx)
 					return err
@@ -51,9 +51,9 @@ func (self *SQLBackend) GetSite(context contextpkg.Context, siteId string) (*bac
 	if rows.Next() {
 		var templateId *string
 		var updated time.Time
-		var resources, metadataJson, deploymentIdsJson []byte
-		if err := rows.Scan(&templateId, &updated, &resources, &metadataJson, &deploymentIdsJson); err == nil {
-			return self.newSite(siteId, templateId, updated, metadataJson, deploymentIdsJson, resources)
+		var package_, metadataJson, deploymentIdsJson []byte
+		if err := rows.Scan(&templateId, &updated, &package_, &metadataJson, &deploymentIdsJson); err == nil {
+			return self.newSite(siteId, templateId, updated, metadataJson, deploymentIdsJson, package_)
 		} else {
 			return nil, err
 		}
@@ -170,10 +170,10 @@ func (self *SQLBackend) newSiteInfo(siteId string, templateId *string, updated t
 	return siteInfo, nil
 }
 
-func (self *SQLBackend) newSite(siteId string, templateId *string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte, resources []byte) (*backend.Site, error) {
+func (self *SQLBackend) newSite(siteId string, templateId *string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte, package_ []byte) (*backend.Site, error) {
 	if siteInfo, err := self.newSiteInfo(siteId, templateId, updated, metadataJson, deploymentIdsJson); err == nil {
 		site := backend.Site{SiteInfo: siteInfo}
-		if site.Resources, err = self.decodeResources(resources); err == nil {
+		if site.Package, err = self.decodePackage(package_); err == nil {
 			return &site, nil
 		} else {
 			return nil, err

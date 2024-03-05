@@ -7,15 +7,18 @@ import (
 	"strings"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
+	pluginspkg "github.com/nephio-experimental/tko/plugins"
 	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
 )
+
+const FIFOPrefix = "tko-preparation-"
 
 type PluginInput struct {
 	GRPC                    PluginInputGRPC         `yaml:"grpc"`
 	LogFile                 string                  `yaml:"logFile"`
 	DeploymentID            string                  `yaml:"deploymentId"`
-	DeploymentResources     util.Resources          `yaml:"deploymentResources"`
+	DeploymentPackage       util.Package            `yaml:"deploymentPackage"`
 	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
 }
 
@@ -26,9 +29,9 @@ type PluginInputGRPC struct {
 }
 
 type PluginOutput struct {
-	Prepared  bool           `yaml:"prepared,omitempty"`
-	Resources util.Resources `yaml:"resources,omitempty"`
-	Error     string         `yaml:"error,omitempty"`
+	Prepared bool         `yaml:"prepared,omitempty"`
+	Package  util.Package `yaml:"package,omitempty"`
+	Error    string       `yaml:"error,omitempty"`
 }
 
 func (self *Context) ToPluginInput(logFile string) PluginInput {
@@ -40,16 +43,16 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 		},
 		LogFile:                 logFile,
 		DeploymentID:            self.DeploymentID,
-		DeploymentResources:     self.DeploymentResources,
+		DeploymentPackage:       self.DeploymentPackage,
 		TargetResourceIdentifer: self.TargetResourceIdentifer,
 	}
 }
 
 func NewPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	switch plugin.Executor {
-	case "command":
+	case pluginspkg.Command:
 		return NewCommandPluginPreparer(plugin)
-	case "kpt":
+	case pluginspkg.Kpt:
 		return NewKptPluginPreparer(plugin)
 	default:
 		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
@@ -57,8 +60,9 @@ func NewPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 }
 
 func NewCommandPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
-	if len(plugin.Arguments) < 1 {
-		return nil, errors.New("plugin of type \"command\" must have at least one argument")
+	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
+	if err != nil {
+		return nil, err
 	}
 
 	return func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error) {
@@ -66,16 +70,18 @@ func NewCommandPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 			"resource", preparationContext.TargetResourceIdentifer,
 			"arguments", strings.Join(plugin.Arguments, " "))
 
-		logFifo := util.NewLogFIFO("tko-preparation", preparationContext.Log)
-		if err := logFifo.Start(); err != nil {
+		var input PluginInput
+		var output PluginOutput
+
+		if logFifo, err := executor.GetLogFIFO(FIFOPrefix, preparationContext.Log); err == nil {
+			input = preparationContext.ToPluginInput(logFifo)
+		} else {
 			return false, nil, err
 		}
 
-		input := preparationContext.ToPluginInput(logFifo.Path)
-		var output PluginOutput
-		if err := util.ExecuteCommand(plugin.Arguments, input, &output); err == nil {
+		if err := executor.Execute(context, input, &output); err == nil {
 			if output.Error == "" {
-				return output.Prepared, output.Resources, nil
+				return output.Prepared, output.Package, nil
 			} else {
 				return false, nil, errors.New(output.Error)
 			}
@@ -86,35 +92,22 @@ func NewCommandPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 }
 
 func NewKptPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
-	if len(plugin.Arguments) != 1 {
-		return nil, errors.New("plugin of type \"command\" must have one argument")
+	executor, err := pluginspkg.NewKptExecutor(plugin.Arguments, plugin.Properties)
+	if err != nil {
+		return nil, err
 	}
 
-	image := plugin.Arguments[0]
-
 	return func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error) {
-		preparationContext.Log.Info("prepare via kpt plugin",
-			"resource", preparationContext.TargetResourceIdentifer,
-			"image", image,
-			"properties", plugin.Properties)
-
-		if resource, ok := preparationContext.GetResource(); ok {
-			//context.Log.Noticef("!!! %s", resource)
-			if resources, err := util.ExecuteKpt(image, plugin.Properties, resource, preparationContext.DeploymentResources); err == nil {
-				// Note: it's OK if the kpt function deleted our plugin resource because that also counts as completion
-				if resource_, ok := preparationContext.TargetResourceIdentifer.GetResource(resources); ok {
-					if !util.SetPreparedAnnotation(resource_, true) {
-						return false, nil, errors.New("malformed resource")
-					}
+		if package_, err := executor.Execute(context, preparationContext.TargetResourceIdentifer, preparationContext.DeploymentPackage); err == nil {
+			// Note: it's OK if the kpt function deleted our plugin resource because that also counts as completion
+			if resource, ok := preparationContext.TargetResourceIdentifer.GetResource(package_); ok {
+				if !util.SetPreparedAnnotation(resource, true) {
+					return false, nil, errors.New("malformed resource")
 				}
-
-				return true, resources, nil
-			} else {
-				return false, nil, err
 			}
+			return true, package_, nil
 		} else {
-			// Our resource disappeared
-			return false, nil, nil
+			return false, nil, err
 		}
 	}, nil
 }

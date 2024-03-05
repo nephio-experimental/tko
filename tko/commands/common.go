@@ -19,9 +19,9 @@ import (
 const toolName = "tko"
 
 var (
-	log                  = commonlog.GetLogger(toolName)
-	clientLog            = commonlog.NewScopeLogger(log, "client")
-	readResourcesTimeout = 10 * time.Second
+	log                = commonlog.GetLogger(toolName)
+	clientLog          = commonlog.NewScopeLogger(log, "client")
+	readPackageTimeout = 10 * time.Second
 
 	url                string
 	stdin              bool
@@ -62,9 +62,9 @@ func Print(content any) {
 	}
 }
 
-func PrintResources(resources tkoutil.Resources) {
+func PrintPackage(package_ tkoutil.Package) {
 	if !terminal.Quiet {
-		WriteResources(os.Stdout, resources)
+		WritePackage(os.Stdout, package_)
 	}
 }
 
@@ -72,9 +72,10 @@ func Write(writer io.Writer, content any) {
 	util.FailOnError(Transcriber(writer).Write(content))
 }
 
-func WriteResources(writer io.Writer, resources tkoutil.Resources) {
-	content := make([]any, len(resources))
-	for index, resource := range resources {
+func WritePackage(writer io.Writer, package_ tkoutil.Package) {
+	// This will transcribe as multiple documents in YAML
+	content := make([]any, len(package_))
+	for index, resource := range package_ {
 		content[index] = resource
 	}
 	Write(writer, content)

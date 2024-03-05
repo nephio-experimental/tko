@@ -6,17 +6,17 @@ yaml=YAML(typ='safe')
 yaml.default_flow_style = False
 
 
-class Resources:
-  def __init__(self, resources=None):
-    if resources is not None:
-      if not isinstance(resources, collections.abc.Iterable):
-        raise Exception('resources is not iterable')
-      for resource in resources:
+class Package:
+  def __init__(self, package=None):
+    if package is not None:
+      if not isinstance(package, collections.abc.Iterable):
+        raise Exception('package is not iterable')
+      for resource in package:
         if not isinstance(resource, collections.abc.Mapping):
           raise Exception('resource is not a mapping')
-      self.resources = resources
+      self.package = package
     else:
-      self.resources = []
+      self.package = []
 
   def __str__(self):
     f = io.StringIO()
@@ -30,7 +30,7 @@ class Resources:
     return f.getvalue()
 
   def __iter__(self):
-    for resource in self.resources:
+    for resource in self.package:
       yield resource
 
   def __getitem__(self, identifier):
@@ -42,7 +42,7 @@ class Resources:
   def append(self, resource):
     if not isinstance(resource, collections.abc.Mapping):
       raise Exception('resource is not a mapping')
-    self.resources.append(resource)
+    self.package.append(resource)
 
   def iter_all(self, gvk):
     for resource in self:

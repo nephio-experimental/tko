@@ -15,12 +15,12 @@ import (
 func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.Template) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerTemplate: %+v", template)
 
-	template_, err := backend.NewTemplateFromBytes(template.TemplateId, template.Metadata, template.ResourcesFormat, template.Resources)
+	template_, err := backend.NewTemplateFromBytes(template.TemplateId, template.Metadata, template.PackageFormat, template.Package)
 	if err != nil {
 		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	template_.UpdateFromResources()
+	template_.UpdateFromPackage()
 
 	if err := self.Backend.SetTemplate(context, template_); err == nil {
 		return &api.RegisterResponse{Registered: true}, nil
@@ -49,18 +49,18 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 	self.Log.Infof("getTemplate: %+v", getTemplate)
 
 	if template, err := self.Backend.GetTemplate(context, getTemplate.TemplateId); err == nil {
-		resourcesFormat := getTemplate.PreferredResourcesFormat
-		if resourcesFormat == "" {
-			resourcesFormat = self.DefaultResourcesFormat
+		packageFormat := getTemplate.PreferredPackageFormat
+		if packageFormat == "" {
+			packageFormat = self.DefaultPackageFormat
 		}
-		if resources, err := template.EncodeResources(resourcesFormat); err == nil {
+		if package_, err := template.EncodePackage(packageFormat); err == nil {
 			return &api.Template{
-				TemplateId:      template.TemplateID,
-				Metadata:        template.Metadata,
-				Updated:         timestamppb.New(template.Updated),
-				ResourcesFormat: resourcesFormat,
-				Resources:       resources,
-				DeploymentIds:   template.DeploymentIDs,
+				TemplateId:    template.TemplateID,
+				Metadata:      template.Metadata,
+				Updated:       timestamppb.New(template.Updated),
+				PackageFormat: packageFormat,
+				Package:       package_,
+				DeploymentIds: template.DeploymentIDs,
 			}, nil
 		} else {
 			return new(api.Template), ToGRPCError(err)

@@ -38,7 +38,7 @@ func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request)
 func (self *Server) GetSite(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if site, err := self.Backend.GetSite(request.Context(), id); err == nil {
-		writeResources(writer, site.Resources)
+		writePackage(writer, site.Package)
 	} else {
 		writer.WriteHeader(500)
 	}

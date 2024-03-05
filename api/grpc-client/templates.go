@@ -19,28 +19,31 @@ type TemplateInfo struct {
 
 type Template struct {
 	TemplateInfo
-	Resources tkoutil.Resources `json:"resources" yaml:"resources"`
+	Package tkoutil.Package `json:"package" yaml:"package"`
 }
 
-func (self *Client) RegisterTemplate(templateId string, metadata map[string]string, resources tkoutil.Resources) (bool, string, error) {
-	if resources_, err := self.encodeResources(resources); err == nil {
-		return self.RegisterTemplateRaw(templateId, metadata, self.ResourcesFormat, resources_)
+func (self *Client) RegisterTemplate(templateId string, metadata map[string]string, package_ tkoutil.Package) (bool, string, error) {
+	if package__, err := self.encodePackage(package_); err == nil {
+		return self.RegisterTemplateRaw(templateId, metadata, self.PackageFormat, package__)
 	} else {
 		return false, "", err
 	}
 }
 
-func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (bool, string, error) {
+func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]string, packageFormat string, package_ []byte) (bool, string, error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("registerTemplate: templateId=%s metadata=%v resourcesFormat=%s", templateId, metadata, resourcesFormat)
+		self.log.Info("registerTemplate",
+			"templateId", templateId,
+			"metadata", metadata,
+			"packageFormat", packageFormat)
 		if response, err := apiClient.RegisterTemplate(context, &api.Template{
-			TemplateId:      templateId,
-			Metadata:        metadata,
-			ResourcesFormat: resourcesFormat,
-			Resources:       resources,
+			TemplateId:    templateId,
+			Metadata:      metadata,
+			PackageFormat: packageFormat,
+			Package:       package_,
 		}); err == nil {
 			return response.Registered, response.NotRegisteredReason, nil
 		} else {
@@ -56,9 +59,10 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("getTemplate: templateId=%s", templateId)
-		if template, err := apiClient.GetTemplate(context, &api.GetTemplate{TemplateId: templateId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-			if resources, err := tkoutil.DecodeResources(template.ResourcesFormat, template.Resources); err == nil {
+		self.log.Info("getTemplate",
+			"templateId", templateId)
+		if template, err := apiClient.GetTemplate(context, &api.GetTemplate{TemplateId: templateId, PreferredPackageFormat: self.PackageFormat}); err == nil {
+			if package_, err := tkoutil.DecodePackage(template.PackageFormat, template.Package); err == nil {
 				return Template{
 					TemplateInfo: TemplateInfo{
 						TemplateID:    template.TemplateId,
@@ -66,7 +70,7 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 						Updated:       self.toTime(template.Updated),
 						DeploymentIDs: template.DeploymentIds,
 					},
-					Resources: resources,
+					Package: package_,
 				}, true, nil
 			} else {
 				return Template{}, false, err
@@ -86,7 +90,8 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("deleteTemplate: templateId=%s", templateId)
+		self.log.Info("deleteTemplate",
+			"templateId", templateId)
 		if response, err := apiClient.DeleteTemplate(context, &api.TemplateID{TemplateId: templateId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -120,7 +125,8 @@ func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[Tem
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
-		self.log.Infof("listTemplates: %s", listTemplates)
+		self.log.Info("listTemplates",
+			"listTemplates", listTemplates)
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
 			Offset:             uint32(listTemplates.Offset),
 			MaxCount:           uint32(listTemplates.MaxCount),

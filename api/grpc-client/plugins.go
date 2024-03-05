@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/nephio-experimental/tko/api/grpc"
+	"github.com/nephio-experimental/tko/plugins"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/kutil/util"
 )
@@ -36,15 +37,20 @@ func NewPluginID(type_ string, name string) PluginID {
 }
 
 func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments []string, properties map[string]string, triggers []tkoutil.GVK) (bool, string, error) {
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return false, "", fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return false, "", fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("registerPlugin: pluginId=%s executor=%s arguments=%v properties=%v triggers=%v", pluginId, executor, arguments, properties, triggers)
+		self.log.Info("registerPlugin",
+			"pluginId", pluginId,
+			"executor", executor,
+			"arguments", arguments,
+			"properties", properties,
+			"triggers", triggers)
 		if response, err := apiClient.RegisterPlugin(context, &api.Plugin{
 			Type:       pluginId.Type,
 			Name:       pluginId.Name,
@@ -63,15 +69,16 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 }
 
 func (self *Client) GetPlugin(pluginId PluginID) (Plugin, bool, error) {
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return Plugin{}, false, fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return Plugin{}, false, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("getPlugin: pluginId=%s", pluginId)
+		self.log.Info("getPlugin",
+			"pluginId", pluginId)
 		if plugin, err := apiClient.GetPlugin(context, &api.PluginID{
 			Type: pluginId.Type,
 			Name: pluginId.Name,
@@ -94,15 +101,16 @@ func (self *Client) GetPlugin(pluginId PluginID) (Plugin, bool, error) {
 }
 
 func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return false, "", fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return false, "", fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("deletePlugin: pluginId=%s", pluginId)
+		self.log.Info("deletePlugin",
+			"pluginId", pluginId)
 		if response, err := apiClient.DeletePlugin(context, &api.PluginID{
 			Type: pluginId.Type,
 			Name: pluginId.Name,
@@ -145,15 +153,16 @@ func (self ListPlugins) String() string {
 
 func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], error) {
 	if listPlugins.Type != nil {
-		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
-			return nil, fmt.Errorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, *listPlugins.Type)
+		if !plugins.IsValidPluginType(*listPlugins.Type, true) {
+			return nil, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Type)
 		}
 	}
 
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
-		self.log.Infof("listPlugins: %s", listPlugins)
+		self.log.Info("listPlugins",
+			"listPlugins", listPlugins)
 		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
 			Offset:       uint32(listPlugins.Offset),
 			MaxCount:     uint32(listPlugins.MaxCount),

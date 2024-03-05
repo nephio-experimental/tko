@@ -46,10 +46,10 @@ func BoolTableCell(v bool) *tview.TableCell {
 	}
 }
 
-// To force the transcriber to transcribe resources as multiple YAML documents
-func ToSliceAny(resources tkoutil.Resources) []any {
-	slice := make([]any, len(resources))
-	for index, resource := range resources {
+// To force the transcriber to transcribe package as multiple YAML documents
+func ToSliceAny(package_ tkoutil.Package) []any {
+	slice := make([]any, len(package_))
+	for index, resource := range package_ {
 		slice[index] = resource
 	}
 	return slice

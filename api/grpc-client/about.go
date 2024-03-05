@@ -15,10 +15,10 @@ type About struct {
 }
 
 type AboutGRPC struct {
-	IPStack                string `json:"ipStack" yaml:"ipStack"`
-	Address                string `json:"address" yaml:"address"`
-	Port                   int    `json:"port" yaml:"port"`
-	DefaultResourcesFormat string `json:"defaultResourcesFormat" yaml:"defaultResourcesFormat"`
+	IPStack              string `json:"ipStack" yaml:"ipStack"`
+	Address              string `json:"address" yaml:"address"`
+	Port                 int    `json:"port" yaml:"port"`
+	DefaultPackageFormat string `json:"defaultPackageFormat" yaml:"defaultPackageFormat"`
 }
 
 func (self *Client) About() (About, error) {
@@ -34,10 +34,10 @@ func (self *Client) About() (About, error) {
 				TKOVersion:          response.TkoVersion,
 				Backend:             response.Backend,
 				GRPC: AboutGRPC{
-					IPStack:                response.IpStack,
-					Address:                response.Address,
-					Port:                   int(response.Port),
-					DefaultResourcesFormat: response.DefaultResourcesFormat,
+					IPStack:              response.IpStack,
+					Address:              response.Address,
+					Port:                 int(response.Port),
+					DefaultPackageFormat: response.DefaultPackageFormat,
 				},
 			}, nil
 		} else {

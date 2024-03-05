@@ -1,11 +1,11 @@
-import subprocess, json, tko.resources, tko.expressions
+import subprocess, json, tko.package, tko.expressions
 
 
-chart_gvk = tko.resources.GVK(group='workload.nephio.org', version='v1alpha1', kind='HelmChart')
+chart_gvk = tko.package.GVK(group='workload.nephio.org', version='v1alpha1', kind='HelmChart')
 
 
-def iter_charts(resources):
-  return resources.iter_all(chart_gvk)
+def iter_charts(package):
+  return package.iter_all(chart_gvk)
 
 
 def get_current_deployments(context=None):
@@ -19,7 +19,7 @@ def get_current_deployments(context=None):
   return complete.stdout.decode().rstrip('\n').split('\n')
 
 
-def install(chart, resources, context=None):
+def install(chart, package, context=None):
   name = chart.get('metadata', {}).get('name', '')
   if name in get_current_deployments(context):
     return
@@ -39,7 +39,7 @@ def install(chart, resources, context=None):
   parameters = spec.get('parameters', None)
   if parameters is not None:
     for key, value in parameters.items():
-      value = tko.expressions.evaluate_expression(value, resources)
+      value = tko.expressions.evaluate_expression(value, package)
       args.append('--set-json')
       args.append(f'{key}={json.dumps(value)}')
 

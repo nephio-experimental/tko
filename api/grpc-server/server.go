@@ -18,26 +18,26 @@ import (
 type Server struct {
 	api.UnimplementedAPIServer
 
-	InstanceName           string
-	InstanceDescription    string
-	Backend                backend.Backend
-	IPStack                util.IPStack
-	Address                string
-	Port                   int
-	DefaultResourcesFormat string
-	Log                    commonlog.Logger
+	InstanceName         string
+	InstanceDescription  string
+	Backend              backend.Backend
+	IPStack              util.IPStack
+	Address              string
+	Port                 int
+	DefaultPackageFormat string
+	Log                  commonlog.Logger
 
 	grpcServers []*grpc.Server
 }
 
-func NewServer(backend backend.Backend, ipStack util.IPStack, address string, port int, defaultResourcesFormat string, log commonlog.Logger) *Server {
+func NewServer(backend backend.Backend, ipStack util.IPStack, address string, port int, defaultPackageFormat string, log commonlog.Logger) *Server {
 	return &Server{
-		Backend:                backend,
-		IPStack:                ipStack,
-		Address:                address,
-		Port:                   port,
-		DefaultResourcesFormat: defaultResourcesFormat,
-		Log:                    log,
+		Backend:              backend,
+		IPStack:              ipStack,
+		Address:              address,
+		Port:                 port,
+		DefaultPackageFormat: defaultPackageFormat,
+		Log:                  log,
 	}
 }
 

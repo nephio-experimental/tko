@@ -13,35 +13,35 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func readResources(context contextpkg.Context, url string, stdin bool) (tkoutil.Resources, error) {
+func readPackage(context contextpkg.Context, url string, stdin bool) (tkoutil.Package, error) {
 	if stdin && (url != "") {
 		util.Fail("cannot specify both --stdin=true and --url=")
 	}
 
-	var resources tkoutil.Resources
+	var package_ tkoutil.Package
 
 	var err error
 	if stdin {
-		resources, err = readResourcesFromStdin()
+		package_, err = readPackageFromStdin()
 	} else {
 		if url == "" {
 			util.Fail("must specify either --stdin=true or --url=")
 		}
-		resources, err = readResourcesFromUrl(context, url)
+		package_, err = readPackageFromUrl(context, url)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return resources, nil
+	return package_, nil
 }
 
-func readResourcesFromStdin() (tkoutil.Resources, error) {
-	log.Info("reading resources from stdin")
-	return tkoutil.ReadResources("yaml", os.Stdin)
+func readPackageFromStdin() (tkoutil.Package, error) {
+	log.Info("reading package from stdin")
+	return tkoutil.ReadPackage("yaml", os.Stdin)
 }
 
-func readResourcesFromUrl(context contextpkg.Context, url string) (tkoutil.Resources, error) {
+func readPackageFromUrl(context contextpkg.Context, url string) (tkoutil.Package, error) {
 	urlContext := exturl.NewContext()
 	util.OnExitError(urlContext.Release)
 
@@ -53,7 +53,7 @@ func readResourcesFromUrl(context contextpkg.Context, url string) (tkoutil.Resou
 		return nil, err
 	}
 
-	log.Infof("reading resources from URL: %s", url_)
+	log.Infof("reading package from URL: %s", url_)
 
 	var unpack string
 	if strings.HasSuffix(url, ".tar") {
@@ -69,7 +69,7 @@ func readResourcesFromUrl(context contextpkg.Context, url string) (tkoutil.Resou
 		return nil, err
 	}
 
-	var resources tkoutil.Resources
+	var package_ tkoutil.Package
 
 	for {
 		if stream, err := streamPackage.Next(); err == nil {
@@ -81,8 +81,8 @@ func readResourcesFromUrl(context contextpkg.Context, url string) (tkoutil.Resou
 				if ext := pathpkg.Ext(path); (ext == ".yaml") || (ext == ".yml") {
 					reader = util.NewContextualReadCloser(context, reader)
 
-					if list_, err := tkoutil.ReadResources("yaml", reader); err == nil {
-						resources = append(resources, list_...)
+					if list_, err := tkoutil.ReadPackage("yaml", reader); err == nil {
+						package_ = append(package_, list_...)
 					} else {
 						reader.Close()
 						return nil, fmt.Errorf("%s: %s", path, err.Error())
@@ -100,5 +100,5 @@ func readResourcesFromUrl(context contextpkg.Context, url string) (tkoutil.Resou
 		}
 	}
 
-	return resources, nil
+	return package_, nil
 }

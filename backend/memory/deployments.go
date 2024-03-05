@@ -49,7 +49,7 @@ func (self *MemoryBackend) CreateDeployment(context contextpkg.Context, deployme
 	// Merge and associate with template
 	if template != nil {
 		deployment.MergeTemplate(template)
-		deployment.UpdateFromResources(true)
+		deployment.UpdateFromPackage(true)
 		template.AddDeployment(deployment.DeploymentID)
 	}
 	deployment.MergeDeploymentResource()
@@ -226,7 +226,7 @@ func (self *MemoryBackend) StartDeploymentModification(context contextpkg.Contex
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
+func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, package_ tkoutil.Package, validation *validationpkg.Validation) (string, error) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -237,12 +237,12 @@ func (self *MemoryBackend) EndDeploymentModification(context contextpkg.Context,
 
 				originalTemplateId := deployment.TemplateID
 				originalSiteId := deployment.SiteID
-				deployment.Resources = resources
-				deployment.UpdateFromResources(false)
+				deployment.Package = package_
+				deployment.UpdateFromPackage(false)
 
 				if validation != nil {
 					// Complete validation when fully prepared
-					if err := validation.ValidateResources(resources, deployment.Prepared); err != nil {
+					if err := validation.ValidatePackage(package_, deployment.Prepared); err != nil {
 						return "", err
 					}
 				}

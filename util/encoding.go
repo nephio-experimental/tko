@@ -11,15 +11,15 @@ import (
 	"github.com/tliron/go-transcribe"
 )
 
-func EncodeResources(format string, resources Resources) ([]byte, error) {
-	if resources == nil {
-		resources = Resources{}
+func EncodePackage(format string, package_ Package) ([]byte, error) {
+	if package_ == nil {
+		package_ = Package{}
 	}
 
 	switch format {
 	case "yaml":
-		content := make([]any, len(resources))
-		for index, resource := range resources {
+		content := make([]any, len(package_))
+		for index, resource := range package_ {
 			content[index] = resource
 		}
 
@@ -31,22 +31,22 @@ func EncodeResources(format string, resources Resources) ([]byte, error) {
 		}
 
 	case "cbor":
-		return cbor.Marshal(resources)
+		return cbor.Marshal(package_)
 
 	default:
 		return nil, fmt.Errorf("format not supported: %s", format)
 	}
 }
 
-func DecodeResources(format string, content []byte) (Resources, error) {
+func DecodePackage(format string, content []byte) (Package, error) {
 	switch format {
 	case "yaml":
-		return ReadResources(format, bytes.NewReader(content))
+		return ReadPackage(format, bytes.NewReader(content))
 
 	case "cbor":
-		var resources Resources
-		if err := cbor.Unmarshal(content, &resources); err == nil {
-			return resources, nil
+		var package_ Package
+		if err := cbor.Unmarshal(content, &package_); err == nil {
+			return package_, nil
 		} else {
 			return nil, err
 		}
@@ -56,21 +56,21 @@ func DecodeResources(format string, content []byte) (Resources, error) {
 	}
 }
 
-func ReadResources(format string, reader io.Reader) (Resources, error) {
+func ReadPackage(format string, reader io.Reader) (Package, error) {
 	switch format {
 	case "yaml":
-		if resources, err := ard.ReadAllYAML(reader); err == nil {
-			resources_ := make(Resources, len(resources))
+		if package_, err := ard.ReadAllYAML(reader); err == nil {
+			package__ := make(Package, len(package_))
 			var ok bool
-			for index, resource := range resources {
-				if resources_[index], ok = resource.(Resource); !ok {
+			for index, resource := range package_ {
+				if package__[index], ok = resource.(Resource); !ok {
 					return nil, errors.New("a resource is not a map")
 				}
 				/*if _, ok := GetResourceIdentifier(resources_[index]); !ok {
 					return nil, fmt.Errorf("a resource is malformed: %s", resources_[index])
 				}*/
 			}
-			return resources_, nil
+			return package__, nil
 		} else {
 			return nil, err
 		}

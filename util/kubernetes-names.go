@@ -1,15 +1,10 @@
 package util
 
 import (
-	"bytes"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/tliron/kutil/kubernetes"
-	"gopkg.in/yaml.v3"
-	restpkg "k8s.io/client-go/rest"
 )
 
 const KubernetesNameMaxLength = 253
@@ -54,22 +49,6 @@ func FromKubernetesName(escapedName string) (string, error) {
 		}
 	}
 	return builder.String(), nil
-}
-
-func ExecuteKubernetesCommand(rest restpkg.Interface, config *restpkg.Config, namespace string, podName string, containerName string, arguments []string, input any, output any) error {
-	input_, err := yaml.Marshal(input)
-	if err != nil {
-		return err
-	}
-
-	var output_ bytes.Buffer
-	var stderr bytes.Buffer
-
-	if err := kubernetes.Exec(rest, config, namespace, podName, containerName, bytes.NewReader(input_), &output_, &stderr, false, arguments...); err == nil {
-		return yaml.Unmarshal(output_.Bytes(), output)
-	} else {
-		return withStderr(err, stderr.String())
-	}
 }
 
 // Utils

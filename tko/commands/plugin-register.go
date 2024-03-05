@@ -2,6 +2,7 @@ package commands
 
 import (
 	client "github.com/nephio-experimental/tko/api/grpc-client"
+	"github.com/nephio-experimental/tko/plugins"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
@@ -37,8 +38,8 @@ var pluginRegisterCommand = &cobra.Command{
 }
 
 func RegisterPlugin(type_ string, name string, executor string, arguments []string, properties map[string]string, triggers []tkoutil.GVK) {
-	if !tkoutil.IsValidPluginType(type_, false) {
-		util.Failf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, type_)
+	if !plugins.IsValidPluginType(type_, false) {
+		util.Failf("plugin type must be %s: %s", plugins.PluginTypesDescription, type_)
 	}
 
 	pluginId := client.NewPluginID(type_, name)

@@ -20,9 +20,9 @@ def schedule():
 
     context = f'kind-{cluster_name}'
     for deployment in tko.get_deployments():
-      cluster_resources, namespaced_resources = tko.meta_schedule(deployment)
-      tko.kubectl.apply(cluster_resources, context=context)
-      tko.kubectl.apply(namespaced_resources, context=context)
+      cluster_package, namespaced_package = tko.meta_schedule(deployment)
+      tko.kubectl.apply(cluster_package, context=context)
+      tko.kubectl.apply(namespaced_package, context=context)
 
       for chart in tko.helm.iter_charts(deployment):
         #name = chart.get('metadata', {}).get('name', '')

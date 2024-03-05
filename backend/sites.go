@@ -27,7 +27,7 @@ func (self *SiteInfo) Clone(withDeployments bool) SiteInfo {
 			TemplateID:    self.TemplateID,
 			Metadata:      util.CloneStringMap(self.Metadata),
 			Updated:       self.Updated,
-			DeploymentIDs: util.CloneStringSet(self.DeploymentIDs),
+			DeploymentIDs: util.CloneStringList(self.DeploymentIDs),
 		}
 	} else {
 		return SiteInfo{
@@ -39,8 +39,8 @@ func (self *SiteInfo) Clone(withDeployments bool) SiteInfo {
 	}
 }
 
-func (self *SiteInfo) UpdateFromResources(resources util.Resources) {
-	updateMetadataFromResources(self.Metadata, resources)
+func (self *SiteInfo) UpdateFromPackage(package_ util.Package) {
+	updateMetadataFromPackage(self.Metadata, package_)
 }
 
 func (self *SiteInfo) MergeTemplateInfo(templateInfo *TemplateInfo) {
@@ -69,11 +69,11 @@ func SortSiteInfos(siteInfos []SiteInfo) {
 
 type Site struct {
 	SiteInfo
-	Resources util.Resources
+	Package util.Package
 }
 
-func NewSiteFromBytes(siteId string, templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (*Site, error) {
-	if resources, err := util.DecodeResources(resourcesFormat, resources); err == nil {
+func NewSiteFromBytes(siteId string, templateId string, metadata map[string]string, packageFormat string, package_ []byte) (*Site, error) {
+	if package__, err := util.DecodePackage(packageFormat, package_); err == nil {
 		if metadata == nil {
 			metadata = make(map[string]string)
 		}
@@ -83,7 +83,7 @@ func NewSiteFromBytes(siteId string, templateId string, metadata map[string]stri
 				TemplateID: templateId,
 				Metadata:   metadata,
 			},
-			Resources: resources,
+			Package: package__,
 		}, nil
 	} else {
 		return nil, err
@@ -92,17 +92,17 @@ func NewSiteFromBytes(siteId string, templateId string, metadata map[string]stri
 
 func (self *Site) Clone(withDeployments bool) *Site {
 	return &Site{
-		SiteInfo:  self.SiteInfo.Clone(withDeployments),
-		Resources: util.CloneResources(self.Resources),
+		SiteInfo: self.SiteInfo.Clone(withDeployments),
+		Package:  util.ClonePackage(self.Package),
 	}
 }
 
-func (self *Site) UpdateFromResources() {
-	self.SiteInfo.UpdateFromResources(self.Resources)
+func (self *Site) UpdateFromPackage() {
+	self.SiteInfo.UpdateFromPackage(self.Package)
 }
 
-func (self *Site) EncodeResources(format string) ([]byte, error) {
-	return util.EncodeResources(format, self.Resources)
+func (self *Site) EncodePackage(format string) ([]byte, error) {
+	return util.EncodePackage(format, self.Package)
 }
 
 func (self *Site) AddDeployment(deploymentId string) bool {
@@ -120,8 +120,8 @@ func (self *Site) RemoveDeployment(deploymentId string) bool {
 func (self *Site) MergeTemplate(template *Template) {
 	self.MergeTemplateInfo(&template.TemplateInfo)
 
-	resources := util.CloneResources(template.Resources)
-	resources = util.MergeResources(resources, self.Resources...)
+	package_ := util.ClonePackage(template.Package)
+	package_ = util.MergePackage(package_, self.Package...)
 
-	self.Resources = resources
+	self.Package = package_
 }

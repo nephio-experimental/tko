@@ -7,9 +7,9 @@ import (
 	"github.com/tliron/commonlog"
 )
 
-func (self *Preparation) GetPreparableResources(resources tkoutil.Resources, log commonlog.Logger) *tkoutil.ResourceIdentifiers {
+func (self *Preparation) GetPreparableResources(package_ tkoutil.Package, log commonlog.Logger) *tkoutil.ResourceIdentifiers {
 	var preparableResources tkoutil.ResourceIdentifiers
-	for _, resource := range resources {
+	for _, resource := range package_ {
 		if resourceIdentifier, ok := tkoutil.NewResourceIdentifierForResource(resource); ok {
 			if isPreparable, _ := self.IsResourcePreparable(resourceIdentifier, resource, log); isPreparable {
 				preparableResources.Push(resourceIdentifier)
@@ -59,9 +59,9 @@ func (self *Preparation) IsResourcePreparable(resourceIdentifier tkoutil.Resourc
 }
 
 func (self *Preparation) prepareResource(deploymentId string, resourceIdentifier tkoutil.ResourceIdentifier, log commonlog.Logger) bool {
-	if modified, err := self.Client.ModifyDeployment(deploymentId, func(resources tkoutil.Resources) (bool, tkoutil.Resources, error) {
+	if modified, err := self.Client.ModifyDeployment(deploymentId, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
 		var resourceModified bool
-		if resource, ok := resourceIdentifier.GetResource(resources); ok {
+		if resource, ok := resourceIdentifier.GetResource(package_); ok {
 			log = commonlog.NewKeyValueLogger(log,
 				"resource", resourceIdentifier)
 
@@ -71,14 +71,14 @@ func (self *Preparation) prepareResource(deploymentId string, resourceIdentifier
 					for _, prepare := range preparers {
 						log.Info("preparing resource")
 
-						preparationContext := self.NewContext(deploymentId, resources, resourceIdentifier, log)
+						preparationContext := self.NewContext(deploymentId, package_, resourceIdentifier, log)
 						var preparerModified bool
 						var err error
 
 						context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 						defer cancel()
 
-						if preparerModified, resources, err = prepare(context, preparationContext); err == nil {
+						if preparerModified, package_, err = prepare(context, preparationContext); err == nil {
 							if preparerModified {
 								resourceModified = true
 							}
@@ -97,7 +97,7 @@ func (self *Preparation) prepareResource(deploymentId string, resourceIdentifier
 		}
 
 		if resourceModified {
-			return true, resources, nil
+			return true, package_, nil
 		} else {
 			return false, nil, nil
 		}

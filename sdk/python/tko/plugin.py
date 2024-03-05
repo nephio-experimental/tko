@@ -1,4 +1,4 @@
-import sys, traceback, copy, tko.resources
+import sys, traceback, copy, tko.package
 from ruamel.yaml import YAML
 
 
@@ -6,13 +6,13 @@ yaml=YAML(typ='safe')
 yaml.default_flow_style = False
 
 input = None
-output = {'prepared': False, 'resources': [], 'error': ''}
+output = {'prepared': False, 'package': [], 'error': ''}
 log_file = None
 
 
-def get_output_resources():
+def get_output_package():
   global output
-  return tko.resources.Resources(output.get('resources', []))
+  return tko.package.Package(output.get('package', []))
 
 
 def get_target_resource_identifier():
@@ -22,19 +22,19 @@ def get_target_resource_identifier():
   version = target_resource_identifier.get('version', '')
   kind = target_resource_identifier.get('kind', '')
   name = target_resource_identifier.get('name', '')
-  gvk = tko.resources.GVK(group=group, version=version, kind=kind)
-  return tko.resources.Identifier(gvk=gvk, name=name)
+  gvk = tko.package.GVK(group=group, version=version, kind=kind)
+  return tko.package.Identifier(gvk=gvk, name=name)
 
 
 def get_target_resource():
-  return get_output_resources()[get_target_resource_identifier()]
+  return get_output_package()[get_target_resource_identifier()]
 
 
 def get_deployments():
   global input
   deployments = input.get('deployments', {})
   for deployment in deployments.values():
-    yield tko.Resources(deployment)
+    yield tko.Package(deployment)
 
 
 def get_grpc_host():
@@ -67,13 +67,13 @@ def validate(f):
   try:
     input = yaml.load(sys.stdin)
     open_log_file()
-    output['resources'] = input.get('resources', [])
+    output['package'] = input.get('package', [])
     complete = input.get('complete', True)
     f(complete)
   except:
     output['error'] = traceback.format_exc()
 
-  del output['resources']
+  del output['package']
   yaml.dump(output, sys.stdout)
 
 
@@ -82,11 +82,11 @@ def prepare(f):
   try:
     input = yaml.load(sys.stdin)
     open_log_file()
-    output['resources'] = copy.deepcopy(input.get('deploymentResources', []))
+    output['package'] = copy.deepcopy(input.get('deploymentPackage', []))
     if f():
       output['prepared'] = True
   except:
-    output['resources'] = []
+    output['package'] = []
     output['error'] = traceback.format_exc()
 
   yaml.dump(output, sys.stdout)
@@ -97,10 +97,10 @@ def schedule(f):
   try:
     input = yaml.load(sys.stdin)
     open_log_file()
-    output['resources'] = input.get('siteResources', [])
+    output['package'] = input.get('sitePackage', [])
     f()
   except:
     output['error'] = traceback.format_exc()
 
-  del output['resources']
+  del output['package']
   yaml.dump(output, sys.stdout)

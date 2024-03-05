@@ -15,12 +15,12 @@ import (
 func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerSite: %+v", site)
 
-	site_, err := backend.NewSiteFromBytes(site.SiteId, site.TemplateId, site.Metadata, site.ResourcesFormat, site.Resources)
+	site_, err := backend.NewSiteFromBytes(site.SiteId, site.TemplateId, site.Metadata, site.PackageFormat, site.Package)
 	if err != nil {
 		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	site_.UpdateFromResources()
+	site_.UpdateFromPackage()
 
 	if err := self.Backend.SetSite(context, site_); err == nil {
 		return &api.RegisterResponse{Registered: true}, nil
@@ -49,19 +49,19 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 	self.Log.Infof("getSite: %+v", getSite)
 
 	if site, err := self.Backend.GetSite(context, getSite.SiteId); err == nil {
-		resourcesFormat := getSite.PreferredResourcesFormat
-		if resourcesFormat == "" {
-			resourcesFormat = self.DefaultResourcesFormat
+		packageFormat := getSite.PreferredPackageFormat
+		if packageFormat == "" {
+			packageFormat = self.DefaultPackageFormat
 		}
-		if resources, err := site.EncodeResources(resourcesFormat); err == nil {
+		if package_, err := site.EncodePackage(packageFormat); err == nil {
 			return &api.Site{
-				SiteId:          site.SiteID,
-				TemplateId:      site.TemplateID,
-				Metadata:        site.Metadata,
-				Updated:         timestamppb.New(site.Updated),
-				ResourcesFormat: resourcesFormat,
-				Resources:       resources,
-				DeploymentIds:   site.DeploymentIDs,
+				SiteId:        site.SiteID,
+				TemplateId:    site.TemplateID,
+				Metadata:      site.Metadata,
+				Updated:       timestamppb.New(site.Updated),
+				PackageFormat: packageFormat,
+				Package:       package_,
+				DeploymentIds: site.DeploymentIDs,
 			}, nil
 		} else {
 			return new(api.Site), ToGRPCError(err)

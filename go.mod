@@ -5,8 +5,8 @@ go 1.22
 require (
 	cloud.google.com/go/spanner v1.57.0
 	github.com/fxamacker/cbor/v2 v2.6.0
-	github.com/gdamore/tcell/v2 v2.7.1
-	github.com/jackc/pgx/v5 v5.5.3
+	github.com/gdamore/tcell/v2 v2.7.4
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/rivo/tview v0.0.0-20240225120200-5605142ca62e
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
@@ -19,7 +19,9 @@ require (
 	github.com/yannh/kubeconform v0.6.4
 	google.golang.org/grpc v1.62.0
 	google.golang.org/protobuf v1.32.0
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
+	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2
 	k8s.io/apiserver v0.29.2
 	k8s.io/client-go v0.29.2
@@ -197,9 +199,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.29.2 // indirect
-	k8s.io/apiextensions-apiserver v0.29.2 // indirect
 	k8s.io/component-base v0.29.2 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kms v0.29.2 // indirect

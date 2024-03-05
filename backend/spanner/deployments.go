@@ -35,7 +35,7 @@ func (self *SpannerBackend) StartDeploymentModification(context contextpkg.Conte
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
+func (self *SpannerBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, package_ tkoutil.Package, validation *validationpkg.Validation) (string, error) {
 	return "", nil
 }
 

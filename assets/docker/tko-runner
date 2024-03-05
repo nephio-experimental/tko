@@ -5,7 +5,11 @@ COPY scripts/install-python-env /opt/
 COPY scripts/_env /opt/
 COPY scripts/_functions /opt/
 
+COPY examples/plugins /opt/examples/plugins/
+COPY sdk/python/tko /opt/sdk/python/tko/
+
 RUN /opt/install-system-dependencies
+#RUN dnf install git -y
 RUN useradd tko
 
 USER tko

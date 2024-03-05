@@ -162,7 +162,7 @@ func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (*krm.Site, error) {
 
 func SiteToKRM(site *backendpkg.Site) (*krm.Site, error) {
 	if krmSite, err := SiteInfoToKRM(&site.SiteInfo); err == nil {
-		krmSite.Spec.Package = ResourcesToKRM(site.Resources)
+		krmSite.Spec.Package = PackageToKRM(site.Package)
 		return krmSite, nil
 	} else {
 		return nil, err
@@ -199,7 +199,7 @@ func SiteFromKRM(object runtime.Object) (*backendpkg.Site, error) {
 		site.TemplateID = *krmSite.Spec.TemplateId
 	}
 
-	site.Resources = ResourcesFromKRM(krmSite.Spec.Package)
+	site.Package = PackageFromKRM(krmSite.Spec.Package)
 
 	return &site, nil
 }

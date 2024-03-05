@@ -7,13 +7,16 @@ import (
 	"strings"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
+	pluginspkg "github.com/nephio-experimental/tko/plugins"
 	"github.com/nephio-experimental/tko/util"
 )
+
+const FIFOPrefix = "tko-validation-"
 
 type PluginInput struct {
 	GRPC                    PluginInputGRPC         `yaml:"grpc"`
 	LogFile                 string                  `yaml:"logFile"`
-	Resources               util.Resources          `yaml:"resources"`
+	Package                 util.Package            `yaml:"package"`
 	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
 	Complete                bool                    `yaml:"complete"`
 }
@@ -36,7 +39,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 			Port:           self.Validation.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
-		Resources:               self.Resources,
+		Package:                 self.Package,
 		TargetResourceIdentifer: self.TargetResourceIdentifer,
 		Complete:                self.Complete,
 	}
@@ -44,7 +47,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 
 func NewPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 	switch plugin.Executor {
-	case "command":
+	case pluginspkg.Command:
 		return NewCommandPluginValidator(plugin)
 	default:
 		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
@@ -52,8 +55,9 @@ func NewPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 }
 
 func NewCommandPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
-	if len(plugin.Arguments) < 1 {
-		return nil, errors.New("plugin of type \"command\" must have at least one argument")
+	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
+	if err != nil {
+		return nil, err
 	}
 
 	return func(context contextpkg.Context, validationContext *Context) []error {
@@ -61,14 +65,16 @@ func NewCommandPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 			"resource", validationContext.TargetResourceIdentifer,
 			"arguments", strings.Join(plugin.Arguments, " "))
 
-		logFifo := util.NewLogFIFO("tko-validation", validationContext.Validation.Log)
-		if err := logFifo.Start(); err != nil {
+		var input PluginInput
+		var output PluginOutput
+
+		if logFifo, err := executor.GetLogFIFO(FIFOPrefix, validationContext.Validation.Log); err == nil {
+			input = validationContext.ToPluginInput(logFifo)
+		} else {
 			return []error{err}
 		}
 
-		input := validationContext.ToPluginInput(logFifo.Path)
-		var output PluginOutput
-		if err := util.ExecuteCommand(plugin.Arguments, input, &output); err == nil {
+		if err := executor.Execute(context, input, &output); err == nil {
 			if output.Error == "" {
 				return nil
 			} else {

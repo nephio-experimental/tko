@@ -30,7 +30,7 @@ func init() {
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO API (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO API")
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API")
-	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding resources for TKO API (\"yaml\" or \"cbor\")")
+	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding KRM for TKO API (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
 	startCommand.Flags().Float64Var(&schedulerTimeout, "scheduler-timeout", 30.0, "scheduler timeout in seconds")
 

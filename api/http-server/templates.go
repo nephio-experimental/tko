@@ -37,7 +37,7 @@ func (self *Server) ListTemplates(writer http.ResponseWriter, request *http.Requ
 func (self *Server) GetTemplate(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if template, err := self.Backend.GetTemplate(request.Context(), id); err == nil {
-		writeResources(writer, template.Resources)
+		writePackage(writer, template.Package)
 	} else {
 		writer.WriteHeader(500)
 	}

@@ -6,6 +6,7 @@ import (
 
 	api "github.com/nephio-experimental/tko/api/grpc"
 	"github.com/nephio-experimental/tko/backend"
+	"github.com/nephio-experimental/tko/plugins"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/kutil/util"
 	"google.golang.org/grpc/codes"
@@ -16,8 +17,8 @@ import (
 func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugin) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerPlugin: %+v", plugin)
 
-	if !tkoutil.IsValidPluginType(plugin.Type, false) {
-		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, plugin.Type))
+	if !plugins.IsValidPluginType(plugin.Type, false) {
+		return new(api.RegisterResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", plugins.PluginTypesDescription, plugin.Type))
 	}
 
 	if err := self.Backend.SetPlugin(context, backend.NewPlugin(plugin.Type, plugin.Name, plugin.Executor, plugin.Arguments, plugin.Properties, tkoutil.TriggersFromAPI(plugin.Triggers))); err == nil {
@@ -33,8 +34,8 @@ func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugi
 func (self *Server) DeletePlugin(context contextpkg.Context, pluginId *api.PluginID) (*api.DeleteResponse, error) {
 	self.Log.Infof("deletePlugin: %+v", pluginId)
 
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return new(api.DeleteResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type))
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return new(api.DeleteResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type))
 	}
 
 	if err := self.Backend.DeletePlugin(context, backend.NewPluginID(pluginId.Type, pluginId.Name)); err == nil {
@@ -50,8 +51,8 @@ func (self *Server) DeletePlugin(context contextpkg.Context, pluginId *api.Plugi
 func (self *Server) GetPlugin(context contextpkg.Context, pluginId *api.PluginID) (*api.Plugin, error) {
 	self.Log.Infof("getPlugin: %+v", pluginId)
 
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return new(api.Plugin), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type))
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return new(api.Plugin), status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type))
 	}
 
 	if plugin, err := self.Backend.GetPlugin(context, backend.NewPluginID(pluginId.Type, pluginId.Name)); err == nil {
@@ -73,8 +74,8 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 	self.Log.Infof("listPlugins: %+v", listPlugins)
 
 	if listPlugins.Type != nil {
-		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, *listPlugins.Type))
+		if !plugins.IsValidPluginType(*listPlugins.Type, true) {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Type))
 		}
 	}
 

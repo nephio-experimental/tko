@@ -66,7 +66,7 @@ func (self *DeploymentDetails) GetTitle() string {
 func (self *DeploymentDetails) GetText() string {
 	if deployment, ok, err := self.client.GetDeployment(self.deploymentId); err == nil {
 		if ok {
-			if s, err := transcriber.Stringify(ToSliceAny(deployment.Resources)); err == nil {
+			if s, err := transcriber.Stringify(ToSliceAny(deployment.Package)); err == nil {
 				return s
 			} else {
 				return err.Error()

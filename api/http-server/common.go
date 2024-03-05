@@ -19,9 +19,9 @@ func sortById(info []ard.StringMap) {
 	})
 }
 
-func writeResources(writer io.Writer, resources util.Resources) {
-	content := make([]any, len(resources))
-	for index, resource := range resources {
+func writePackage(writer io.Writer, package_ util.Package) {
+	content := make([]any, len(package_))
+	for index, resource := range package_ {
 		content[index] = resource
 	}
 	transcribe.NewTranscriber().SetWriter(writer).SetIndentSpaces(2).WriteYAML(content)

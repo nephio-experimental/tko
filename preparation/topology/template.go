@@ -12,7 +12,7 @@ var TemplateGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Template")
 
 // TODO: cache result
 func GetTemplateID(preparationContext *preparation.Context, name string) (string, bool) {
-	if template, ok := TemplateGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentResources); ok {
+	if template, ok := TemplateGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentPackage); ok {
 		spec := ard.With(template).Get("spec").ConvertSimilar()
 
 		if templateId, ok := spec.Get("templateId").String(); ok {

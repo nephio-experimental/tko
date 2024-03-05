@@ -11,7 +11,7 @@ func init() {
 
 var deploymentGetCommand = &cobra.Command{
 	Use:   "get [DEPLOYMENT ID]",
-	Short: "Get deployment resources",
+	Short: "Get deployment package",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		GetDeployment(args[0])
@@ -22,7 +22,7 @@ func GetDeployment(deploymentId string) {
 	deployment, ok, err := NewClient().GetDeployment(deploymentId)
 	FailOnGRPCError(err)
 	if ok {
-		PrintResources(deployment.Resources)
+		PrintPackage(deployment.Package)
 	} else {
 		util.Fail("not found")
 	}

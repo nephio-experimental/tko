@@ -17,7 +17,7 @@ var SiteGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Site")
 
 // TODO: cache result
 func GetSiteID(preparationContext *preparation.Context, name string) (string, bool) {
-	if site, ok := SiteGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentResources); ok {
+	if site, ok := SiteGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentPackage); ok {
 		return GetStatusSiteID(site)
 	}
 
@@ -25,8 +25,8 @@ func GetSiteID(preparationContext *preparation.Context, name string) (string, bo
 }
 
 // ([preparation.PrepareFunc] signature)
-func PrepareSite(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Resources, error) {
-	if site, ok := preparationContext.GetResource(); ok {
+func PrepareSite(context contextpkg.Context, preparationContext *preparation.Context) (bool, tkoutil.Package, error) {
+	if site, ok := preparationContext.GetTargetResource(); ok {
 		prepared := false
 
 		spec := ard.With(site).Get("spec").ConvertSimilar()
@@ -56,7 +56,7 @@ func PrepareSite(context contextpkg.Context, preparationContext *preparation.Con
 				templateId, _ := spec.Get("provisionTemplateId").String()
 
 				merge, _ := spec.Get("merge").List()
-				ok, mergeResources, err := preparationContext.GetMergeResources(merge)
+				ok, mergePackage, err := preparationContext.GetMergePackage(merge)
 				if err != nil {
 					return false, nil, err
 				}
@@ -65,7 +65,7 @@ func PrepareSite(context contextpkg.Context, preparationContext *preparation.Con
 				}
 
 				siteId := "provisioned/" + backend.NewID()
-				if ok, reason, err := preparationContext.Preparation.Client.RegisterSite(siteId, templateId, map[string]string{"type": "provisioned"}, mergeResources); err == nil {
+				if ok, reason, err := preparationContext.Preparation.Client.RegisterSite(siteId, templateId, map[string]string{"type": "provisioned"}, mergePackage); err == nil {
 					if ok {
 						preparationContext.Log.Infof("provisioned new site %s for %s", siteId, preparationContext.TargetResourceIdentifer.Name)
 						SetStatusSiteID(site, siteId)
@@ -83,15 +83,15 @@ func PrepareSite(context contextpkg.Context, preparationContext *preparation.Con
 			if !tkoutil.SetPreparedAnnotation(site, true) {
 				return false, nil, errors.New("malformed Site resource")
 			}
-			return true, preparationContext.DeploymentResources, nil
+			return true, preparationContext.DeploymentPackage, nil
 		}
 	}
 
-	return false, preparationContext.DeploymentResources, nil
+	return false, preparationContext.DeploymentPackage, nil
 }
 
-func GetSite(resources tkoutil.Resources, siteName string) (tkoutil.Resource, bool) {
-	return SiteGVK.NewResourceIdentifier(siteName).GetResource(resources)
+func GetSite(package_ tkoutil.Package, siteName string) (tkoutil.Resource, bool) {
+	return SiteGVK.NewResourceIdentifier(siteName).GetResource(package_)
 }
 
 func GetSpecProvisionIfNotFound(spec *ard.Node, resource tkoutil.Resource) bool {

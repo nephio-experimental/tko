@@ -20,29 +20,33 @@ type SiteInfo struct {
 
 type Site struct {
 	SiteInfo
-	Resources tkoutil.Resources `json:"resources" yaml:"resources"`
+	Package tkoutil.Package `json:"package" yaml:"package"`
 }
 
-func (self *Client) RegisterSite(siteId string, templateId string, metadata map[string]string, resources tkoutil.Resources) (bool, string, error) {
-	if resources_, err := self.encodeResources(resources); err == nil {
-		return self.RegisterSiteRaw(siteId, templateId, metadata, self.ResourcesFormat, resources_)
+func (self *Client) RegisterSite(siteId string, templateId string, metadata map[string]string, package_ tkoutil.Package) (bool, string, error) {
+	if package__, err := self.encodePackage(package_); err == nil {
+		return self.RegisterSiteRaw(siteId, templateId, metadata, self.PackageFormat, package__)
 	} else {
 		return false, "", err
 	}
 }
 
-func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata map[string]string, resourcesFormat string, resources []byte) (bool, string, error) {
+func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata map[string]string, packageFormat string, package_ []byte) (bool, string, error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("registerSite: siteId=%s templateId=%s metadata=%v resourcesFormat=%s", siteId, templateId, metadata, resourcesFormat)
+		self.log.Info("registerSite",
+			"siteId", siteId,
+			"templateId", templateId,
+			"metadata", metadata,
+			"packageFormat", packageFormat)
 		if response, err := apiClient.RegisterSite(context, &api.Site{
-			SiteId:          siteId,
-			TemplateId:      templateId,
-			Metadata:        metadata,
-			ResourcesFormat: resourcesFormat,
-			Resources:       resources,
+			SiteId:        siteId,
+			TemplateId:    templateId,
+			Metadata:      metadata,
+			PackageFormat: packageFormat,
+			Package:       package_,
 		}); err == nil {
 			return response.Registered, response.NotRegisteredReason, nil
 		} else {
@@ -58,9 +62,10 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("getSite: siteId=%s", siteId)
-		if site, err := apiClient.GetSite(context, &api.GetSite{SiteId: siteId, PreferredResourcesFormat: self.ResourcesFormat}); err == nil {
-			if resources, err := tkoutil.DecodeResources(site.ResourcesFormat, site.Resources); err == nil {
+		self.log.Info("getSite",
+			"siteId", siteId)
+		if site, err := apiClient.GetSite(context, &api.GetSite{SiteId: siteId, PreferredPackageFormat: self.PackageFormat}); err == nil {
+			if package_, err := tkoutil.DecodePackage(site.PackageFormat, site.Package); err == nil {
 				return Site{
 					SiteInfo: SiteInfo{
 						SiteID:        site.SiteId,
@@ -69,7 +74,7 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 						Updated:       self.toTime(site.Updated),
 						DeploymentIDs: site.DeploymentIds,
 					},
-					Resources: resources,
+					Package: package_,
 				}, true, nil
 			} else {
 				return Site{}, false, err
@@ -89,7 +94,8 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
-		self.log.Infof("deleteSite: siteId=%s", siteId)
+		self.log.Infof("deleteSite",
+			"siteId", siteId)
 		if response, err := apiClient.DeleteSite(context, &api.SiteID{SiteId: siteId}); err == nil {
 			return response.Deleted, response.NotDeletedReason, nil
 		} else {
@@ -127,7 +133,8 @@ func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], erro
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
-		self.log.Infof("listSites: %s", listSites)
+		self.log.Info("listSites",
+			"listSites", listSites)
 		if client, err := apiClient.ListSites(context, &api.ListSites{
 			Offset:             uint32(listSites.Offset),
 			MaxCount:           uint32(listSites.MaxCount),

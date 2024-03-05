@@ -12,7 +12,7 @@ var SitesGVK = tkoutil.NewGVK("topology.nephio.org", "v1alpha1", "Sites")
 
 // TODO: cache result
 func GetSiteIDs(preparationContext *preparation.Context, name string) ([]string, bool) {
-	if site, ok := SitesGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentResources); ok {
+	if site, ok := SitesGVK.NewResourceIdentifier(name).GetResource(preparationContext.DeploymentPackage); ok {
 		spec := ard.With(site).Get("spec").ConvertSimilar()
 
 		if selectMetadata, ok := spec.Get("select", "metadata").StringMap(); ok {

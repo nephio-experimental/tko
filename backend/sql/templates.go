@@ -12,11 +12,11 @@ import (
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) SetTemplate(context contextpkg.Context, template *backend.Template) error {
-	if resources, err := self.encodeResources(template.Resources); err == nil {
+	if package_, err := self.encodePackage(template.Package); err == nil {
 		if tx, err := self.db.BeginTx(context, nil); err == nil {
 			upsertTemplate := tx.StmtContext(context, self.statements.PreparedUpsertTemplate)
 			template.Updated = time.Now().UTC()
-			if _, err := upsertTemplate.ExecContext(context, template.TemplateID, template.Updated, resources); err == nil {
+			if _, err := upsertTemplate.ExecContext(context, template.TemplateID, template.Updated, package_); err == nil {
 				if err := self.updateTemplateMetadata(context, tx, template); err != nil {
 					self.rollback(tx)
 					return err
@@ -138,10 +138,10 @@ func (self *SQLBackend) newTemplateInfo(templateId string, updated time.Time, me
 	return templateInfo, nil
 }
 
-func (self *SQLBackend) newTemplate(templateId string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte, resources []byte) (*backend.Template, error) {
+func (self *SQLBackend) newTemplate(templateId string, updated time.Time, metadataJson []byte, deploymentIdsJson []byte, package_ []byte) (*backend.Template, error) {
 	if templateInfo, err := self.newTemplateInfo(templateId, updated, metadataJson, deploymentIdsJson); err == nil {
 		template := backend.Template{TemplateInfo: templateInfo}
-		if template.Resources, err = self.decodeResources(resources); err == nil {
+		if template.Package, err = self.decodePackage(package_); err == nil {
 			return &template, nil
 		} else {
 			return nil, err
@@ -165,9 +165,9 @@ func (self *SQLBackend) getTemplateStmt(context contextpkg.Context, selectTempla
 
 	if rows.Next() {
 		var updated time.Time
-		var resources, metadataJson, deploymentIdsJson []byte
-		if err := rows.Scan(&updated, &resources, &metadataJson, &deploymentIdsJson); err == nil {
-			return self.newTemplate(templateId, updated, metadataJson, deploymentIdsJson, resources)
+		var package_, metadataJson, deploymentIdsJson []byte
+		if err := rows.Scan(&updated, &package_, &metadataJson, &deploymentIdsJson); err == nil {
+			return self.newTemplate(templateId, updated, metadataJson, deploymentIdsJson, package_)
 		} else {
 			return nil, err
 		}

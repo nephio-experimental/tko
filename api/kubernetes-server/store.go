@@ -166,7 +166,7 @@ func (self *Store) GetSingularName() string {
 
 // ([rest.GroupVersionKindProvider] interface)
 func (self *Store) GroupVersionKind(containingGV schema.GroupVersion) schema.GroupVersionKind {
-	self.Log.Infof("GroupVersionKind: %s", containingGV)
+	self.Log.Infof("GroupVersionKind: containingGV=%s", containingGV)
 	return containingGV.WithKind(self.TypeKind)
 }
 

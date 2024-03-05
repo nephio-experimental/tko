@@ -1,4 +1,4 @@
-package util
+package plugins
 
 import (
 	"bufio"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/segmentio/ksuid"
 	"github.com/tliron/commonlog"
 )
 
@@ -21,9 +22,9 @@ type LogFIFO struct {
 	Log  commonlog.Logger
 }
 
-func NewLogFIFO(name string, log commonlog.Logger) *LogFIFO {
+func NewLogFIFO(prefix string, log commonlog.Logger) *LogFIFO {
 	return &LogFIFO{
-		Path: filepath.Join(os.TempDir(), name),
+		Path: filepath.Join(os.TempDir(), prefix+ksuid.New().String()),
 		Log:  log,
 	}
 }
@@ -43,12 +44,11 @@ func (self *LogFIFO) create() error {
 			return err
 		}
 	}
-	//self.Log.Errorf("creating log file: %s", self.Path)
+	self.Log.Infof("creating log FIFO: %s", self.Path)
 	return syscall.Mkfifo(self.Path, 0600)
 }
 
 func (self *LogFIFO) start() {
-	//self.Log.Errorf("reading log file: %s", self.Path)
 	if file, err := os.Open(self.Path); err == nil {
 		defer file.Close()
 		reader := bufio.NewReader(file)
@@ -59,7 +59,7 @@ func (self *LogFIFO) start() {
 				if err != io.EOF {
 					self.Log.Error(err.Error())
 				}
-				//self.Log.Errorf("stopped reading log file: %s", self.Path)
+				self.Log.Infof("stopped reading from log FIFO: %s", self.Path)
 				break
 			}
 		}

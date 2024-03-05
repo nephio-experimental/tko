@@ -1,24 +1,24 @@
-import tko.resources
+import tko.package
 
 
-def meta_schedule(resources):
+def meta_schedule(package):
   # TODO: this is too simplistic ;)
   # We should support per-user grouping and dependency-based ordering
-  cluster_resources = tko.resources.Resources()
-  namespaced_resources = tko.resources.Resources()
+  cluster_package = tko.package.Package()
+  namespaced_package = tko.package.Package()
 
-  for resource in resources:
-    gvk = tko.resources.GVK(resource=resource)
+  for resource in package:
+    gvk = tko.package.GVK(resource=resource)
 
     if gvk.group.endswith('nephio.org'):
       continue
 
     if is_namespaced(resource):
-      namespaced_resources.append(resource)
+      namespaced_package.append(resource)
     else:
-      cluster_resources.append(resource)
+      cluster_package.append(resource)
 
-  return cluster_resources, namespaced_resources
+  return cluster_package, namespaced_package
 
 
 def is_namespaced(resource):

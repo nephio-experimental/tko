@@ -10,8 +10,8 @@ func NewID() string {
 	return ksuid.New().String()
 }
 
-func updateMetadataFromResources(metadata map[string]string, resources util.Resources) {
-	for _, resource := range resources {
+func updateMetadataFromPackage(metadata map[string]string, package_ util.Package) {
+	for _, resource := range package_ {
 		if resourceIdentifier, ok := util.NewResourceIdentifierForResource(resource); ok {
 			if resourceIdentifier.GVK.Group == "metadata.nephio.org" {
 				if annotation, ok := util.GetMetadataAnnotation(resource); ok {

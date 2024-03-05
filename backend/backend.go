@@ -63,12 +63,12 @@ type Backend interface {
 	// Can return BadArgumentError, NotFoundError, NotDoneError, BusyError.
 	StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *Deployment, error)
 
-	// Owns and may change the contents of the resources argument.
+	// Owns and may change the contents of the package argument.
 	// May change TemplateID, SiteID, Prepared, Approved.
-	// Does *not* modify Metadata, even if modified resources indicate a change.
+	// Does *not* modify Metadata, even if modified package indicate a change.
 	// If validation is not nil, should validate the modification. If the deployment is prepared, it should be complete validation.
 	// Can return BadArgumentError, NotFoundError, NotDoneError, TimeoutError.
-	EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error)
+	EndDeploymentModification(context contextpkg.Context, modificationToken string, package_ tkoutil.Package, validation *validationpkg.Validation) (string, error)
 
 	// Can return BadArgumentError, NotFoundError, NotDoneError.
 	CancelDeploymentModification(context contextpkg.Context, modificationToken string) error

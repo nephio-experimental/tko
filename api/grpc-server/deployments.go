@@ -16,7 +16,7 @@ import (
 func (self *Server) CreateDeployment(context contextpkg.Context, createDeployment *api.CreateDeployment) (*api.CreateDeploymentResponse, error) {
 	self.Log.Infof("createDeployment: %+v", createDeployment)
 
-	deployment, err := backend.NewDeploymentFromBytes(createDeployment.ParentDeploymentId, createDeployment.TemplateId, createDeployment.SiteId, createDeployment.MergeMetadata, createDeployment.Prepared, createDeployment.Approved, createDeployment.MergeResourcesFormat, createDeployment.MergeResources)
+	deployment, err := backend.NewDeploymentFromBytes(createDeployment.ParentDeploymentId, createDeployment.TemplateId, createDeployment.SiteId, createDeployment.MergeMetadata, createDeployment.Prepared, createDeployment.Approved, createDeployment.MergePackageFormat, createDeployment.MergePackage)
 	if err != nil {
 		return new(api.CreateDeploymentResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -48,11 +48,11 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 	self.Log.Infof("getDeployment: %+v", getDeployment)
 
 	if deployment, err := self.Backend.GetDeployment(context, getDeployment.DeploymentId); err == nil {
-		resourcesFormat := getDeployment.PreferredResourcesFormat
-		if resourcesFormat == "" {
-			resourcesFormat = self.DefaultResourcesFormat
+		packageFormat := getDeployment.PreferredPackageFormat
+		if packageFormat == "" {
+			packageFormat = self.DefaultPackageFormat
 		}
-		if resources, err := deployment.EncodeResources(resourcesFormat); err == nil {
+		if pakcage_, err := deployment.EncodePackage(packageFormat); err == nil {
 			return &api.Deployment{
 				DeploymentId:       deployment.DeploymentID,
 				ParentDeploymentId: deployment.ParentDeploymentID,
@@ -62,8 +62,8 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 				Updated:            timestamppb.New(deployment.Updated),
 				Prepared:           deployment.Prepared,
 				Approved:           deployment.Approved,
-				ResourcesFormat:    resourcesFormat,
-				Resources:          resources,
+				PackageFormat:      packageFormat,
+				Package:            pakcage_,
 			}, nil
 		} else {
 			return new(api.Deployment), ToGRPCError(err)
@@ -116,16 +116,16 @@ func (self *Server) StartDeploymentModification(context contextpkg.Context, star
 	self.Log.Infof("startDeploymentModification: %+v", startDeploymentModification)
 
 	if modificationToken, deployment, err := self.Backend.StartDeploymentModification(context, startDeploymentModification.DeploymentId); err == nil {
-		resourcesFormat := startDeploymentModification.PreferredResourcesFormat
-		if resourcesFormat == "" {
-			resourcesFormat = self.DefaultResourcesFormat
+		packageFormat := startDeploymentModification.PreferredPackageFormat
+		if packageFormat == "" {
+			packageFormat = self.DefaultPackageFormat
 		}
-		if resources, err := deployment.EncodeResources(resourcesFormat); err == nil {
+		if package_, err := deployment.EncodePackage(packageFormat); err == nil {
 			return &api.StartDeploymentModificationResponse{
 				Started:           true,
 				ModificationToken: modificationToken,
-				ResourcesFormat:   resourcesFormat,
-				Resources:         resources,
+				PackageFormat:     packageFormat,
+				Package:           package_,
 			}, nil
 		} else {
 			return new(api.StartDeploymentModificationResponse), ToGRPCError(err)
@@ -141,12 +141,12 @@ func (self *Server) StartDeploymentModification(context contextpkg.Context, star
 func (self *Server) EndDeploymentModification(context contextpkg.Context, endDeploymentModification *api.EndDeploymentModification) (*api.EndDeploymentModificationResponse, error) {
 	self.Log.Infof("endDeploymentModification: %+v", endDeploymentModification)
 
-	resources, err := tkoutil.DecodeResources(endDeploymentModification.ResourcesFormat, endDeploymentModification.Resources)
+	package_, err := tkoutil.DecodePackage(endDeploymentModification.PackageFormat, endDeploymentModification.Package)
 	if err != nil {
 		return new(api.EndDeploymentModificationResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if deploymentId, err := self.Backend.EndDeploymentModification(context, endDeploymentModification.ModificationToken, resources, nil); err == nil {
+	if deploymentId, err := self.Backend.EndDeploymentModification(context, endDeploymentModification.ModificationToken, package_, nil); err == nil {
 		return &api.EndDeploymentModificationResponse{Modified: true, DeploymentId: deploymentId}, nil
 	} else if backend.IsNotDoneError(err) {
 		return &api.EndDeploymentModificationResponse{Modified: false, NotModifiedReason: err.Error()}, nil

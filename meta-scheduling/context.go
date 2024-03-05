@@ -13,22 +13,22 @@ type Context struct {
 	MetaScheduling          *MetaScheduling
 	Log                     commonlog.Logger
 	SiteID                  string
-	SiteResources           util.Resources
+	SitePackage             util.Package
 	TargetResourceIdentifer util.ResourceIdentifier
-	Deployments             map[string]util.Resources
+	Deployments             map[string]util.Package
 }
 
-func (self *MetaScheduling) NewContext(siteId string, siteResources util.Resources, targetResourceIdentifer util.ResourceIdentifier, deployments map[string]util.Resources, log commonlog.Logger) *Context {
+func (self *MetaScheduling) NewContext(siteId string, sitePackage util.Package, targetResourceIdentifer util.ResourceIdentifier, deployments map[string]util.Package, log commonlog.Logger) *Context {
 	return &Context{
 		MetaScheduling:          self,
 		Log:                     log,
 		SiteID:                  siteId,
-		SiteResources:           siteResources,
+		SitePackage:             sitePackage,
 		TargetResourceIdentifer: targetResourceIdentifer,
 		Deployments:             deployments,
 	}
 }
 
 func (self *Context) GetResource() (util.Resource, bool) {
-	return self.TargetResourceIdentifer.GetResource(self.SiteResources)
+	return self.TargetResourceIdentifer.GetResource(self.SitePackage)
 }

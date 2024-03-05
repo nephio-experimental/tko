@@ -42,7 +42,7 @@ message AboutResponse {
     string ipStack = 5;
     string address = 6;
     uint32 port = 7;
-    string defaultResourcesFormat = 8;
+    string defaultPackageFormat = 8;
 }
 
 message RegisterResponse {
@@ -65,8 +65,8 @@ message Template {
     string templateId = 1;
     map<string, string> metadata = 2;
     google.protobuf.Timestamp updated = 3;
-    string resourcesFormat = 4;
-    bytes resources = 5; // TODO: stream
+    string packageFormat = 4;
+    bytes package = 5; // TODO: stream
     repeated string deploymentIds = 6;
 }
 
@@ -79,7 +79,7 @@ message ListedTemplate {
 
 message GetTemplate {
     string templateId = 1;
-    string preferredResourcesFormat = 2;
+    string preferredPackageFormat = 2;
 }
 
 message ListTemplates {
@@ -100,8 +100,8 @@ message Site {
     string templateId = 2;
     map<string, string> metadata = 3;
     google.protobuf.Timestamp updated = 4;
-    string resourcesFormat = 5;
-    bytes resources = 6; // TODO: stream
+    string packageFormat = 5;
+    bytes package = 6; // TODO: stream
     repeated string deploymentIds = 7;
 }
 
@@ -115,7 +115,7 @@ message ListedSite {
 
 message GetSite {
     string siteId = 1;
-    string preferredResourcesFormat = 2;
+    string preferredPackageFormat = 2;
 }
 
 message ListSites {
@@ -142,8 +142,8 @@ message Deployment {
     google.protobuf.Timestamp updated = 7;
     bool prepared = 8;
     bool approved = 9;
-    string resourcesFormat = 10;
-    bytes resources = 11; // TODO: stream
+    string packageFormat = 10;
+    bytes package = 11; // TODO: stream
 }
 
 message ListedDeployment {
@@ -165,8 +165,8 @@ message CreateDeployment {
     map<string, string> mergeMetadata = 4;
     bool prepared = 5;
     bool approved = 6;
-    string mergeResourcesFormat = 7;
-    bytes mergeResources = 8; // TODO: stream
+    string mergePackageFormat = 7;
+    bytes mergePackage = 8; // TODO: stream
 }
 
 message CreateDeploymentResponse {
@@ -177,7 +177,7 @@ message CreateDeploymentResponse {
 
 message GetDeployment {
     string deploymentId = 1;
-    string preferredResourcesFormat = 2;
+    string preferredPackageFormat = 2;
 }
 
 message ListDeployments {
@@ -195,21 +195,21 @@ message ListDeployments {
 
 message StartDeploymentModification {
     string deploymentId = 1;
-    string preferredResourcesFormat = 2;
+    string preferredPackageFormat = 2;
 }
 
 message StartDeploymentModificationResponse {
     bool started = 1;
     string notStartedReason = 2;
     string modificationToken = 3;
-    string resourcesFormat = 4;
-    bytes resources = 5; // TODO: stream
+    string packageFormat = 4;
+    bytes package = 5; // TODO: stream
 }
 
 message EndDeploymentModification {
     string modificationToken = 1;
-    string resourcesFormat = 2;
-    bytes resources = 3; // TODO: stream
+    string packageFormat = 2;
+    bytes package = 3; // TODO: stream
 }
 
 message EndDeploymentModificationResponse {

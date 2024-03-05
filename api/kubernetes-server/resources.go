@@ -6,23 +6,23 @@ import (
 	"github.com/tliron/go-ard"
 )
 
-func ResourcesToKRM(resources tkoutil.Resources) *krm.Package {
+func PackageToKRM(package_ tkoutil.Package) *krm.Package {
 	krmPackage := &krm.Package{
-		Resources: make([]ard.StringMap, len(resources)),
+		Resources: make([]ard.StringMap, len(package_)),
 	}
-	for index, resource := range resources {
+	for index, resource := range package_ {
 		krmPackage.Resources[index] = ard.CopyMapsToStringMaps(resource).(ard.StringMap)
 	}
 	return krmPackage
 }
 
-func ResourcesFromKRM(krmPackage *krm.Package) tkoutil.Resources {
+func PackageFromKRM(krmPackage *krm.Package) tkoutil.Package {
 	if krmPackage != nil {
-		resources := make(tkoutil.Resources, len(krmPackage.Resources))
+		package_ := make(tkoutil.Package, len(krmPackage.Resources))
 		for index, resource := range krmPackage.Resources {
-			resources[index] = ard.CopyStringMapsToMaps(resource).(tkoutil.Resource)
+			package_[index] = ard.CopyStringMapsToMaps(resource).(tkoutil.Resource)
 		}
-		return resources
+		return package_
 	} else {
 		return nil
 	}

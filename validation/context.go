@@ -10,20 +10,20 @@ import (
 
 type Context struct {
 	Validation              *Validation
-	Resources               util.Resources
+	Package                 util.Package
 	TargetResourceIdentifer util.ResourceIdentifier
 	Complete                bool
 }
 
-func (self *Validation) NewContext(resources util.Resources, targetResourceIdentifer util.ResourceIdentifier, complete bool) *Context {
+func (self *Validation) NewContext(package_ util.Package, targetResourceIdentifer util.ResourceIdentifier, complete bool) *Context {
 	return &Context{
 		Validation:              self,
-		Resources:               resources,
+		Package:                 package_,
 		TargetResourceIdentifer: targetResourceIdentifer,
 		Complete:                complete,
 	}
 }
 
 func (self *Context) GetResource() (util.Resource, bool) {
-	return self.TargetResourceIdentifer.GetResource(self.Resources)
+	return self.TargetResourceIdentifer.GetResource(self.Package)
 }

@@ -1,4 +1,4 @@
-import types, collections.abc, tko.resources, tko.plugin
+import types, collections.abc, tko.package, tko.plugin
 
 
 def wrap(o):
@@ -15,19 +15,19 @@ def wrap(o):
   return o
 
 
-def evaluate_expression(expression, resources):
+def evaluate_expression(expression, package):
   if expression.startswith('{{') and expression.endswith('}}'):
     expression = expression[2:-2].strip()
 
-    GVK = tko.resources.GVK
-    Identifier = tko.resources.Identifier
+    GVK = tko.package.GVK
+    Identifier = tko.package.Identifier
 
     def get(g, v, k, name=None):
       gvk = GVK(g, v, k)
       if name is None:
-        return wrap(resources.get_first(gvk))
+        return wrap(package.get_first(gvk))
       else:
-        return wrap(resources[Identifier(gvk, name)])
+        return wrap(package[Identifier(gvk, name)])
 
     r = eval(expression)
 

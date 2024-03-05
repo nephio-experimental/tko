@@ -4,6 +4,7 @@ import (
 	contextpkg "context"
 	"regexp"
 
+	"github.com/nephio-experimental/tko/plugins"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/tliron/kutil/util"
@@ -59,7 +60,7 @@ func (self *ValidatingBackend) SetTemplate(context contextpkg.Context, template 
 		return NewBadArgumentError("invalid templateId")
 	}
 
-	if err := self.Validation.ValidateResources(template.Resources, false); err != nil {
+	if err := self.Validation.ValidatePackage(template.Package, false); err != nil {
 		return WrapBadArgumentError(err)
 	}
 
@@ -112,7 +113,7 @@ func (self *ValidatingBackend) SetSite(context contextpkg.Context, site *Site) e
 		return NewBadArgumentError("invalid siteId")
 	}
 
-	if err := self.Validation.ValidateResources(site.Resources, true); err != nil {
+	if err := self.Validation.ValidatePackage(site.Package, true); err != nil {
 		return WrapBadArgumentError(err)
 	}
 
@@ -168,10 +169,10 @@ func (self *ValidatingBackend) CreateDeployment(context contextpkg.Context, depl
 
 	// Prepared deployments must be completely valid
 	clone := deployment.Clone(true)
-	clone.UpdateFromResources(true)
+	clone.UpdateFromPackage(true)
 	completeValidation := clone.Prepared
 
-	if err := self.Validation.ValidateResources(deployment.Resources, completeValidation); err != nil {
+	if err := self.Validation.ValidatePackage(deployment.Package, completeValidation); err != nil {
 		return WrapBadArgumentError(err)
 	}
 
@@ -219,13 +220,13 @@ func (self *ValidatingBackend) StartDeploymentModification(context contextpkg.Co
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, resources tkoutil.Resources, validation *validationpkg.Validation) (string, error) {
+func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Context, modificationToken string, package_ tkoutil.Package, validation *validationpkg.Validation) (string, error) {
 	if modificationToken == "" {
 		return "", NewBadArgumentError("modificationToken is empty")
 	}
 
 	// Partial validation before calling the wrapped backend
-	if err := self.Validation.ValidateResources(resources, false); err != nil {
+	if err := self.Validation.ValidatePackage(package_, false); err != nil {
 		return "", WrapBadArgumentError(err)
 	}
 
@@ -234,7 +235,7 @@ func (self *ValidatingBackend) EndDeploymentModification(context contextpkg.Cont
 	}
 
 	// It's the wrapped backend's job to validate the complete deployment
-	return self.Backend.EndDeploymentModification(context, modificationToken, resources, validation)
+	return self.Backend.EndDeploymentModification(context, modificationToken, package_, validation)
 }
 
 // ([Backend] interface)
@@ -248,8 +249,8 @@ func (self *ValidatingBackend) CancelDeploymentModification(context contextpkg.C
 
 // ([Backend] interface)
 func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *Plugin) error {
-	if !tkoutil.IsValidPluginType(plugin.Type, false) {
-		return NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, plugin.Type)
+	if !plugins.IsValidPluginType(plugin.Type, false) {
+		return NewBadArgumentErrorf("plugin type must be %s: %s", plugins.PluginTypesDescription, plugin.Type)
 	}
 
 	if plugin.Name == "" {
@@ -278,8 +279,8 @@ func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *Plu
 
 // ([Backend] interface)
 func (self *ValidatingBackend) GetPlugin(context contextpkg.Context, pluginId PluginID) (*Plugin, error) {
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return nil, NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return nil, NewBadArgumentErrorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
 	if pluginId.Name == "" {
@@ -294,8 +295,8 @@ func (self *ValidatingBackend) GetPlugin(context contextpkg.Context, pluginId Pl
 
 // ([Backend] interface)
 func (self *ValidatingBackend) DeletePlugin(context contextpkg.Context, pluginId PluginID) error {
-	if !tkoutil.IsValidPluginType(pluginId.Type, false) {
-		return NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, pluginId.Type)
+	if !plugins.IsValidPluginType(pluginId.Type, false) {
+		return NewBadArgumentErrorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
 	if pluginId.Name == "" {
@@ -319,8 +320,8 @@ func (self *ValidatingBackend) ListPlugins(context contextpkg.Context, listPlugi
 	}
 
 	if listPlugins.Type != nil {
-		if !tkoutil.IsValidPluginType(*listPlugins.Type, true) {
-			return nil, NewBadArgumentErrorf("plugin type must be %s: %s", tkoutil.PluginTypesDescription, *listPlugins.Type)
+		if !plugins.IsValidPluginType(*listPlugins.Type, true) {
+			return nil, NewBadArgumentErrorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Type)
 		}
 	}
 

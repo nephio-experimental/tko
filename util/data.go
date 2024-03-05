@@ -1,8 +1,8 @@
 package util
 
-func CloneStringSet(set []string) []string {
-	set_ := make([]string, len(set))
-	copy(set_, set)
+func CloneStringList(list []string) []string {
+	set_ := make([]string, len(list))
+	copy(set_, list)
 	return set_
 }
 

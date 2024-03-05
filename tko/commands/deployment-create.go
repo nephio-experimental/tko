@@ -19,8 +19,8 @@ func init() {
 	deploymentCommand.AddCommand(deploymentCreateCommand)
 
 	deploymentCreateCommand.Flags().StringToStringVarP(&deploymentMetadata, "mergeable metadata", "m", nil, "metadata")
-	deploymentCreateCommand.Flags().StringVar(&mergeUrl, "merge", "", "URL for mergeable YAML content (can be a local directory or file)")
-	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable YAML content from stdin")
+	deploymentCreateCommand.Flags().StringVar(&mergeUrl, "merge", "", "URL for mergeable package YAML manifests (can be a local directory or file)")
+	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable package YAML manifests from stdin")
 	deploymentCreateCommand.Flags().StringVar(&parentDeploymentId, "parent", "", "parent deployment ID")
 	deploymentCreateCommand.Flags().StringVarP(&siteId, "site", "s", "", "deployment site ID")
 	deploymentCreateCommand.Flags().BoolVar(&prepared, "prepared", false, "mark deployment as prepared")
@@ -32,7 +32,7 @@ var deploymentCreateCommand = &cobra.Command{
 	Short: "Create deployment",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readPackageTimeout)
 		util.OnExit(cancel)
 
 		CreateDeployment(context, parentDeploymentId, args[0], siteId, deploymentMetadata, prepared, approved, url, stdin)
@@ -40,14 +40,14 @@ var deploymentCreateCommand = &cobra.Command{
 }
 
 func CreateDeployment(context contextpkg.Context, parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, url string, stdin bool) {
-	var mergeResources tkoutil.Resources
+	var mergePackage tkoutil.Package
 	if stdin || (mergeUrl != "") {
 		var err error
-		mergeResources, err = readResources(context, mergeUrl, stdin)
+		mergePackage, err = readPackage(context, mergeUrl, stdin)
 		util.FailOnError(err)
 	}
 
-	ok, reason, deploymentId, err := NewClient().CreateDeployment(parentDeploymentId, templateId, siteId, mergeMetadata, prepared, approved, mergeResources)
+	ok, reason, deploymentId, err := NewClient().CreateDeployment(parentDeploymentId, templateId, siteId, mergeMetadata, prepared, approved, mergePackage)
 	FailOnGRPCError(err)
 	if ok {
 		log.Noticef("created deployment: %s", deploymentId)

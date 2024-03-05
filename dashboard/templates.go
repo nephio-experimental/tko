@@ -50,7 +50,7 @@ func (self *TemplateDetails) GetTitle() string {
 func (self *TemplateDetails) GetText() string {
 	if template, ok, err := self.client.GetTemplate(self.templateId); err == nil {
 		if ok {
-			if s, err := transcriber.Stringify(ToSliceAny(template.Resources)); err == nil {
+			if s, err := transcriber.Stringify(ToSliceAny(template.Package)); err == nil {
 				return s
 			} else {
 				return err.Error()

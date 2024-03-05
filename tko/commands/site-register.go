@@ -12,8 +12,8 @@ func init() {
 	siteCommand.AddCommand(siteRegisterCommand)
 
 	siteRegisterCommand.Flags().StringToStringVarP(&siteMetadata, "metadata", "m", nil, "mergeable metadata")
-	siteRegisterCommand.Flags().StringVarP(&url, "url", "u", "", "URL for mergeable YAML content (can be a local directory or file)")
-	siteRegisterCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable YAML content from stdin")
+	siteRegisterCommand.Flags().StringVarP(&url, "url", "u", "", "URL for mergeable package YAML manifests (can be a local directory or file)")
+	siteRegisterCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable package YAML manifests from stdin")
 }
 
 var siteRegisterCommand = &cobra.Command{
@@ -21,7 +21,7 @@ var siteRegisterCommand = &cobra.Command{
 	Short: "Register site",
 	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readResourcesTimeout)
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), readPackageTimeout)
 		util.OnExit(cancel)
 
 		if len(args) == 2 {
@@ -33,14 +33,14 @@ var siteRegisterCommand = &cobra.Command{
 }
 
 func RegisterSite(context contextpkg.Context, siteId string, templateId string, metadata map[string]string, url string, stdin bool) {
-	var resources tkoutil.Resources
+	var package_ tkoutil.Package
 	if stdin || (url != "") {
 		var err error
-		resources, err = readResources(context, url, stdin)
+		package_, err = readPackage(context, url, stdin)
 		util.FailOnError(err)
 	}
 
-	ok, reason, err := NewClient().RegisterSite(siteId, templateId, metadata, resources)
+	ok, reason, err := NewClient().RegisterSite(siteId, templateId, metadata, package_)
 	FailOnGRPCError(err)
 	if ok {
 		log.Noticef("registered site: %s", siteId)

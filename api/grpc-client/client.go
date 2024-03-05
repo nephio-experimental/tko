@@ -19,7 +19,7 @@ type Client struct {
 	GRPCLevel2Protocol string
 	GRPCAddress        string
 	GRPCPort           int
-	ResourcesFormat    string
+	PackageFormat      string
 	Timeout            time.Duration
 	Timezone           *time.Location
 
@@ -28,7 +28,7 @@ type Client struct {
 	log           commonlog.Logger
 }
 
-func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resourcesFormat string, timeout time.Duration, log commonlog.Logger) *Client {
+func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, packageFormat string, timeout time.Duration, log commonlog.Logger) *Client {
 	bind := grpcIpStack.ClientBind(grpcAddress)
 
 	if address, err := util.ToReachableIPAddress(bind.Address); err == nil {
@@ -39,7 +39,7 @@ func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, resou
 		GRPCLevel2Protocol: bind.Level2Protocol,
 		GRPCAddress:        bind.Address,
 		GRPCPort:           grpcPort,
-		ResourcesFormat:    resourcesFormat,
+		PackageFormat:      packageFormat,
 		Timeout:            timeout,
 		Timezone:           time.Local,
 		log:                log,
@@ -63,8 +63,8 @@ func (self *Client) APIClient() (api.APIClient, error) {
 
 // Utils
 
-func (self *Client) encodeResources(resources tkoutil.Resources) ([]byte, error) {
-	return tkoutil.EncodeResources(self.ResourcesFormat, resources)
+func (self *Client) encodePackage(package_ tkoutil.Package) ([]byte, error) {
+	return tkoutil.EncodePackage(self.PackageFormat, package_)
 }
 
 func (self *Client) toTime(timestamp *timestamppb.Timestamp) time.Time {

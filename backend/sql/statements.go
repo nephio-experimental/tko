@@ -3,6 +3,7 @@ package sql
 import (
 	contextpkg "context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -234,15 +235,18 @@ func (self *Statements) DropTables(context contextpkg.Context) error {
 // Utils
 
 func (self *Statements) execAll(context contextpkg.Context, fail bool, statements ...string) error {
+	var errs []error
 	for _, statement := range statements {
-		self.log.Info(statement)
+		self.log.Debugf("executing SQL:\n%s", statement)
 		if _, err := self.db.ExecContext(context, statement); err != nil {
 			if fail {
-				return err
+				errs = append(errs, err)
+			} else {
+				self.log.Error(err.Error())
 			}
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func nilIfEmptyString(s string) any {
@@ -269,7 +273,7 @@ func (self PreparedStmtField) GetSource(statements *Statements) string {
 
 func (self PreparedStmtField) GetPrepared(statements *Statements) *sql.Stmt {
 	statements_ := reflect.ValueOf(statements).Elem()
-	return statements_.FieldByName(self.SourceName).Interface().(*sql.Stmt) // will panic if not *sql.Stmt
+	return statements_.FieldByName(self.PreparedName).Interface().(*sql.Stmt) // will panic if not *sql.Stmt
 }
 
 func (self PreparedStmtField) SetPrepared(statements *Statements, stmt *sql.Stmt) {
