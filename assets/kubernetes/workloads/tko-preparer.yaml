@@ -20,6 +20,7 @@ spec:
         app.kubernetes.io/name: tko-preparer
         app.kubernetes.io/part-of: tko
     spec:
+      serviceAccountName: tko
       containers:
       - name: tko-preparer
         image: tko-preparer

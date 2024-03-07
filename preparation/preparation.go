@@ -19,7 +19,7 @@ type Preparation struct {
 	AutoApprove bool
 	Log         commonlog.Logger
 
-	registeredPreparers map[util.GVK][]PreparerFunc
+	registeredPreparers map[util.GVK][]PrepareFunc
 	preparers           sync.Map
 }
 
@@ -29,7 +29,7 @@ func NewPreparation(client *clientpkg.Client, timeout time.Duration, autoApprove
 		Timeout:             timeout,
 		AutoApprove:         autoApprove,
 		Log:                 log,
-		registeredPreparers: make(map[util.GVK][]PreparerFunc),
+		registeredPreparers: make(map[util.GVK][]PrepareFunc),
 	}
 }
 

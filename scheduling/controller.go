@@ -1,4 +1,4 @@
-package metascheduling
+package scheduling
 
 import (
 	"time"
@@ -14,22 +14,22 @@ import (
 type Controller struct {
 	*util.Controller
 
-	MetaScheduling *MetaScheduling
+	Scheduling *Scheduling
 
 	log commonlog.Logger
 }
 
-func NewController(metaScheduling *MetaScheduling, interval time.Duration, log commonlog.Logger) *Controller {
+func NewController(scheduling *Scheduling, interval time.Duration, log commonlog.Logger) *Controller {
 	self := Controller{
-		MetaScheduling: metaScheduling,
-		log:            log,
+		Scheduling: scheduling,
+		log:        log,
 	}
 	self.Controller = util.NewController(self.run, interval, log)
 	return &self
 }
 
 func (self *Controller) run() error {
-	if err := self.MetaScheduling.ScheduleSites(); err != nil {
+	if err := self.Scheduling.ScheduleSites(); err != nil {
 		self.log.Error(err.Error())
 	}
 	return nil

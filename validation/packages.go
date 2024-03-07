@@ -34,7 +34,7 @@ func (self *Validation) ValidatePackage(package_ util.Package, complete bool) er
 	return errors.Join(errs...)
 }
 
-// ([ValidatorFunc] signature)
+// ([ValidateFunc] signature)
 func (self *Validation) DefaultValidate(context contextpkg.Context, validationContext *Context) []error {
 	if resource, ok := validationContext.GetResource(); ok {
 		return self.Kubeconform(resource, validationContext.Complete)

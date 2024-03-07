@@ -1,8 +1,8 @@
-FROM fedora:39
+FROM alpine:3.19.1
 
-COPY work/tko-preparer /usr/bin/
+COPY work/tko-preparer /opt/
 
-RUN useradd tko
-
+RUN adduser --disabled-password tko && apk add --no-cache libc6-compat tzdata
 USER tko
-CMD /usr/bin/tko-preparer start -v
+
+ENTRYPOINT ["/opt/tko-preparer", "start", "-v"]

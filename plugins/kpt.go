@@ -5,6 +5,7 @@ import (
 	contextpkg "context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/nephio-experimental/tko/util"
@@ -32,27 +33,25 @@ func NewKptExecutor(arguments []string, properties map[string]string) (*KptExecu
 }
 
 func (self *KptExecutor) Execute(context contextpkg.Context, targetResourceIdentifer util.ResourceIdentifier, package_ util.Package) (util.Package, error) {
-	if self.Remote != nil {
-		return self.ExecuteKubernetes(context, targetResourceIdentifer, package_)
-	} else {
-		return self.ExecuteLocal(context, targetResourceIdentifer, package_)
-	}
-}
-
-func (self *KptExecutor) ExecuteLocal(context contextpkg.Context, targetResourceIdentifer util.ResourceIdentifier, package___ util.Package) (util.Package, error) {
 	var targetResource util.Resource
 	var ok bool
-	if targetResource, ok = targetResourceIdentifer.GetResource(package___); !ok {
+	if targetResource, ok = targetResourceIdentifer.GetResource(package_); !ok {
 		// TODO: is this an error?
 		return nil, errors.New("missing target resource for kpt function")
 	}
 
+	kpt := "/usr/bin/kpt"
+	if self.Remote != nil {
+		kpt = "/opt/kpt-podman"
+	}
+
 	image := self.Arguments[0]
-	command := []string{"kpt", "fn", "eval", "--image=" + image, "-", "--"}
+	command := []string{kpt, "fn", "eval", "--image=" + image, "-", "--"}
 
 	// Add kpt inputs
 	resource := ard.With(targetResource).ConvertSimilar()
 	for key, path := range self.Properties {
+		// Ignore internal properties
 		if !strings.HasPrefix(key, "_") {
 			if value, ok := resource.GetPath(path, ".").String(); ok {
 				command = append(command, key+"="+value)
@@ -62,13 +61,17 @@ func (self *KptExecutor) ExecuteLocal(context contextpkg.Context, targetResource
 		}
 	}
 
-	if input, err := util.EncodePackage("yaml", package___); err == nil {
-		if output_, err := Run(context, bytes.NewReader(input), command...); err == nil {
-			if resourceList, err := util.ReadPackage("yaml", bytes.NewReader(output_)); err == nil {
+	/*if self.Remote != nil {
+		command = bashify(command...)
+	}*/
+
+	if stdin, err := util.EncodePackage("yaml", package_); err == nil {
+		if stdout, err := self.Executor.Execute(context, bytes.NewReader(stdin), command...); err == nil {
+			if resourceList, err := util.DecodePackage("yaml", stdout); err == nil {
 				if len(resourceList) == 1 {
-					if package__, ok := ard.With(resourceList[0]).Get("items").ConvertSimilar().List(); ok {
-						if package___, ok = util.ToMapList(package__); ok {
-							return package___, nil
+					if items, ok := ard.With(resourceList[0]).Get("items").ConvertSimilar().List(); ok {
+						if package__, ok := util.ToMapList(items); ok {
+							return package__, nil
 						} else {
 							return nil, errors.New("kpt function returned a malformed item")
 						}
@@ -89,6 +92,9 @@ func (self *KptExecutor) ExecuteLocal(context contextpkg.Context, targetResource
 	}
 }
 
-func (self *KptExecutor) ExecuteKubernetes(context contextpkg.Context, targetResourceIdentifer util.ResourceIdentifier, package_ util.Package) (util.Package, error) {
-	return nil, nil
+func bashify(command ...string) []string {
+	command = append([]string{".", "/home/tko/.bash_profile", "&&"}, command...)
+	command = []string{"/usr/bin/bash", "-c", strconv.Quote(strings.Join(command, " "))}
+	//command = append([]string{"/usr/bin/env", "KPT_FN_RUNTIME=podman"}, command...)
+	return command
 }

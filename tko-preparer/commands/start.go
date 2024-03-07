@@ -23,6 +23,8 @@ var (
 	grpcTimeout       float64
 	preparerTimeout   float64
 	autoApprove       bool
+
+	ResetPreparationPluginCacheFrequency = 10 * time.Second
 )
 
 func init() {
@@ -57,7 +59,7 @@ func Start() {
 
 	// Preparation
 	preparation := preparationpkg.NewPreparation(client, tkoutil.SecondsToDuration(preparerTimeout), autoApprove, commonlog.GetLogger("preparation"))
-	preparationTicker := tkoutil.NewTicker(10*time.Second, preparation.ResetPluginCache)
+	preparationTicker := tkoutil.NewTicker(ResetPreparationPluginCacheFrequency, preparation.ResetPluginCache)
 	util.OnExit(preparationTicker.Stop)
 
 	// Controller

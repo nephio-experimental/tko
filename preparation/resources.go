@@ -19,7 +19,7 @@ func (self *Preparation) GetPreparableResources(package_ tkoutil.Package, log co
 	return &preparableResources
 }
 
-func (self *Preparation) IsResourcePreparable(resourceIdentifier tkoutil.ResourceIdentifier, resource tkoutil.Resource, log commonlog.Logger) (bool, []PreparerFunc) {
+func (self *Preparation) IsResourcePreparable(resourceIdentifier tkoutil.ResourceIdentifier, resource tkoutil.Resource, log commonlog.Logger) (bool, []PrepareFunc) {
 	if prepareAnnotation, ok := tkoutil.GetPrepareAnnotation(resource); ok {
 		if prepareAnnotation == tkoutil.PrepareAnnotationHere {
 			if preparers, err := self.GetPreparers(resourceIdentifier.GVK); err == nil {

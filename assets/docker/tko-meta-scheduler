@@ -1,8 +1,8 @@
-FROM fedora:39
+FROM alpine:3.19.1
 
-COPY work/tko-meta-scheduler /usr/bin/
+COPY work/tko-meta-scheduler /opt/
 
-RUN useradd tko
-
+RUN adduser --disabled-password tko && apk add --no-cache libc6-compat tzdata
 USER tko
-CMD /usr/bin/tko-meta-scheduler start -v
+
+ENTRYPOINT ["/opt/tko-meta-scheduler", "start", "-v"]

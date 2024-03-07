@@ -4,7 +4,7 @@ import (
 	"time"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
-	metascheduling "github.com/nephio-experimental/tko/meta-scheduling"
+	schedulingpkg "github.com/nephio-experimental/tko/scheduling"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/commonlog"
@@ -21,6 +21,8 @@ var (
 	grpcFormat        string
 	grpcTimeout       float64
 	schedulerTimeout  float64
+
+	ResetSchedulingPluginCacheFrequency = 10 * time.Second
 )
 
 func init() {
@@ -52,13 +54,13 @@ func Start() {
 	// Client
 	client := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
-	// Meta-scheduling
-	metaScheduling := metascheduling.NewMetaScheduling(client, tkoutil.SecondsToDuration(schedulerTimeout), commonlog.GetLogger("meta-scheduling"))
-	metaSchedulingTicker := tkoutil.NewTicker(10*time.Second, metaScheduling.ResetPluginCache)
-	util.OnExit(metaSchedulingTicker.Stop)
+	// Scheduling
+	scheduling := schedulingpkg.NewScheduling(client, tkoutil.SecondsToDuration(schedulerTimeout), commonlog.GetLogger("scheduling"))
+	schedulingTicker := tkoutil.NewTicker(ResetSchedulingPluginCacheFrequency, scheduling.ResetPluginCache)
+	util.OnExit(schedulingTicker.Stop)
 
 	// Controller
-	controller := metascheduling.NewController(metaScheduling, tkoutil.SecondsToDuration(interval), commonlog.GetLogger("controller"))
+	controller := schedulingpkg.NewController(scheduling, tkoutil.SecondsToDuration(interval), commonlog.GetLogger("controller"))
 
 	controller.Start()
 	util.OnExit(controller.Stop)

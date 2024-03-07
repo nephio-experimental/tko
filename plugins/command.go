@@ -30,7 +30,7 @@ func NewCommandExecutor(arguments []string, properties map[string]string) (*Comm
 }
 
 func (self *CommandExecutor) GetLogFIFO(prefix string, log commonlog.Logger) (string, error) {
-	if self.IsLocal() {
+	if self.Remote == nil {
 		logFifo := NewLogFIFO(prefix, log)
 		if err := logFifo.Start(); err != nil {
 			return "", err
@@ -42,25 +42,13 @@ func (self *CommandExecutor) GetLogFIFO(prefix string, log commonlog.Logger) (st
 }
 
 func (self *CommandExecutor) Execute(context contextpkg.Context, input any, output any) error {
-	if self.Remote != nil {
-		return self.ExecuteKubernetes(context, input, output)
-	} else {
-		return self.ExecuteLocal(context, input, output)
-	}
-}
-
-func (self *CommandExecutor) ExecuteLocal(context contextpkg.Context, input any, output any) error {
-	if input, err := yaml.Marshal(input); err == nil {
-		if output_, err := Run(context, bytes.NewReader(input), self.Arguments...); err == nil {
-			return yaml.Unmarshal(output_, output)
+	if inputBytes, err := yaml.Marshal(input); err == nil {
+		if stdout, err := self.Executor.Execute(context, bytes.NewReader(inputBytes), self.Arguments...); err == nil {
+			return yaml.Unmarshal(stdout, output)
 		} else {
 			return err
 		}
 	} else {
 		return err
 	}
-}
-
-func (self *CommandExecutor) ExecuteKubernetes(context contextpkg.Context, input any, output any) error {
-	return nil
 }

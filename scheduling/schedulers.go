@@ -1,4 +1,4 @@
-package metascheduling
+package scheduling
 
 import (
 	contextpkg "context"
@@ -8,9 +8,9 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-type SchedulerFunc func(context contextpkg.Context, schedulingContext *Context) error
+type ScheduleFunc func(context contextpkg.Context, schedulingContext *Context) error
 
-func (self *MetaScheduling) RegisterScheduler(gvk tkoutil.GVK, schedule SchedulerFunc) {
+func (self *Scheduling) RegisterScheduler(gvk tkoutil.GVK, schedule ScheduleFunc) {
 	schedulers, _ := self.registeredSchedulers[gvk]
 	schedulers = append(schedulers, schedule)
 	self.registeredSchedulers[gvk] = schedulers
@@ -18,12 +18,12 @@ func (self *MetaScheduling) RegisterScheduler(gvk tkoutil.GVK, schedule Schedule
 
 var scheduleString = "schedule"
 
-func (self *MetaScheduling) GetSchedulers(gvk tkoutil.GVK) ([]SchedulerFunc, error) {
+func (self *Scheduling) GetSchedulers(gvk tkoutil.GVK) ([]ScheduleFunc, error) {
 	if schedulers, ok := self.schedulers.Load(gvk); ok {
-		return schedulers.([]SchedulerFunc), nil
+		return schedulers.([]ScheduleFunc), nil
 	}
 
-	var schedulers []SchedulerFunc
+	var schedulers []ScheduleFunc
 
 	if schedulers_, ok := self.registeredSchedulers[gvk]; ok {
 		schedulers = append(schedulers, schedulers_...)
@@ -33,7 +33,7 @@ func (self *MetaScheduling) GetSchedulers(gvk tkoutil.GVK) ([]SchedulerFunc, err
 		Type:    &scheduleString,
 		Trigger: &gvk,
 	}); err == nil {
-		if util.IterateResults(plugins, func(plugin client.Plugin) error {
+		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
 			if schedule, err := NewPluginScheduler(plugin); err == nil {
 				schedulers = append(schedulers, schedule)
 				return nil
@@ -48,7 +48,7 @@ func (self *MetaScheduling) GetSchedulers(gvk tkoutil.GVK) ([]SchedulerFunc, err
 	}
 
 	if schedulers_, loaded := self.schedulers.LoadOrStore(gvk, schedulers); loaded {
-		schedulers = schedulers_.([]SchedulerFunc)
+		schedulers = schedulers_.([]ScheduleFunc)
 	}
 
 	return schedulers, nil

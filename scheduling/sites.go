@@ -1,4 +1,4 @@
-package metascheduling
+package scheduling
 
 import (
 	contextpkg "context"
@@ -9,7 +9,7 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func (self *MetaScheduling) ScheduleSites() error {
+func (self *Scheduling) ScheduleSites() error {
 	//self.Log.Notice("scheduling sites")
 	if siteInfos, err := self.Client.ListSites(client.ListSites{}); err == nil {
 		return util.IterateResults(siteInfos, func(siteInfo client.SiteInfo) error {
@@ -21,7 +21,7 @@ func (self *MetaScheduling) ScheduleSites() error {
 	}
 }
 
-func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
+func (self *Scheduling) ScheduleSite(siteInfo client.SiteInfo) {
 	log := commonlog.NewKeyValueLogger(self.Log,
 		"site", siteInfo.SiteID)
 	log.Notice("scheduling site")
@@ -37,7 +37,7 @@ func (self *MetaScheduling) ScheduleSite(siteInfo client.SiteInfo) {
 	}
 }
 
-func (self *MetaScheduling) scheduleSite(siteId string, sitePackage tkoutil.Package, deploymentIds []string, log commonlog.Logger) {
+func (self *Scheduling) scheduleSite(siteId string, sitePackage tkoutil.Package, deploymentIds []string, log commonlog.Logger) {
 	for _, resource := range sitePackage {
 		if resourceIdentifier, ok := tkoutil.NewResourceIdentifierForResource(resource); ok {
 			if schedulers, err := self.GetSchedulers(resourceIdentifier.GVK); err == nil {

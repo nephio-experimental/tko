@@ -48,7 +48,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
+func NewPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
 	switch plugin.Executor {
 	case pluginspkg.Command:
 		return NewCommandPluginPreparer(plugin)
@@ -59,7 +59,7 @@ func NewPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	}
 }
 
-func NewCommandPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
+func NewCommandPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
 	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func NewCommandPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
 	}, nil
 }
 
-func NewKptPluginPreparer(plugin client.Plugin) (PreparerFunc, error) {
+func NewKptPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
 	executor, err := pluginspkg.NewKptExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err

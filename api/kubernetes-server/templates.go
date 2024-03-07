@@ -97,15 +97,23 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
 					{Name: "Name", Type: "string", Format: "name"},
 					{Name: "TemplateID", Type: "string"},
+					{Name: "Updated", Type: "string", Format: "date-time"},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmTemplates))
 			for index, krmTemplate := range krmTemplates {
+				var updated time.Time
+				var err error
+				if updated, err = FromResourceVersion(krmTemplate.ResourceVersion); err != nil {
+					return nil, err
+				}
+
 				row := meta.TableRow{
 					Cells: []any{
 						krmTemplate.Name,
 						krmTemplate.Spec.TemplateId,
+						updated,
 					},
 				}
 				if withObject {

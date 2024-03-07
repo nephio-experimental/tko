@@ -99,16 +99,24 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 					{Name: "Name", Type: "string", Format: "name"},
 					{Name: "SiteID", Type: "string"},
 					{Name: "TemplateID", Type: "string"},
+					{Name: "Updated", Type: "string", Format: "date-time"},
 				}
 			}
 
 			table.Rows = make([]meta.TableRow, len(krmSites))
 			for index, krmSite := range krmSites {
+				var updated time.Time
+				var err error
+				if updated, err = FromResourceVersion(krmSite.ResourceVersion); err != nil {
+					return nil, err
+				}
+
 				row := meta.TableRow{
 					Cells: []any{
 						krmSite.Name,
 						krmSite.Spec.SiteId,
 						krmSite.Spec.TemplateId,
+						updated,
 					},
 				}
 				if withObject {

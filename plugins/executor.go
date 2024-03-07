@@ -1,5 +1,10 @@
 package plugins
 
+import (
+	contextpkg "context"
+	"io"
+)
+
 const (
 	KubernetesNamespace = "_kubernetes.namespace" // optional (defaults to "tko")
 	KubernetesPod       = "_kubernetes.pod"       // required
@@ -29,8 +34,16 @@ func NewExecutor(arguments []string, properties map[string]string) *Executor {
 	return &self
 }
 
-func (self *Executor) IsLocal() bool {
-	return self.Remote == nil
+func (self *Executor) Execute(context contextpkg.Context, stdin io.Reader, command ...string) ([]byte, error) {
+	if self.Remote == nil {
+		return ExecuteLocal(context, stdin, command...)
+	} else {
+		if kubernetesRest, err := NewKubernetesREST(); err == nil {
+			return kubernetesRest.Execute(context, self.Remote.KubernetesNamespace, self.Remote.KubernetesPod, self.Remote.KubernetesContainer, stdin, command...)
+		} else {
+			return nil, err
+		}
+	}
 }
 
 //
@@ -46,15 +59,13 @@ type Remote struct {
 func (self *Executor) NewRemote() *Remote {
 	if self.Properties != nil {
 		var remote Remote
-		remote.KubernetesNamespace, _ = self.Properties[KubernetesNamespace]
-		remote.KubernetesPod, _ = self.Properties[KubernetesPod]
-		remote.KubernetesContainer, _ = self.Properties[KubernetesContainer]
-
-		if remote.KubernetesPod != "" {
-			if remote.KubernetesNamespace == "" {
+		var ok bool
+		if remote.KubernetesPod, ok = self.Properties[KubernetesPod]; ok {
+			if remote.KubernetesNamespace, ok = self.Properties[KubernetesNamespace]; !ok {
 				remote.KubernetesNamespace = DefaultKubernetesNamespace
 			}
-			if remote.KubernetesContainer == "" {
+
+			if remote.KubernetesContainer, ok = self.Properties[KubernetesContainer]; !ok {
 				remote.KubernetesContainer = remote.KubernetesPod
 			}
 

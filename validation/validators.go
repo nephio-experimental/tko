@@ -8,9 +8,9 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-type ValidatorFunc func(context contextpkg.Context, validationContext *Context) []error
+type ValidateFunc func(context contextpkg.Context, validationContext *Context) []error
 
-func (self *Validation) RegisterValidator(gvk tkoutil.GVK, validate ValidatorFunc) {
+func (self *Validation) RegisterValidator(gvk tkoutil.GVK, validate ValidateFunc) {
 	validators, _ := self.registeredValidators[gvk]
 	validators = append(validators, validate)
 	self.registeredValidators[gvk] = validators
@@ -18,12 +18,12 @@ func (self *Validation) RegisterValidator(gvk tkoutil.GVK, validate ValidatorFun
 
 var validateString = "validate"
 
-func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]ValidatorFunc, error) {
+func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]ValidateFunc, error) {
 	if validators, ok := self.validators.Load(gvk); ok {
-		return self.defaultValidators(validators.([]ValidatorFunc), complete), nil
+		return self.defaultValidators(validators.([]ValidateFunc), complete), nil
 	}
 
-	var validators []ValidatorFunc
+	var validators []ValidateFunc
 
 	if validators_, ok := self.registeredValidators[gvk]; ok {
 		validators = append(validators, validators_...)
@@ -33,7 +33,7 @@ func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]Validat
 		Type:    &validateString,
 		Trigger: &gvk,
 	}); err == nil {
-		if util.IterateResults(plugins, func(plugin client.Plugin) error {
+		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
 			if validate, err := NewPluginValidator(plugin); err == nil {
 				validators = append(validators, validate)
 				return nil
@@ -48,15 +48,15 @@ func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]Validat
 	}
 
 	if validators_, loaded := self.validators.LoadOrStore(gvk, validators); loaded {
-		validators = validators_.([]ValidatorFunc)
+		validators = validators_.([]ValidateFunc)
 	}
 
 	return self.defaultValidators(validators, complete), nil
 }
 
-func (self *Validation) defaultValidators(validators []ValidatorFunc, complete bool) []ValidatorFunc {
+func (self *Validation) defaultValidators(validators []ValidateFunc, complete bool) []ValidateFunc {
 	if complete && (len(validators) == 0) {
-		validators = []ValidatorFunc{self.DefaultValidate}
+		validators = []ValidateFunc{self.DefaultValidate}
 	}
 	return validators
 }

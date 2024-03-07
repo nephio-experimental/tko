@@ -2,7 +2,6 @@ package server
 
 import (
 	contextpkg "context"
-	"strconv"
 	"time"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
@@ -120,7 +119,6 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			if withHeaders {
 				table.ColumnDefinitions = []meta.TableColumnDefinition{
 					{Name: "Name", Type: "string", Format: "name"},
-					{Name: "DeploymentID", Type: "string"},
 					{Name: "ParentDeploymentID", Type: "string"},
 					{Name: "TemplateID", Type: "string"},
 					{Name: "SiteID", Type: "string"},
@@ -134,14 +132,14 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			table.Rows = make([]meta.TableRow, len(krmDeployments))
 			for index, krmDeployment := range krmDeployments {
 				var updated time.Time
-				if updated_, err := strconv.ParseInt(krmDeployment.ResourceVersion, 10, 64); err == nil {
-					updated = time.UnixMicro(updated_)
+				var err error
+				if updated, err = FromResourceVersion(krmDeployment.ResourceVersion); err != nil {
+					return nil, err
 				}
 
 				row := meta.TableRow{
 					Cells: []any{
 						krmDeployment.Name,
-						krmDeployment.Spec.DeploymentId,
 						krmDeployment.Spec.ParentDeploymentId,
 						krmDeployment.Spec.TemplateId,
 						krmDeployment.Spec.SiteId,

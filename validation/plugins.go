@@ -45,7 +45,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
+func NewPluginValidator(plugin client.Plugin) (ValidateFunc, error) {
 	switch plugin.Executor {
 	case pluginspkg.Command:
 		return NewCommandPluginValidator(plugin)
@@ -54,7 +54,7 @@ func NewPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
 	}
 }
 
-func NewCommandPluginValidator(plugin client.Plugin) (ValidatorFunc, error) {
+func NewCommandPluginValidator(plugin client.Plugin) (ValidateFunc, error) {
 	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err

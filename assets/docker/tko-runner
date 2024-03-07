@@ -1,18 +1,22 @@
 FROM fedora:39
 
-COPY scripts/install-system-dependencies /opt/
-COPY scripts/install-python-env /opt/
 COPY scripts/_env /opt/
 COPY scripts/_functions /opt/
+COPY scripts/install-system-dependencies /opt/
+COPY scripts/install-python-env /opt/
+COPY scripts/kpt-podman /opt/
 
 COPY examples/plugins /opt/examples/plugins/
 COPY sdk/python/tko /opt/sdk/python/tko/
 
-RUN /opt/install-system-dependencies
-#RUN dnf install git -y
-RUN useradd tko
+RUN /opt/install-system-dependencies && \
+dnf install --assumeyes git podman && \
+dnf clean all && \
+useradd tko && \
+usermod --append --groups wheel tko && \
+echo tko:tko | chpasswd
 
 USER tko
 RUN /opt/install-python-env
-CMD exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+CMD exec bash -c "trap : TERM INT; sleep infinity & wait"
 # https://stackoverflow.com/a/35770783

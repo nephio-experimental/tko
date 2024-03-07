@@ -9,9 +9,9 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-type PreparerFunc func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error)
+type PrepareFunc func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error)
 
-func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PreparerFunc) {
+func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PrepareFunc) {
 	preparers, _ := self.registeredPreparers[gvk]
 	preparers = append(preparers, prepare)
 	self.registeredPreparers[gvk] = preparers
@@ -20,12 +20,12 @@ func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PreparerFunc)
 var prepareString = "prepare"
 
 // TODO: cache
-func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PreparerFunc, error) {
+func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PrepareFunc, error) {
 	if preparers, ok := self.preparers.Load(gvk); ok {
-		return preparers.([]PreparerFunc), nil
+		return preparers.([]PrepareFunc), nil
 	}
 
-	var preparers []PreparerFunc
+	var preparers []PrepareFunc
 
 	if preparers_, ok := self.registeredPreparers[gvk]; ok {
 		preparers = append(preparers, preparers_...)
@@ -35,7 +35,7 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PreparerFunc, error) {
 		Type:    &prepareString,
 		Trigger: &gvk,
 	}); err == nil {
-		if util.IterateResults(plugins, func(plugin client.Plugin) error {
+		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
 			if prepare, err := NewPluginPreparer(plugin); err == nil {
 				preparers = append(preparers, prepare)
 				return nil
@@ -50,7 +50,7 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PreparerFunc, error) {
 	}
 
 	if preparers_, loaded := self.preparers.LoadOrStore(gvk, preparers); loaded {
-		preparers = preparers_.([]PreparerFunc)
+		preparers = preparers_.([]PrepareFunc)
 	}
 
 	return preparers, nil

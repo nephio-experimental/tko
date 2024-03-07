@@ -1,4 +1,4 @@
-package metascheduling
+package scheduling
 
 import (
 	contextpkg "context"
@@ -11,7 +11,7 @@ import (
 	"github.com/nephio-experimental/tko/util"
 )
 
-const FIFOPrefix = "tko-meta-scheduling-"
+const FIFOPrefix = "tko-scheduling-"
 
 type PluginInput struct {
 	GRPC                    PluginInputGRPC         `yaml:"grpc"`
@@ -35,9 +35,9 @@ type PluginOutput struct {
 func (self *Context) ToPluginInput(logFile string) PluginInput {
 	return PluginInput{
 		GRPC: PluginInputGRPC{
-			Level2Protocol: self.MetaScheduling.Client.GRPCLevel2Protocol,
-			Address:        self.MetaScheduling.Client.GRPCAddress,
-			Port:           self.MetaScheduling.Client.GRPCPort,
+			Level2Protocol: self.Scheduling.Client.GRPCLevel2Protocol,
+			Address:        self.Scheduling.Client.GRPCAddress,
+			Port:           self.Scheduling.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
 		SiteID:                  self.SiteID,
@@ -47,7 +47,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
+func NewPluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
 	switch plugin.Executor {
 	case pluginspkg.Command:
 		return NewCommandPluginScheduler(plugin)
@@ -56,7 +56,7 @@ func NewPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
 	}
 }
 
-func NewCommandPluginScheduler(plugin client.Plugin) (SchedulerFunc, error) {
+func NewCommandPluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
 	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err

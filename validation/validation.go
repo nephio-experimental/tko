@@ -21,7 +21,7 @@ type Validation struct {
 	Timeout time.Duration
 	Log     commonlog.Logger
 
-	registeredValidators map[util.GVK][]ValidatorFunc
+	registeredValidators map[util.GVK][]ValidateFunc
 	validators           sync.Map
 	kubeconform          validatorpkg.Validator
 }
@@ -46,7 +46,7 @@ func NewValidation(client *clientpkg.Client, timeout time.Duration, log commonlo
 		Client:               client,
 		Timeout:              timeout,
 		Log:                  log,
-		registeredValidators: make(map[util.GVK][]ValidatorFunc),
+		registeredValidators: make(map[util.GVK][]ValidateFunc),
 		kubeconform:          kubeconform,
 	}, nil
 }
