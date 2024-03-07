@@ -15,7 +15,7 @@ build () {
 	if [ -f "$GOPATH/bin/$1" ]; then
 		cp --force "$GOPATH/bin/$1" "$ROOT/work/"
 	fi
-	docker build --tag="$1" --file="assets/docker/$1" "$ROOT"
+	docker build --tag="$1" --file="assets/docker/$1" --build-arg="ALPINE_VERSION=$ALPINE_VERSION" "$ROOT"
 }
 
 build tko-api

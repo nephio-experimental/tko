@@ -10,6 +10,10 @@ import (
 
 type ValidateFunc func(context contextpkg.Context, validationContext *Context) []error
 
+type Validators []ValidateFunc
+
+type ValidatorsMap map[tkoutil.GVK]Validators
+
 func (self *Validation) RegisterValidator(gvk tkoutil.GVK, validate ValidateFunc) {
 	validators, _ := self.registeredValidators[gvk]
 	validators = append(validators, validate)
@@ -18,12 +22,12 @@ func (self *Validation) RegisterValidator(gvk tkoutil.GVK, validate ValidateFunc
 
 var validateString = "validate"
 
-func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]ValidateFunc, error) {
+func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) (Validators, error) {
 	if validators, ok := self.validators.Load(gvk); ok {
-		return self.defaultValidators(validators.([]ValidateFunc), complete), nil
+		return self.defaultValidators(validators.(Validators), complete), nil
 	}
 
-	var validators []ValidateFunc
+	var validators Validators
 
 	if validators_, ok := self.registeredValidators[gvk]; ok {
 		validators = append(validators, validators_...)
@@ -48,15 +52,15 @@ func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) ([]Validat
 	}
 
 	if validators_, loaded := self.validators.LoadOrStore(gvk, validators); loaded {
-		validators = validators_.([]ValidateFunc)
+		validators = validators_.(Validators)
 	}
 
 	return self.defaultValidators(validators, complete), nil
 }
 
-func (self *Validation) defaultValidators(validators []ValidateFunc, complete bool) []ValidateFunc {
+func (self *Validation) defaultValidators(validators Validators, complete bool) Validators {
 	if complete && (len(validators) == 0) {
-		validators = []ValidateFunc{self.DefaultValidate}
+		validators = Validators{self.DefaultValidate}
 	}
 	return validators
 }

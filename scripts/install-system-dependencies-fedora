@@ -12,12 +12,13 @@ if [ "$1" == -y ]; then
 fi
 
 dnf install \
-wget zip \
+zip \
 golang protobuf-compiler \
 python3-virtualenv \
 postgresql-server postgresql-contrib $DNF_ARGS
 
-# See: https://docs.fedoraproject.org/en-US/quick-docs/postgresql/
+# Note: if Fedora's version of golang is not recent enough, try this:
+# https://github.com/canha/golang-tools-install-script
 
 systemctl enable postgresql
 postgresql-setup --initdb --unit postgresql || true
@@ -40,5 +41,4 @@ dnf install docker-ce docker-ce-cli containerd.io $DNF_ARGS
 
 systemctl enable --now docker
 
-#groupadd docker || true
 usermod --append --groups docker "$SUDO_USER"

@@ -24,4 +24,9 @@ m 'install-python-env...' $CYAN
 m 'install-systemd-services...' $CYAN
 BACKEND=postgresql BACKEND_CLEAN=true "$HERE/install-systemd-services"
 
-echo "export PATH=$HOME/go/bin:$PATH" >> "$HOME/.bashrc"
+m 'install-golang...' $CYAN
+# See: https://github.com/canha/golang-tools-install-script
+curl --location https://git.io/vQhTU | bash -s -- --remove
+curl --location https://git.io/vQhTU | bash -s -- --version 1.22.1
+
+echo 'export PATH=$HOME/go/bin:$PATH' >> "$HOME/.bashrc"

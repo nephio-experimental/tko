@@ -5,7 +5,6 @@ import (
 	"time"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
-	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 )
 
@@ -18,15 +17,16 @@ type Scheduling struct {
 	Timeout time.Duration
 	Log     commonlog.Logger
 
-	registeredSchedulers map[util.GVK][]ScheduleFunc
+	registeredSchedulers SchedulersMap
 	schedulers           sync.Map
 }
 
 func NewScheduling(client *clientpkg.Client, timeout time.Duration, log commonlog.Logger) *Scheduling {
 	self := Scheduling{
 		Client:               client,
+		Timeout:              timeout,
 		Log:                  log,
-		registeredSchedulers: make(map[util.GVK][]ScheduleFunc),
+		registeredSchedulers: make(SchedulersMap),
 	}
 
 	return &self

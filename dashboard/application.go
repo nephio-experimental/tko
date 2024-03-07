@@ -61,11 +61,11 @@ func NewApplication(client *clientpkg.Client, frequency time.Duration, timezone 
 		SetBorder(true).
 		SetTitle("TKO (PoC)")
 
-	self.AddTextPage("about", "About", 'a', self.UpdateAbout)
 	self.AddTablePage("deployments", "Deployments", 'd', self.UpdateDeployments)
 	self.AddTablePage("sites", "Sites", 's', self.UpdateSites)
 	self.AddTablePage("templates", "Templates", 't', self.UpdateTemplates)
 	self.AddTablePage("plugins", "Plugins", 'p', self.UpdatePlugins)
+	self.AddTextPage("about", "About", 'a', self.UpdateAbout)
 	self.menu.AddItem("Quit", "", 'q', self.application.Stop)
 	self.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, 'd', tcell.ModNone))
 

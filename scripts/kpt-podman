@@ -1,6 +1,0 @@
-#!/bin/bash
-set -e
-
-export PATH=/usr/bin:$PATH
-
-KPT_FN_RUNTIME=podman /usr/bin/kpt "$@"

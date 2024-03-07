@@ -5,7 +5,6 @@ import (
 	"time"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
-	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 )
 
@@ -19,7 +18,7 @@ type Preparation struct {
 	AutoApprove bool
 	Log         commonlog.Logger
 
-	registeredPreparers map[util.GVK][]PrepareFunc
+	registeredPreparers PreparersMap
 	preparers           sync.Map
 }
 
@@ -29,7 +28,7 @@ func NewPreparation(client *clientpkg.Client, timeout time.Duration, autoApprove
 		Timeout:             timeout,
 		AutoApprove:         autoApprove,
 		Log:                 log,
-		registeredPreparers: make(map[util.GVK][]PrepareFunc),
+		registeredPreparers: make(PreparersMap),
 	}
 }
 

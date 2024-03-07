@@ -6,4 +6,4 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-vagrant ssh -- -t cd /vagrant '&&' "$@"
+"$HERE/kubectl-kind" logs pods/tko-runner --container=docker --namespace=tko "$@"

@@ -11,6 +11,10 @@ import (
 
 type PrepareFunc func(context contextpkg.Context, preparationContext *Context) (bool, []ard.Map, error)
 
+type Preparers []PrepareFunc
+
+type PreparersMap map[tkoutil.GVK]Preparers
+
 func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PrepareFunc) {
 	preparers, _ := self.registeredPreparers[gvk]
 	preparers = append(preparers, prepare)
@@ -20,12 +24,12 @@ func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PrepareFunc) 
 var prepareString = "prepare"
 
 // TODO: cache
-func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PrepareFunc, error) {
+func (self *Preparation) GetPreparers(gvk tkoutil.GVK) (Preparers, error) {
 	if preparers, ok := self.preparers.Load(gvk); ok {
-		return preparers.([]PrepareFunc), nil
+		return preparers.(Preparers), nil
 	}
 
-	var preparers []PrepareFunc
+	var preparers Preparers
 
 	if preparers_, ok := self.registeredPreparers[gvk]; ok {
 		preparers = append(preparers, preparers_...)
@@ -50,7 +54,7 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) ([]PrepareFunc, error) {
 	}
 
 	if preparers_, loaded := self.preparers.LoadOrStore(gvk, preparers); loaded {
-		preparers = preparers_.([]PrepareFunc)
+		preparers = preparers_.(Preparers)
 	}
 
 	return preparers, nil

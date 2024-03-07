@@ -34,7 +34,7 @@ func init() {
 	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding KRM for TKO API (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
-	startCommand.Flags().Float64Var(&schedulerTimeout, "scheduler-timeout", 30.0, "scheduler timeout in seconds")
+	startCommand.Flags().Float64Var(&schedulerTimeout, "scheduler-timeout", 300.0, "scheduler timeout in seconds")
 
 	cobrautil.SetFlagsFromEnvironment("TKO_", startCommand)
 }

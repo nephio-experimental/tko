@@ -12,6 +12,7 @@ import (
 var (
 	type_        string
 	namePatterns []string
+	listExecutor string
 	trigger      string
 )
 
@@ -22,7 +23,7 @@ func init() {
 	pluginListCommand.Flags().UintVar(&maxCount, "max-count", backend.DefaultMaxCount, "maximum number of results to fetch")
 	pluginListCommand.Flags().StringVarP(&type_, "type", "t", "", "filter by plugin type")
 	pluginListCommand.Flags().StringArrayVarP(&namePatterns, "name", "n", nil, "filter by plugin name pattern")
-	pluginListCommand.Flags().StringVarP(&executor, "executor", "e", "command", "filter by plugin executor")
+	pluginListCommand.Flags().StringVarP(&listExecutor, "executor", "e", "", "filter by plugin executor")
 	pluginListCommand.Flags().StringVarP(&trigger, "trigger", "g", "", "filter by plugin trigger (\"group,version,kind\")")
 }
 
@@ -31,7 +32,7 @@ var pluginListCommand = &cobra.Command{
 	Short: "List plugins",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		ListPlugins(offset, maxCount, type_, namePatterns, executor, ParseTrigger(trigger))
+		ListPlugins(offset, maxCount, type_, namePatterns, listExecutor, ParseTrigger(trigger))
 	},
 }
 

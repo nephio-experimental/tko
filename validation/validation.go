@@ -7,7 +7,6 @@ import (
 	"time"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
-	"github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	validatorpkg "github.com/yannh/kubeconform/pkg/validator"
 )
@@ -21,7 +20,7 @@ type Validation struct {
 	Timeout time.Duration
 	Log     commonlog.Logger
 
-	registeredValidators map[util.GVK][]ValidateFunc
+	registeredValidators ValidatorsMap
 	validators           sync.Map
 	kubeconform          validatorpkg.Validator
 }
@@ -46,7 +45,7 @@ func NewValidation(client *clientpkg.Client, timeout time.Duration, log commonlo
 		Client:               client,
 		Timeout:              timeout,
 		Log:                  log,
-		registeredValidators: make(map[util.GVK][]ValidateFunc),
+		registeredValidators: make(ValidatorsMap),
 		kubeconform:          kubeconform,
 	}, nil
 }

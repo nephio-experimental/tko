@@ -5,7 +5,6 @@ import (
 	contextpkg "context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/nephio-experimental/tko/util"
@@ -40,13 +39,8 @@ func (self *KptExecutor) Execute(context contextpkg.Context, targetResourceIdent
 		return nil, errors.New("missing target resource for kpt function")
 	}
 
-	kpt := "/usr/bin/kpt"
-	if self.Remote != nil {
-		kpt = "/opt/kpt-podman"
-	}
-
 	image := self.Arguments[0]
-	command := []string{kpt, "fn", "eval", "--image=" + image, "-", "--"}
+	command := []string{"/usr/bin/kpt", "fn", "eval", "--image=" + image, "-", "--"}
 
 	// Add kpt inputs
 	resource := ard.With(targetResource).ConvertSimilar()
@@ -60,10 +54,6 @@ func (self *KptExecutor) Execute(context contextpkg.Context, targetResourceIdent
 			}
 		}
 	}
-
-	/*if self.Remote != nil {
-		command = bashify(command...)
-	}*/
 
 	if stdin, err := util.EncodePackage("yaml", package_); err == nil {
 		if stdout, err := self.Executor.Execute(context, bytes.NewReader(stdin), command...); err == nil {
@@ -90,11 +80,4 @@ func (self *KptExecutor) Execute(context contextpkg.Context, targetResourceIdent
 	} else {
 		return nil, err
 	}
-}
-
-func bashify(command ...string) []string {
-	command = append([]string{".", "/home/tko/.bash_profile", "&&"}, command...)
-	command = []string{"/usr/bin/bash", "-c", strconv.Quote(strings.Join(command, " "))}
-	//command = append([]string{"/usr/bin/env", "KPT_FN_RUNTIME=podman"}, command...)
-	return command
 }

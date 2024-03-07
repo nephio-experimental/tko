@@ -1,8 +1,12 @@
-FROM alpine:3.19.1
+ARG ALPINE_VERSION=latest
+
+FROM alpine:$ALPINE_VERSION
 
 COPY work/tko-preparer /opt/
 
-RUN adduser --disabled-password tko && apk add --no-cache libc6-compat tzdata
-USER tko
+RUN \
+apk add --no-cache libc6-compat tzdata && \
+adduser --disabled-password tko
 
-ENTRYPOINT ["/opt/tko-preparer", "start", "-v"]
+USER tko
+ENTRYPOINT [ "/opt/tko-preparer", "start", "-v" ]

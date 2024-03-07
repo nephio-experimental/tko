@@ -29,6 +29,7 @@ type Server struct {
 	Log                 commonlog.Logger
 
 	httpServers []*http.Server
+	addresses   []string
 	mux         *http.ServeMux
 }
 
@@ -80,6 +81,7 @@ func (self *Server) start(level2protocol string, address string) error {
 			Handler: http.TimeoutHandler(self.mux, self.Timeout, ""),
 		}
 		self.httpServers = append(self.httpServers, &httpServer)
+		self.addresses = append(self.addresses, address)
 
 		go func() {
 			if err := httpServer.Serve(listener); err != nil {

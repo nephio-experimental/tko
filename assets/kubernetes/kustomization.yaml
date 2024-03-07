@@ -26,6 +26,13 @@ images:
 - name: tko-runner
   newName: tliron/tko-runner
   newTag: latest
+
+# See: https://hub.docker.com/_/postgres
 - name: postgresql
-  newName: postgres # see: https://hub.docker.com/_/postgres
-  newTag: "16.2-alpine"
+  newName: postgres
+  newTag: 16.2-alpine
+
+# See: https://hub.docker.com/_/docker
+- name: docker-dind
+  newName: docker
+  newTag: 26.0.0-rc1-dind

@@ -10,6 +10,10 @@ import (
 
 type ScheduleFunc func(context contextpkg.Context, schedulingContext *Context) error
 
+type Schedulers []ScheduleFunc
+
+type SchedulersMap map[tkoutil.GVK]Schedulers
+
 func (self *Scheduling) RegisterScheduler(gvk tkoutil.GVK, schedule ScheduleFunc) {
 	schedulers, _ := self.registeredSchedulers[gvk]
 	schedulers = append(schedulers, schedule)
@@ -18,12 +22,12 @@ func (self *Scheduling) RegisterScheduler(gvk tkoutil.GVK, schedule ScheduleFunc
 
 var scheduleString = "schedule"
 
-func (self *Scheduling) GetSchedulers(gvk tkoutil.GVK) ([]ScheduleFunc, error) {
+func (self *Scheduling) GetSchedulers(gvk tkoutil.GVK) (Schedulers, error) {
 	if schedulers, ok := self.schedulers.Load(gvk); ok {
-		return schedulers.([]ScheduleFunc), nil
+		return schedulers.(Schedulers), nil
 	}
 
-	var schedulers []ScheduleFunc
+	var schedulers Schedulers
 
 	if schedulers_, ok := self.registeredSchedulers[gvk]; ok {
 		schedulers = append(schedulers, schedulers_...)
@@ -48,7 +52,7 @@ func (self *Scheduling) GetSchedulers(gvk tkoutil.GVK) ([]ScheduleFunc, error) {
 	}
 
 	if schedulers_, loaded := self.schedulers.LoadOrStore(gvk, schedulers); loaded {
-		schedulers = schedulers_.([]ScheduleFunc)
+		schedulers = schedulers_.(Schedulers)
 	}
 
 	return schedulers, nil

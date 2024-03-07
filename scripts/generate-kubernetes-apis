@@ -14,8 +14,8 @@ CLIENT_PKG=$API_PKG/kubernetes-client
 BOILERPLATE=$ROOT/assets/kubernetes/kube_codegen/boilerplate.go.txt
 OPENAPI_REPORT=$ROOT/assets/kubernetes/kube_codegen/gen_openapi.report
 
-go get -d "k8s.io/code-generator@v$K8S_VERSION"
-CODE_GENERATOR=$(go list -f '{{.Dir}}' -m "k8s.io/code-generator@v$K8S_VERSION")
+go get -d "k8s.io/code-generator@v$KUBERNETES_VERSION"
+CODE_GENERATOR=$(go list -f '{{.Dir}}' -m "k8s.io/code-generator@v$KUBERNETES_VERSION")
 . "${CODE_GENERATOR}/kube_codegen.sh"
 
 # kube_codegen expects a specific directory structure, so we will create it via a symlink
