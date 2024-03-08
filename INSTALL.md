@@ -30,7 +30,7 @@ script:
 
     scripts/tko-vagrant dashboard
 
-Continue to [user guide](USAGE.md).
+Continue to [user guide](USAGE.md), taking into account the modifications above.
 
 During development, if you want the virtual machine to continuously sync file changes
 from the host (it's one-way, only from the host to the virtual machine at directory
@@ -45,13 +45,20 @@ To delete the virtual machine:
 Kubernetes Cluster
 ------------------
 
-TKO can run in a Kubernetes cluster with a rich KRM aggregated API. We provide a quick
-setup on top of [Kind](https://kind.sigs.k8s.io/) using TKO container images published
-on [Docker Hub](https://hub.docker.com/u/tliron) with a simple PostgreSQL instance.
+TKO can run in a Kubernetes cluster with a rich KRM aggregated API (in *addition* to the gRPC
+API). We provide a quick setup on top of [Kind](https://kind.sigs.k8s.io/) using TKO container
+images published on [Docker Hub](https://hub.docker.com/u/tliron), together with a PostgreSQL
+instance.
 
 To create the Kind cluster:
 
     scripts/test-kind
+
+(Because our test scenario runs Kind-in-Kind you might need to increase the inotify limits on
+your host. See
+[this](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files)).
+
+(By the way, you can also run `test-kind` inside the Vagrant virtual machine detailed above.)
 
 The internal web server port is mapped to your host at port 30051, so you can access
 the web dashboard at [http://localhost:30051/](http://localhost:30051/).
@@ -69,11 +76,20 @@ context):
 
 See the [KRM API guide](KRM.md) for more information.
 
+Plugins will be run in a pod named `tko-runner`, and this also where the meta-scheduler's
+Kind plugin will create clusters (Kind-in-Kind, using Docker-in-Docker, a.k.a. "dind").
+We provide a script for accessing that environment:
+
+    scripts/kind-runner kind get clusters
+    scripts/kind-runner kubectl get pods --all-namespaces --context=kind-edge1
+
 To follow logs:
 
     scripts/log-service-kind tko-api -f
     scripts/log-service-kind tko-preparer -f
     scripts/log-service-kind tko-meta-scheduler -f
+
+Continue to [user guide](USAGE.md), taking into account the modifications above.
 
 To delete the Kind cluster:
 

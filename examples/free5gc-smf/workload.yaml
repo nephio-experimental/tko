@@ -16,7 +16,7 @@ metadata:
 
 spec:
   # See: https://artifacthub.io/packages/helm/bitnami/mysql
-  repository: https://charts.bitnami.com/bitnami
-  chart: mysql
+  #repository: https://charts.bitnami.com/bitnami
+  chart: oci://registry-1.docker.io/bitnamicharts/mysql
   parameters:
     namespaceOverride: "{{ get('', 'v1', 'Namespace').metadata.name }}"

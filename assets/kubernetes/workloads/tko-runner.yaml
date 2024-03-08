@@ -15,13 +15,84 @@ spec:
     image: tko-runner
     imagePullPolicy: Always
     env:
+    # All Docker usage (including by Kind) will actually take place in the "docker" container
     - name: DOCKER_HOST
       value: tcp://127.0.0.1:2375
   - name: docker
-    image: docker-dind
+    image: docker-dind # "dind" stands for "Docker-in-Docker"
+    imagePullPolicy: Always
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: "2"
     command: [ dockerd, --host, tcp://127.0.0.1:2375 ]
     securityContext:
       privileged: true
+    volumeMounts:
+    # See: https://github.com/kubernetes-sigs/kind/issues/303
+    - name: cgroup
+      mountPath: /sys/fs/cgroup
+    # Docker might need a lot of storage!
+    - name: docker-data
+      mountPath: /var/lib/docker
     ports:
     - name: docker
       containerPort: 2375
+  volumes:
+  - name: cgroup
+    hostPath:
+      type: Directory  
+      path: /sys/fs/cgroup
+  - name: docker-data
+    persistentVolumeClaim:
+      claimName: docker-data
+  # Circumvent Kubernetes DNS (for Docker and Helm)
+  dnsPolicy: None
+  dnsConfig:
+    nameservers:
+    # From CloudFlare: https://1.1.1.1/
+    - 1.1.1.1
+    - 1.0.0.1
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: docker-data
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: tko-runner
+    app.kubernetes.io/part-of: tko
+
+spec:
+  storageClassName: manual
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+
+metadata:
+  name: docker-data
+  labels:
+    app.kubernetes.io/name: tko-runner
+    app.kubernetes.io/part-of: tko
+
+spec:
+  claimRef:
+    name: docker-data
+    namespace: tko
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: /mnt/docker # see kind/tko.yaml

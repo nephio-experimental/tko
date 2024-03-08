@@ -6,4 +6,4 @@ metadata:
 
 spec:
   templateId: k8s/hello:v1.0.0
-  siteId: k8s/lab:v1.0.0
+  siteId: k8s/lab1

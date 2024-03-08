@@ -12,7 +12,8 @@ subsystems, specifically the data backend and API access, as well as integration
 site inventories and blueprint catalogs.
 
 This PoC is a complete rewrite of the Nephio core. It comprises three controllers that can run
-independently or be embedded into a control plane, such as a Kubernetes management cluster.
+independently or be embedded into a control plane, including first-class support for Kubernetes
+management clusters.
 
 Included are backends for [PostgreSQL](https://www.postgresql.org/) and
 [Spanner](https://cloud.google.com/spanner). Both provide scalability, resiliency, and

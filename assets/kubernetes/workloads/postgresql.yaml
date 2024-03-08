@@ -114,4 +114,4 @@ spec:
   accessModes:
   - ReadWriteMany
   hostPath:
-    path: /mnt/postgresql # see kind.yaml
+    path: /mnt/postgresql # see kind/tko.yaml

@@ -2,7 +2,7 @@ apiVersion: tko.nephio.org/v1alpha1
 kind: Site
 
 metadata:
-  name: k8s-002flab-003av1.0.0 # k8s/lab:v1.0.0
+  name: k8s-002flab1 # k8s/lab1
 
 spec:
   metadata:

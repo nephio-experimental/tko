@@ -1,23 +1,19 @@
-import os, pathlib, subprocess, copy, tko
+import pathlib, copy, tko
 
 
 kind_dir = pathlib.Path(__file__).parents[0] / 'kind'
 kind_dir.mkdir(parents=True, exist_ok=True)
 cluster_path = kind_dir / 'cluster.yaml'
-env = {'PATH': '/usr/bin'}
 
 
 def get_current_cluster_names():
-  complete = subprocess.run(('/usr/bin/kind', 'get', 'clusters'), env=env, capture_output=True)
-  if complete.returncode != 0:
-    raise Exception(complete.stderr.decode())
-  return complete.stdout.decode().rstrip('\n').split('\n')
+  args = ('/usr/bin/kind', 'get', 'clusters')
+  return tko.plugin.execute(args).rstrip('\n').split('\n')
 
 
 def create_cluster():
-  complete = subprocess.run(('/usr/bin/kind', 'create', 'cluster', '--config', cluster_path), env=env, capture_output=True)
-  if complete.returncode != 0:
-    raise Exception(complete.stderr.decode())
+  args = ('/usr/bin/kind', 'create', 'cluster', '--config', str(cluster_path))
+  tko.plugin.execute(args)
 
 
 def write_cluster_manifest(cluster):

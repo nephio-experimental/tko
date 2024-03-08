@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	client "github.com/nephio-experimental/tko/api/grpc-client"
+	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
@@ -36,10 +36,12 @@ var deploymentApproveCommand = &cobra.Command{
 }
 
 func ApproveDeployment(deploymentId string, parentDemploymentId string, templateIdPatterns []string, templateMetadataPatterns map[string]string, siteIdPatterns []string, siteMetadataPatterns map[string]string, metadataPatterns map[string]string) {
-	var deploymentInfos util.Results[client.DeploymentInfo]
+	var deploymentInfos util.Results[clientpkg.DeploymentInfo]
+
+	client := NewClient()
 
 	if deploymentId != "" {
-		deploymentInfos = util.NewResultsSlice([]client.DeploymentInfo{{DeploymentID: deploymentId}})
+		deploymentInfos = util.NewResultsSlice([]clientpkg.DeploymentInfo{{DeploymentID: deploymentId}})
 	} else {
 		var parentDemploymentId_ *string
 		if parentDemploymentId != "" {
@@ -47,7 +49,7 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 		}
 
 		var err error
-		deploymentInfos, err = NewClient().ListDeployments(client.ListDeployments{
+		deploymentInfos, err = client.ListDeployments(clientpkg.ListDeployments{
 			ParentDeploymentID:       parentDemploymentId_,
 			TemplateIDPatterns:       templateIdPatterns,
 			TemplateMetadataPatterns: templateMetadataPatterns,
@@ -61,9 +63,9 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 	}
 
 	empty := true
-	util.FailOnError(util.IterateResults(deploymentInfos, func(deploymentInfo client.DeploymentInfo) error {
+	util.FailOnError(util.IterateResults(deploymentInfos, func(deploymentInfo clientpkg.DeploymentInfo) error {
 		empty = false
-		if approved, err := NewClient().ModifyDeployment(deploymentInfo.DeploymentID, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
+		if approved, err := client.ModifyDeployment(deploymentInfo.DeploymentID, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
 			if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(package_); ok {
 				if tkoutil.SetApprovedAnnotation(deployment, true) {
 					return true, package_, nil

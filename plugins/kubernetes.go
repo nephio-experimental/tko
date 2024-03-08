@@ -43,11 +43,13 @@ func (self *KubernetesREST) Execute(context contextpkg.Context, namespace string
 		return nil, errors.New("command must have at least one argument")
 	}
 
-	log.Infof("execute Kubernetes: %s/%s/%s %s", namespace, podName, containerName, command)
-
 	if strings.HasSuffix(command[0], ".py") {
 		command = append([]string{"/home/tko/tko-python-env/bin/python"}, command...)
 	}
+
+	//command = append([]string{"/usr/bin/env", "DOCKER_HOST=tcp://127.0.0.1:2375"}, command...)
+
+	log.Infof("execute Kubernetes: %s/%s/%s %s", namespace, podName, containerName, strings.Join(command, " "))
 
 	request := self.Interface.Post().
 		Namespace(namespace).

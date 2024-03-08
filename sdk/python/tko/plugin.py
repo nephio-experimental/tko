@@ -1,4 +1,4 @@
-import sys, traceback, copy, tko.package
+import sys, traceback, copy, subprocess, os, tko.package
 from ruamel.yaml import YAML
 
 
@@ -49,10 +49,22 @@ def get_grpc_host():
     return f'{address}:{port}' # ipv4
 
 
+def execute(args, env=None, input=None):
+  log(f'executing: {" ".join(args)}')
+  if env:
+      env_ = os.environ.copy()
+      env_.update(env)
+      env = env_
+  complete = subprocess.run(args, env=env, input=input, capture_output=True)
+  if complete.returncode != 0:
+    raise Exception(complete.stderr.decode())
+  return complete.stdout.decode()
+
+
 def log(message):
   global log_file
   if log_file:
-    log_file.write(message+'\n')
+    log_file.write(str(message)+'\n')
 
 
 def open_log_file():

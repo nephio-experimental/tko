@@ -8,3 +8,4 @@ TODO
 * Parallel processing by multiple controller instances (sharding?)
 * Support Spanner
 * Support TOSCA ETSI NSDs
+* Explore using [Loki](https://github.com/grafana/loki) for log aggregation

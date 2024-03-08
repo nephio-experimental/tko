@@ -59,7 +59,7 @@ func NewApplication(client *clientpkg.Client, frequency time.Duration, timezone 
 		SetShortcutColor(tcell.ColorBlue).
 		SetDoneFunc(self.application.Stop).
 		SetBorder(true).
-		SetTitle("TKO (PoC)")
+		SetTitle("TKO")
 
 	self.AddTablePage("deployments", "Deployments", 'd', self.UpdateDeployments)
 	self.AddTablePage("sites", "Sites", 's', self.UpdateSites)

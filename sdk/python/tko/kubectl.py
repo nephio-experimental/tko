@@ -1,7 +1,4 @@
-import subprocess
-
-
-env = {'PATH': '/usr/bin'}
+import subprocess, tko.plugin
 
 
 def apply(package, context=None):
@@ -11,6 +8,4 @@ def apply(package, context=None):
     if context is not None:
       args.append(f'--context={context}')
 
-    complete = subprocess.run(args, env=env, input=manifest.encode(), capture_output=True)
-    if complete.returncode != 0:
-      raise Exception(f'{complete.stderr.decode()}\n{manifest}')
+    tko.plugin.execute(args, input=manifest.encode())

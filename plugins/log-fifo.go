@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"bufio"
-	"io"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -18,14 +17,17 @@ import (
 //
 
 type LogFIFO struct {
-	Path string
-	Log  commonlog.Logger
+	Path  string
+	Log   commonlog.Logger
+	Level commonlog.Level
 }
 
-func NewLogFIFO(prefix string, log commonlog.Logger) *LogFIFO {
+func NewLogFIFO(prefix string, log commonlog.Logger, level commonlog.Level) *LogFIFO {
+	path := filepath.Join(os.TempDir(), prefix+ksuid.New().String())
 	return &LogFIFO{
-		Path: filepath.Join(os.TempDir(), prefix+ksuid.New().String()),
-		Log:  log,
+		Path:  path,
+		Log:   commonlog.NewKeyValueLogger(log, "fifo", path),
+		Level: level,
 	}
 }
 
@@ -44,24 +46,24 @@ func (self *LogFIFO) create() error {
 			return err
 		}
 	}
-	self.Log.Infof("creating log FIFO: %s", self.Path)
+	self.Log.Debug("creating log FIFO")
 	return syscall.Mkfifo(self.Path, 0600)
 }
 
 func (self *LogFIFO) start() {
 	if file, err := os.Open(self.Path); err == nil {
 		defer file.Close()
-		reader := bufio.NewReader(file)
-		for {
-			if line, err := reader.ReadString('\n'); err == nil {
-				self.Log.Notice(line)
-			} else {
-				if err != io.EOF {
-					self.Log.Error(err.Error())
-				}
-				self.Log.Infof("stopped reading from log FIFO: %s", self.Path)
-				break
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			self.Log.Log(self.Level, 0, scanner.Text())
+
+			if err := scanner.Err(); err != nil {
+				self.Log.Error(err.Error())
 			}
+		}
+		self.Log.Debug("closing log FIFO")
+		if err := os.Remove(self.Path); err != nil {
+			self.Log.Error(err.Error())
 		}
 	} else {
 		self.Log.Error(err.Error())

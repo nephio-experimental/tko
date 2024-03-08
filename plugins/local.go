@@ -14,8 +14,6 @@ func ExecuteLocal(context contextpkg.Context, stdin io.Reader, command ...string
 		return nil, errors.New("command must have at least one argument")
 	}
 
-	log.Infof("execute local: %s", command)
-
 	name := command[0]
 	arguments := command[1:]
 	cmd := exec.CommandContext(context, name, arguments...)
@@ -32,6 +30,8 @@ func ExecuteLocal(context contextpkg.Context, stdin io.Reader, command ...string
 			return nil, err
 		}
 	}
+
+	log.Infof("execute local: %s", strings.Join(command, " "))
 
 	if err := cmd.Run(); err == nil {
 		return stdout.Bytes(), nil

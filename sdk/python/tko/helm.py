@@ -1,4 +1,4 @@
-import subprocess, json, tko.package, tko.expressions
+import json, tko.plugin, tko.package, tko.expressions
 
 
 chart_gvk = tko.package.GVK(group='workload.nephio.org', version='v1alpha1', kind='HelmChart')
@@ -9,14 +9,15 @@ def iter_charts(package):
 
 
 def get_current_deployments(context=None):
-  env = {'PATH': '/usr/bin'}
+  args = ('/usr/bin/helm', 'list', '--all-namespaces', '--deployed', '--short')
+  tko.plugin.log(f'executing: {" ".join(args)}')
+
+  env = {}
+  env['HELM_NAMESPACE'] = 'default'
   if context is not None:
     env['HELM_KUBECONTEXT'] = context
 
-  complete = subprocess.run(('/usr/bin/helm', 'list', '--all-namespaces', '--deployed', '--short'), env=env, capture_output=True)
-  if complete.returncode != 0:
-    raise Exception(complete.stderr.decode())
-  return complete.stdout.decode().rstrip('\n').split('\n')
+  return tko.plugin.execute(args, env=env).rstrip('\n').split('\n')
 
 
 def install(chart, package, context=None):
@@ -25,16 +26,15 @@ def install(chart, package, context=None):
     return
 
   spec = chart.get('spec', {})
-  repository = spec.get('repository', '')
   chart = spec.get('chart', '')
-  if (repository == '') or (chart == ''):
+  if chart == '':
     raise Exception('invalid HelmChart')
 
-  args = ['/usr/bin/helm', 'install', '--replace', '--repo', repository, name, chart]
+  args = ['/usr/bin/helm', 'install', '--replace' ]
 
-  env = {'PATH': '/usr/bin'}
-  if context is not None:
-    env['HELM_KUBECONTEXT'] = context
+  repository = spec.get('repository', '')
+  if repository != '':
+    args.extend(('--repo', repository))
 
   parameters = spec.get('parameters', None)
   if parameters is not None:
@@ -43,6 +43,11 @@ def install(chart, package, context=None):
       args.append('--set-json')
       args.append(f'{key}={json.dumps(value)}')
 
-  complete = subprocess.run(args, env=env, capture_output=True)
-  if complete.returncode != 0:
-    raise Exception(complete.stderr.decode())
+  args.extend((name, chart))
+
+  env = {}
+  env['HELM_NAMESPACE'] = 'default'
+  if context is not None:
+    env['HELM_KUBECONTEXT'] = context
+
+  tko.plugin.execute(args, env=env)

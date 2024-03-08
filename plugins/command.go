@@ -31,7 +31,7 @@ func NewCommandExecutor(arguments []string, properties map[string]string) (*Comm
 
 func (self *CommandExecutor) GetLogFIFO(prefix string, log commonlog.Logger) (string, error) {
 	if self.Remote == nil {
-		logFifo := NewLogFIFO(prefix, log)
+		logFifo := NewLogFIFO(prefix, log, commonlog.Info)
 		if err := logFifo.Start(); err != nil {
 			return "", err
 		}

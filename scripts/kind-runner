@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+"$HERE/kubectl-kind" --context=kind-tko exec -it pod/tko-runner --namespace=tko --container=tko-runner -- "$@"
