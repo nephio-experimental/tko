@@ -46,13 +46,12 @@ spec:
   - name: docker-data
     persistentVolumeClaim:
       claimName: docker-data
-  # Circumvent Kubernetes DNS (for Docker and Helm)
-  dnsPolicy: None
+  # Make sure Docker and Helm can access the internet
   dnsConfig:
-    nameservers:
-    # From CloudFlare: https://1.1.1.1/
-    - 1.1.1.1
-    - 1.0.0.1
+     nameservers:
+     # From CloudFlare: https://1.1.1.1/
+     - 1.1.1.1
+     - 1.0.0.1
 
 ---
 

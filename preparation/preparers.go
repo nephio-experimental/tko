@@ -40,7 +40,7 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) (Preparers, error) {
 		Trigger: &gvk,
 	}); err == nil {
 		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
-			if prepare, err := NewPluginPreparer(plugin); err == nil {
+			if prepare, err := NewPluginPreparer(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
 				preparers = append(preparers, prepare)
 				return nil
 			} else {

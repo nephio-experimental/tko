@@ -8,7 +8,7 @@ COPY scripts/install-system-dependencies /opt/
 COPY scripts/install-python-env /opt/
 
 RUN \
-apk add --no-cache libc6-compat bash coreutils curl git python3 docker && \
+apk add --no-cache libc6-compat bash coreutils iputils curl git python3 docker && \
 adduser --disabled-password tko && \
 /opt/install-system-dependencies
 

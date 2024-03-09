@@ -8,7 +8,6 @@ import (
 
 	"github.com/nephio-experimental/tko/assets/web"
 	"github.com/nephio-experimental/tko/backend"
-	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
@@ -28,9 +27,9 @@ type Server struct {
 	Timezone            *time.Location
 	Log                 commonlog.Logger
 
-	httpServers []*http.Server
-	addresses   []string
-	mux         *http.ServeMux
+	httpServers        []*http.Server
+	clientAddressPorts []string
+	mux                *http.ServeMux
 }
 
 func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, timezone *time.Location, log commonlog.Logger) (*Server, error) {
@@ -64,40 +63,7 @@ func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPSt
 }
 
 func (self *Server) Start() error {
-	return tkoutil.StartServer(self.IPStack, self.Address, self.start)
-}
-
-// ([util.StartServerFunc] signature)
-func (self *Server) start(level2protocol string, address string) error {
-	address = util.JoinIPAddressPort(address, self.Port)
-	if listener, err := net.Listen(level2protocol, address); err == nil {
-		index := len(self.httpServers)
-		self.Log.Notice("starting HTTP server",
-			"index", index,
-			"level2protocol", level2protocol,
-			"address", listener.Addr().String())
-
-		httpServer := http.Server{
-			Handler: http.TimeoutHandler(self.mux, self.Timeout, ""),
-		}
-		self.httpServers = append(self.httpServers, &httpServer)
-		self.addresses = append(self.addresses, address)
-
-		go func() {
-			if err := httpServer.Serve(listener); err != nil {
-				if err == http.ErrServerClosed {
-					self.Log.Info("stopped HTTP server",
-						"index", index)
-				} else {
-					self.Log.Error(err.Error())
-				}
-			}
-		}()
-
-		return nil
-	} else {
-		return err
-	}
+	return self.IPStack.StartServers(self.Address, self.start)
 }
 
 func (self *Server) Stop() {
@@ -110,5 +76,38 @@ func (self *Server) Stop() {
 		if err := httpServer.Shutdown(context); err != nil {
 			self.Log.Critical(err.Error())
 		}
+	}
+}
+
+// ([util.IPStackStartServerFunc] signature)
+func (self *Server) start(level2protocol string, address string) error {
+	addressPort := util.JoinIPAddressPort(address, self.Port)
+	if listener, err := net.Listen(level2protocol, addressPort); err == nil {
+		index := len(self.httpServers)
+		self.Log.Notice("starting HTTP server",
+			"index", index,
+			"level2protocol", level2protocol,
+			"addressPort", listener.Addr().String())
+
+		httpServer := http.Server{
+			Handler: http.TimeoutHandler(self.mux, self.Timeout, ""),
+		}
+		self.httpServers = append(self.httpServers, &httpServer)
+		self.clientAddressPorts = append(self.clientAddressPorts, util.IPAddressPortWithoutZone(addressPort))
+
+		go func() {
+			if err := httpServer.Serve(listener); err != nil {
+				if err == http.ErrServerClosed {
+					self.Log.Notice("stopped HTTP server",
+						"index", index)
+				} else {
+					self.Log.Error(err.Error())
+				}
+			}
+		}()
+
+		return nil
+	} else {
+		return err
 	}
 }

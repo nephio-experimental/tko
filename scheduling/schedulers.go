@@ -38,7 +38,7 @@ func (self *Scheduling) GetSchedulers(gvk tkoutil.GVK) (Schedulers, error) {
 		Trigger: &gvk,
 	}); err == nil {
 		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
-			if schedule, err := NewPluginScheduler(plugin); err == nil {
+			if schedule, err := NewPluginScheduler(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
 				schedulers = append(schedulers, schedule)
 				return nil
 			} else {

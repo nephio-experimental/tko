@@ -18,7 +18,7 @@ func (self *Server) About(context contextpkg.Context, _ *emptypb.Empty) (*api.Ab
 		TkoVersion:           version.GitVersion,
 		Backend:              self.Backend.String(),
 		IpStack:              string(self.IPStack),
-		Addresses:            self.addresses,
+		Addresses:            self.clientAddresses,
 		DefaultPackageFormat: self.DefaultPackageFormat,
 	}, nil
 }

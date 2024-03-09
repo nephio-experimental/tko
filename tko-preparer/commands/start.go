@@ -21,6 +21,10 @@ var (
 	grpcPort          uint
 	grpcFormat        string
 	grpcTimeout       float64
+	logIpStackString  string
+	logIpStack        util.IPStack
+	logAddress        string
+	logPort           uint
 	preparerTimeout   float64
 	autoApprove       bool
 
@@ -32,10 +36,13 @@ func init() {
 
 	startCommand.Flags().Float64Var(&interval, "interval", 3.0, "polling interval in seconds")
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO API (\"dual\", \"ipv6\", or \"ipv4\")")
-	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO API")
-	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API")
+	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "IP address for TKO API")
+	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "TCP port for TKO API")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding KRM for TKO API (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
+	startCommand.Flags().StringVar(&logIpStackString, "log-ip-stack", "dual", "IP stack for log server (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&logAddress, "log-address", "", "bind IP address for log server")
+	startCommand.Flags().UintVar(&logPort, "log-port", 50055, "bind TCP port for log server")
 	startCommand.Flags().Float64Var(&preparerTimeout, "preparer-timeout", 30.0, "preparer timeout in seconds")
 	startCommand.Flags().BoolVar(&autoApprove, "auto-approve", true, "whether to automatically approve prepared deployments")
 
@@ -49,6 +56,9 @@ var startCommand = &cobra.Command{
 		grpcIpStack = util.IPStack(grpcIpStackString)
 		util.FailOnError(grpcIpStack.Validate("grpc-ip-stack"))
 
+		logIpStack = util.IPStack(logIpStackString)
+		util.FailOnError(logIpStack.Validate("log-ip-stack"))
+
 		Start()
 	},
 }
@@ -58,7 +68,7 @@ func Start() {
 	client := clientpkg.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
 	// Preparation
-	preparation := preparationpkg.NewPreparation(client, tkoutil.SecondsToDuration(preparerTimeout), autoApprove, commonlog.GetLogger("preparation"))
+	preparation := preparationpkg.NewPreparation(client, tkoutil.SecondsToDuration(preparerTimeout), autoApprove, commonlog.GetLogger("preparation"), logIpStack, logAddress, int(logPort))
 	preparationTicker := tkoutil.NewTicker(ResetPreparationPluginCacheFrequency, preparation.ResetPluginCache)
 	util.OnExit(preparationTicker.Stop)
 

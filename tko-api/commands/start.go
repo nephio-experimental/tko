@@ -51,6 +51,11 @@ var (
 	kubernetes     bool
 	kubernetesPort uint
 
+	logIpStackString string
+	logIpStack       util.IPStack
+	logAddress       string
+	logPort          uint
+
 	validatorTimeout float64
 
 	ResetValidationPluginCacheFrequency = 10 * time.Second
@@ -68,18 +73,21 @@ func init() {
 	startCommand.Flags().BoolVar(&backendClean, "backend-clean", false, "clean backend data on startup")
 	startCommand.Flags().BoolVar(&grpc, "grpc", true, "start gRPC server")
 	startCommand.Flags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "bind IP stack for gRPC server (\"dual\", \"ipv6\", or \"ipv4\")")
-	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "bind address for gRPC server")
-	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "bind HTTP/2 port for gRPC server")
+	startCommand.Flags().StringVar(&grpcAddress, "grpc-address", "", "bind IP address for gRPC server")
+	startCommand.Flags().UintVar(&grpcPort, "grpc-port", 50050, "bind TCP port for gRPC server")
 	startCommand.Flags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding KRM over gRPC (\"yaml\" or \"cbor\")")
 	startCommand.Flags().Float64Var(&grpcTimeout, "grpc-timeout", 5.0, "gRPC timeout in seconds")
 	startCommand.Flags().BoolVar(&web, "web", true, "start web server")
 	startCommand.Flags().Float64Var(&webTimeout, "web-timeout", 5.0, "web read/write timeout in seconds")
 	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
-	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind address for web server")
-	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind HTTP/2 port for web server")
+	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind IP address for web server")
+	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind TCP port for web server")
 	startCommand.Flags().StringVar(&webTimezone, "web-timezone", "", "web server timezone, e.g. \"UTC\" (empty string for local)")
 	startCommand.Flags().BoolVar(&kubernetes, "kubernetes", false, "start Kubernetes aggregated API server")
-	startCommand.Flags().UintVar(&kubernetesPort, "kubernetes-port", 50052, "bind port for Kubernetes aggregated API server")
+	startCommand.Flags().UintVar(&kubernetesPort, "kubernetes-port", 50052, "bind TCP port for Kubernetes aggregated API server")
+	startCommand.Flags().StringVar(&logIpStackString, "log-ip-stack", "dual", "IP stack for log server (\"dual\", \"ipv6\", or \"ipv4\")")
+	startCommand.Flags().StringVar(&logAddress, "log-address", "", "bind IP address for log server")
+	startCommand.Flags().UintVar(&logPort, "log-port", 50055, "bind TCP port for log server")
 	startCommand.Flags().Float64Var(&validatorTimeout, "validator-timeout", 30.0, "validator timeout in seconds")
 
 	cobrautil.SetFlagsFromEnvironment("TKO_", startCommand)
@@ -94,6 +102,9 @@ var startCommand = &cobra.Command{
 
 		webIpStack = util.IPStack(webIpStackString)
 		util.FailOnError(grpcIpStack.Validate("web-ip-stack"))
+
+		logIpStack = util.IPStack(logIpStackString)
+		util.FailOnError(logIpStack.Validate("log-ip-stack"))
 
 		Serve()
 	},
@@ -131,7 +142,7 @@ func Serve() {
 	client := grpcclient.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
 	// Wrap backend with validation
-	validation, err := validationpkg.NewValidation(client, tkoutil.SecondsToDuration(validatorTimeout), commonlog.GetLogger("validation"))
+	validation, err := validationpkg.NewValidation(client, tkoutil.SecondsToDuration(validatorTimeout), commonlog.GetLogger("validation"), logIpStack, logAddress, int(logPort))
 	util.FailOnError(err)
 	validationTicker := tkoutil.NewTicker(ResetValidationPluginCacheFrequency, validation.ResetPluginCache)
 	util.OnExit(validationTicker.Stop)

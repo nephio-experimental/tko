@@ -8,17 +8,19 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	pluginspkg "github.com/nephio-experimental/tko/plugins"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 const FIFOPrefix = "tko-validation-"
 
 type PluginInput struct {
-	GRPC                    PluginInputGRPC         `yaml:"grpc"`
-	LogFile                 string                  `yaml:"logFile"`
-	Package                 util.Package            `yaml:"package"`
-	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
-	Complete                bool                    `yaml:"complete"`
+	GRPC                    PluginInputGRPC            `yaml:"grpc"`
+	LogFile                 string                     `yaml:"logFile"`
+	LogAddressPort          string                     `yaml:"logAddressPort"`
+	Package                 tkoutil.Package            `yaml:"package"`
+	TargetResourceIdentifer tkoutil.ResourceIdentifier `yaml:"targetResourceIdentifier"`
+	Complete                bool                       `yaml:"complete"`
 }
 
 type PluginInputGRPC struct {
@@ -31,7 +33,7 @@ type PluginOutput struct {
 	Error string `yaml:"error,omitempty"`
 }
 
-func (self *Context) ToPluginInput(logFile string) PluginInput {
+func (self *Context) ToPluginInput(logFile string, logAddressPort string) PluginInput {
 	return PluginInput{
 		GRPC: PluginInputGRPC{
 			Level2Protocol: self.Validation.Client.GRPCLevel2Protocol,
@@ -39,22 +41,23 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 			Port:           self.Validation.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
+		LogAddressPort:          logAddressPort,
 		Package:                 self.Package,
 		TargetResourceIdentifer: self.TargetResourceIdentifer,
 		Complete:                self.Complete,
 	}
 }
 
-func NewPluginValidator(plugin client.Plugin) (ValidateFunc, error) {
+func NewPluginValidator(plugin client.Plugin, logIpStack util.IPStack, logAddress string, logPort int) (ValidateFunc, error) {
 	switch plugin.Executor {
 	case pluginspkg.Command:
-		return NewCommandPluginValidator(plugin)
+		return NewCommandPluginValidator(plugin, logIpStack, logAddress, logPort)
 	default:
 		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
 	}
 }
 
-func NewCommandPluginValidator(plugin client.Plugin) (ValidateFunc, error) {
+func NewCommandPluginValidator(plugin client.Plugin, logIpStack util.IPStack, logAddress string, logPort int) (ValidateFunc, error) {
 	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err
@@ -68,8 +71,8 @@ func NewCommandPluginValidator(plugin client.Plugin) (ValidateFunc, error) {
 		var input PluginInput
 		var output PluginOutput
 
-		if logFifo, err := executor.GetLogFIFO(FIFOPrefix, validationContext.Validation.Log); err == nil {
-			input = validationContext.ToPluginInput(logFifo)
+		if logFile, logAddressPort, err := executor.GetLog(FIFOPrefix, logIpStack, logAddress, logPort, validationContext.Validation.Log); err == nil {
+			input = validationContext.ToPluginInput(logFile, logAddressPort)
 		} else {
 			return []error{err}
 		}

@@ -59,7 +59,7 @@ class GVK:
       api_version = resource.get('apiVersion', '')
       if not isinstance(api_version, str):
         raise Exception('"apiVersion" is not a string')
-      self.group, self.version = api_version.split('/', 2) if '/' in api_version else ('', api_version)
+      self.group, self.version = api_version.split('/', 1) if '/' in api_version else ('', api_version)
       self.kind = resource.get('kind', '')
       if not isinstance(self.kind, str):
         raise Exception('"kind" is not a string')

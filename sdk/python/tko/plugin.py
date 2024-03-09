@@ -1,9 +1,11 @@
-import sys, traceback, copy, subprocess, os, collections.abc, tko.package, tko.encoding
+import sys, traceback, copy, socket, subprocess, os, collections.abc, tko.package, tko.encoding
 
 
 input = None
 output = {'package': [], 'error': ''}
 log_file = None
+log_socket = None
+log_socket_timeout = 5 # seconds
 
 
 def get_output_package():
@@ -65,23 +67,64 @@ def execute(args, env=None, input=None):
 
 
 def log(message):
-  global log_file
+  global log_file, log_socket
   if log_file:
     log_file.write(str(message)+'\n')
+  elif log_socket:
+    log_socket.sendall((str(message)+'\n').encode())
 
 
-def open_log_file():
-  global input, output, log_file
+def open_log():
+  global input, output, log_file, log_socket
+
   log_file_ = input.get('logFile', '')
   if log_file_ != '':
-    log_file = open(log_file_, 'w', buffering=1)
+    try:
+      log_file = open(log_file_, 'w', buffering=1)
+    except Exception as e:
+      raise Exception(f'cannot open life file {log_file_}: {e}')
+    return
+
+  log_address_port = input.get('logAddressPort', '')
+  address, port = split_ip_address_port(log_address_port)
+  if address is not None:
+    try:
+      if ':' in address:
+        # IPv6
+        family = socket.AF_INET6
+      else:
+        # IPv4
+        family = socket.AF_INET
+      # See: https://stackoverflow.com/a/4030559
+      #      https://docs.python.org/3/library/socket.html#socket.getaddrinfo
+      socket_address = socket.getaddrinfo(address, port, family, socket.SOCK_STREAM)[0][4]
+      log_socket = socket.socket(family, socket.SOCK_STREAM)
+      log_socket.settimeout(log_socket_timeout)
+      log_socket.connect(socket_address)
+    except Exception as e:
+      raise Exception(f'cannot open log socket {log_address_port}: {e}')
+
+
+def split_ip_address_port(address_port):
+  split = address_port.rsplit(':', 1)
+  if len(split) == 2:
+    address = split[0]
+    if address.startswith('['):
+      # IPv6 (e.g. [fe80::aca9:89ff:fea8:f19b]:50055)
+      address = address[1:-1]
+    try:
+      port = int(split[1])
+    except:
+      return (None, None)
+    return (address, port)
+  return (None, None)
 
 
 def validate(f):
   global input, output, log_file
   try:
     input = tko.encoding.yaml.load(sys.stdin)
-    open_log_file()
+    open_log()
     output['package'] = input.get('package', [])
     complete = input.get('complete', True)
     f(complete)
@@ -96,7 +139,7 @@ def prepare(f):
   global input, output, log_file
   try:
     input = tko.encoding.yaml.load(sys.stdin)
-    open_log_file()
+    open_log()
     output['prepared'] = False
     output['package'] = copy.deepcopy(input.get('deploymentPackage', []))
     if f():
@@ -112,7 +155,7 @@ def schedule(f):
   global input, output, log_file
   try:
     input = tko.encoding.yaml.load(sys.stdin)
-    open_log_file()
+    open_log()
     output['package'] = input.get('sitePackage', [])
     f()
   except:

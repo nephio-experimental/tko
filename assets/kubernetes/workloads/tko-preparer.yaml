@@ -28,3 +28,6 @@ spec:
         env:
         - name: TKO_grpc-address
           value: tko-api
+        ports:
+        - name: log
+          containerPort: 50055

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	contextpkg "context"
 	"errors"
+	"sync"
 
 	"github.com/tliron/commonlog"
+	"github.com/tliron/kutil/util"
 	"gopkg.in/yaml.v2"
 )
 
@@ -29,15 +31,40 @@ func NewCommandExecutor(arguments []string, properties map[string]string) (*Comm
 	}, nil
 }
 
-func (self *CommandExecutor) GetLogFIFO(prefix string, log commonlog.Logger) (string, error) {
+var loggerServer *commonlog.LoggerServer
+var loggerServerLock sync.Mutex
+
+func (self *CommandExecutor) GetLog(fifoPrefix string, ipStack util.IPStack, address string, port int, log commonlog.Logger) (string, string, error) {
 	if self.Remote == nil {
-		logFifo := NewLogFIFO(prefix, log, commonlog.Info)
-		if err := logFifo.Start(); err != nil {
-			return "", err
+		loggerFifo := commonlog.NewLoggerFIFO(fifoPrefix, log, commonlog.Info)
+		if err := loggerFifo.Start(); err == nil {
+			loggerFifo.Log.Info("plugin log")
+			return loggerFifo.Path, "", nil
+		} else {
+			return "", "", err
 		}
-		return logFifo.Path, nil
 	} else {
-		return "", nil
+		loggerServerLock.Lock()
+		defer loggerServerLock.Unlock()
+
+		if loggerServer == nil {
+			loggerServer = commonlog.NewLoggerServer(util.DualStack, address, port, log, commonlog.Info)
+			if err := loggerServer.Start(); err == nil {
+				util.OnExit(loggerServer.Stop)
+			} else {
+				return "", "", err
+			}
+		}
+
+		// In dual stack IPv6 will appear first
+		for _, logAddressPort := range loggerServer.ClientAddressPorts {
+			if logAddress, _, found := util.SplitIPAddressPort(logAddressPort); found {
+				loggerServer.Log.Info("plugin log", "address", logAddress)
+				return "", logAddressPort, nil
+			}
+		}
+
+		return "", "", nil
 	}
 }
 

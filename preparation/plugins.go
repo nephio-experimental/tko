@@ -8,18 +8,20 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	pluginspkg "github.com/nephio-experimental/tko/plugins"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-ard"
+	"github.com/tliron/kutil/util"
 )
 
 const FIFOPrefix = "tko-preparation-"
 
 type PluginInput struct {
-	GRPC                    PluginInputGRPC         `yaml:"grpc"`
-	LogFile                 string                  `yaml:"logFile"`
-	DeploymentID            string                  `yaml:"deploymentId"`
-	DeploymentPackage       util.Package            `yaml:"deploymentPackage"`
-	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
+	GRPC                    PluginInputGRPC            `yaml:"grpc"`
+	LogFile                 string                     `yaml:"logFile"`
+	LogAddressPort          string                     `yaml:"logAddressPort"`
+	DeploymentID            string                     `yaml:"deploymentId"`
+	DeploymentPackage       tkoutil.Package            `yaml:"deploymentPackage"`
+	TargetResourceIdentifer tkoutil.ResourceIdentifier `yaml:"targetResourceIdentifier"`
 }
 
 type PluginInputGRPC struct {
@@ -29,12 +31,12 @@ type PluginInputGRPC struct {
 }
 
 type PluginOutput struct {
-	Prepared bool         `yaml:"prepared,omitempty"`
-	Package  util.Package `yaml:"package,omitempty"`
-	Error    string       `yaml:"error,omitempty"`
+	Prepared bool            `yaml:"prepared,omitempty"`
+	Package  tkoutil.Package `yaml:"package,omitempty"`
+	Error    string          `yaml:"error,omitempty"`
 }
 
-func (self *Context) ToPluginInput(logFile string) PluginInput {
+func (self *Context) ToPluginInput(logFile string, logAddressPort string) PluginInput {
 	return PluginInput{
 		GRPC: PluginInputGRPC{
 			Level2Protocol: self.Preparation.Client.GRPCLevel2Protocol,
@@ -42,16 +44,17 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 			Port:           self.Preparation.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
+		LogAddressPort:          logAddressPort,
 		DeploymentID:            self.DeploymentID,
 		DeploymentPackage:       self.DeploymentPackage,
 		TargetResourceIdentifer: self.TargetResourceIdentifer,
 	}
 }
 
-func NewPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
+func NewPluginPreparer(plugin client.Plugin, logIpStack util.IPStack, logAddress string, logPort int) (PrepareFunc, error) {
 	switch plugin.Executor {
 	case pluginspkg.Command:
-		return NewCommandPluginPreparer(plugin)
+		return NewCommandPluginPreparer(plugin, logIpStack, logAddress, logPort)
 	case pluginspkg.Kpt:
 		return NewKptPluginPreparer(plugin)
 	default:
@@ -59,7 +62,7 @@ func NewPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
 	}
 }
 
-func NewCommandPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
+func NewCommandPluginPreparer(plugin client.Plugin, logIpStack util.IPStack, logAddress string, logPort int) (PrepareFunc, error) {
 	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err
@@ -73,8 +76,8 @@ func NewCommandPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
 		var input PluginInput
 		var output PluginOutput
 
-		if logFifo, err := executor.GetLogFIFO(FIFOPrefix, preparationContext.Log); err == nil {
-			input = preparationContext.ToPluginInput(logFifo)
+		if logFile, logAddressPort, err := executor.GetLog(FIFOPrefix, logIpStack, logAddress, logPort, preparationContext.Preparation.Log); err == nil {
+			input = preparationContext.ToPluginInput(logFile, logAddressPort)
 		} else {
 			return false, nil, err
 		}
@@ -101,7 +104,7 @@ func NewKptPluginPreparer(plugin client.Plugin) (PrepareFunc, error) {
 		if package_, err := executor.Execute(context, preparationContext.TargetResourceIdentifer, preparationContext.DeploymentPackage); err == nil {
 			// Note: it's OK if the kpt function deleted our plugin resource because that also counts as completion
 			if resource, ok := preparationContext.TargetResourceIdentifer.GetResource(package_); ok {
-				if !util.SetPreparedAnnotation(resource, true) {
+				if !tkoutil.SetPreparedAnnotation(resource, true) {
 					return false, nil, errors.New("malformed resource")
 				}
 			}

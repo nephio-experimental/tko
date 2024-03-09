@@ -38,7 +38,7 @@ func (self *Validation) GetValidators(gvk tkoutil.GVK, complete bool) (Validator
 		Trigger: &gvk,
 	}); err == nil {
 		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
-			if validate, err := NewPluginValidator(plugin); err == nil {
+			if validate, err := NewPluginValidator(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
 				validators = append(validators, validate)
 				return nil
 			} else {

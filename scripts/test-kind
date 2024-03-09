@@ -32,6 +32,7 @@ if [ "$1" == -d ]; then
 	kubectl wait --for=delete namespace/tko
 
 	m 'deleting volumes (via sudo)...'
+	# If we don't do this, Docker-in-Docker (and thus Kind) will get confused with existing data
 	sudo rm --recursive --force /tmp/tko-postgresql /tmp/tko-docker
 fi
 
@@ -41,7 +42,7 @@ m 'deploying TKO...'
 
 m 'waiting for TKO...'
 
-TIMEOUT=120s
+TIMEOUT=180s
 "$HERE/kubectl-kind" wait deployment/postgresql --namespace=tko --for=condition=available --timeout="$TIMEOUT"
 "$HERE/kubectl-kind" wait deployment/tko-api --namespace=tko --for=condition=available --timeout="$TIMEOUT"
 "$HERE/kubectl-kind" wait pod/tko-runner --namespace=tko --for=condition=ready --timeout="$TIMEOUT"

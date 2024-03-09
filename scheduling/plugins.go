@@ -8,18 +8,20 @@ import (
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	pluginspkg "github.com/nephio-experimental/tko/plugins"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 )
 
 const FIFOPrefix = "tko-scheduling-"
 
 type PluginInput struct {
-	GRPC                    PluginInputGRPC         `yaml:"grpc"`
-	LogFile                 string                  `yaml:"logFile"`
-	SiteID                  string                  `yaml:"siteId"`
-	SitePackage             util.Package            `yaml:"sitePackage"`
-	TargetResourceIdentifer util.ResourceIdentifier `yaml:"targetResourceIdentifier"`
-	Deployments             map[string]util.Package `yaml:"deployments"`
+	GRPC                    PluginInputGRPC            `yaml:"grpc"`
+	LogFile                 string                     `yaml:"logFile"`
+	LogAddressPort          string                     `yaml:"logAddressPort"`
+	SiteID                  string                     `yaml:"siteId"`
+	SitePackage             tkoutil.Package            `yaml:"sitePackage"`
+	TargetResourceIdentifer tkoutil.ResourceIdentifier `yaml:"targetResourceIdentifier"`
+	Deployments             map[string]tkoutil.Package `yaml:"deployments"`
 }
 
 type PluginInputGRPC struct {
@@ -32,7 +34,7 @@ type PluginOutput struct {
 	Error string `yaml:"error,omitempty"`
 }
 
-func (self *Context) ToPluginInput(logFile string) PluginInput {
+func (self *Context) ToPluginInput(logFile string, logAddressPort string) PluginInput {
 	return PluginInput{
 		GRPC: PluginInputGRPC{
 			Level2Protocol: self.Scheduling.Client.GRPCLevel2Protocol,
@@ -40,6 +42,7 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 			Port:           self.Scheduling.Client.GRPCPort,
 		},
 		LogFile:                 logFile,
+		LogAddressPort:          logAddressPort,
 		SiteID:                  self.SiteID,
 		SitePackage:             self.SitePackage,
 		TargetResourceIdentifer: self.TargetResourceIdentifer,
@@ -47,16 +50,16 @@ func (self *Context) ToPluginInput(logFile string) PluginInput {
 	}
 }
 
-func NewPluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
+func NewPluginScheduler(plugin client.Plugin, logIpStack util.IPStack, logAddress string, logPort int) (ScheduleFunc, error) {
 	switch plugin.Executor {
 	case pluginspkg.Command:
-		return NewCommandPluginScheduler(plugin)
+		return NewCommandPluginScheduler(plugin, logIpStack, logAddress, logPort)
 	default:
 		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
 	}
 }
 
-func NewCommandPluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
+func NewCommandPluginScheduler(plugin client.Plugin, logIpStack util.IPStack, logAddress string, logPort int) (ScheduleFunc, error) {
 	executor, err := pluginspkg.NewCommandExecutor(plugin.Arguments, plugin.Properties)
 	if err != nil {
 		return nil, err
@@ -70,8 +73,8 @@ func NewCommandPluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
 		var input PluginInput
 		var output PluginOutput
 
-		if logFifo, err := executor.GetLogFIFO(FIFOPrefix, schedulingContext.Log); err == nil {
-			input = schedulingContext.ToPluginInput(logFifo)
+		if logFile, logAddressPort, err := executor.GetLog(FIFOPrefix, logIpStack, logAddress, logPort, schedulingContext.Scheduling.Log); err == nil {
+			input = schedulingContext.ToPluginInput(logFile, logAddressPort)
 		} else {
 			return err
 		}
