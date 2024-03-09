@@ -4,3 +4,4 @@ from tko.validation import *
 from tko.expressions import *
 from tko.scheduling import *
 from tko.client import *
+from tko.encoding import *

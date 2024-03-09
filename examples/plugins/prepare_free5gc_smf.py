@@ -11,16 +11,17 @@ smf_gvk = tko.GVK('free5gc.plugin.nephio.org', 'v1alpha1', 'SMF')
 
 
 def prepare():
-  # free5gc.plugin.nephio.org/v1alpha1, SMF
   smf = tko.get_target_resource()
-  if smf is not None:
-    if tko.GVK(resource=smf) == smf_gvk:
-      smf['status'] = smf.get('status', {})
-      smf['status']['test'] = 'hi'
-      tko.set_prepared(smf)
-      return True
+  if smf is None:
+    return True
+  if tko.GVK(resource=smf) != smf_gvk:
+    return True
 
-  return False
+  smf['status'] = smf.get('status', {})
+  smf['status']['test'] = 'hi'
+  tko.set_prepared(smf)
+  return True
 
 
-tko.prepare(prepare)
+if __name__ == '__main__':
+  tko.prepare(prepare)

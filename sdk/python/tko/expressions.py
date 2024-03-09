@@ -1,16 +1,16 @@
 import types, collections.abc, tko.package, tko.plugin
 
 
-def wrap(o):
+def namespace_wrap(o):
   if isinstance(o, collections.abc.Mapping):
     r = types.SimpleNamespace()
     for k, v in o.items():
-      setattr(r, k, wrap(v))
+      setattr(r, k, namespace_wrap(v))
     return r
   if isinstance(o, list):
     r = []
     for v in o:
-      r.append(wrap(v))
+      r.append(namespace_wrap(v))
     return oo
   return o
 
@@ -25,9 +25,9 @@ def evaluate_expression(expression, package):
     def get(g, v, k, name=None):
       gvk = GVK(g, v, k)
       if name is None:
-        return wrap(package.get_first(gvk))
+        return namespace_wrap(package.get_first(gvk))
       else:
-        return wrap(package[Identifier(gvk, name)])
+        return namespace_wrap(package[Identifier(gvk, name)])
 
     r = eval(expression)
 

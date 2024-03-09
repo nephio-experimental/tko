@@ -1,12 +1,8 @@
-import sys, traceback, copy, subprocess, os, tko.package
-from ruamel.yaml import YAML
+import sys, traceback, copy, subprocess, os, collections.abc, tko.package, tko.encoding
 
-
-yaml=YAML(typ='safe')
-yaml.default_flow_style = False
 
 input = None
-output = {'prepared': False, 'package': [], 'error': ''}
+output = {'package': [], 'error': ''}
 log_file = None
 
 
@@ -34,7 +30,7 @@ def get_deployments():
   global input
   deployments = input.get('deployments', {})
   for deployment in deployments.values():
-    yield tko.Package(deployment)
+    yield tko.package.Package(deployment)
 
 
 def get_grpc_host():
@@ -50,11 +46,18 @@ def get_grpc_host():
 
 
 def execute(args, env=None, input=None):
+  if not isinstance(args, collections.abc.Sequence):
+    raise Exception('args is not a sequence')
   log(f'executing: {" ".join(args)}')
-  if env:
+  if env is not None:
+      if not isinstance(env, collections.abc.Mapping):
+        raise Exception('env is not a mapping')
       env_ = os.environ.copy()
       env_.update(env)
       env = env_
+  if input is not None:
+    input = input.encode()
+
   complete = subprocess.run(args, env=env, input=input, capture_output=True)
   if complete.returncode != 0:
     raise Exception(complete.stderr.decode())
@@ -77,7 +80,7 @@ def open_log_file():
 def validate(f):
   global input, output, log_file
   try:
-    input = yaml.load(sys.stdin)
+    input = tko.encoding.yaml.load(sys.stdin)
     open_log_file()
     output['package'] = input.get('package', [])
     complete = input.get('complete', True)
@@ -86,14 +89,15 @@ def validate(f):
     output['error'] = traceback.format_exc()
 
   del output['package']
-  yaml.dump(output, sys.stdout)
+  tko.encoding.yaml.dump(output, sys.stdout)
 
 
 def prepare(f):
   global input, output, log_file
   try:
-    input = yaml.load(sys.stdin)
+    input = tko.encoding.yaml.load(sys.stdin)
     open_log_file()
+    output['prepared'] = False
     output['package'] = copy.deepcopy(input.get('deploymentPackage', []))
     if f():
       output['prepared'] = True
@@ -101,13 +105,13 @@ def prepare(f):
     output['package'] = []
     output['error'] = traceback.format_exc()
 
-  yaml.dump(output, sys.stdout)
+  tko.encoding.yaml.dump(output, sys.stdout)
 
 
 def schedule(f):
   global input, output, log_file
   try:
-    input = yaml.load(sys.stdin)
+    input = tko.encoding.yaml.load(sys.stdin)
     open_log_file()
     output['package'] = input.get('sitePackage', [])
     f()
@@ -115,4 +119,4 @@ def schedule(f):
     output['error'] = traceback.format_exc()
 
   del output['package']
-  yaml.dump(output, sys.stdout)
+  tko.encoding.yaml.dump(output, sys.stdout)

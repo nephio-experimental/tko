@@ -1,9 +1,4 @@
-import io, collections.abc
-from ruamel.yaml import YAML
-
-
-yaml=YAML(typ='safe')
-yaml.default_flow_style = False
+import io, collections.abc, tko.encoding
 
 
 class Package:
@@ -26,7 +21,7 @@ class Package:
         f.write('---\n')
       if first:
         first = False
-      yaml.dump(resource, f)
+      tko.encoding.yaml.dump(resource, f)
     return f.getvalue()
 
   def __iter__(self):
