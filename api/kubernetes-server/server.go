@@ -9,7 +9,6 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/server"
-	apiserver "k8s.io/apiserver/pkg/server"
 	serverpkg "k8s.io/apiserver/pkg/server"
 
 	// Support *all* authentication methods (increases the size of the executable)
@@ -72,13 +71,13 @@ func (self *Server) Stop() {
 	self.Log.Notice("stopped Kubernetes server")
 }
 
-func NewAPIGroupInfo(restOptions generic.RESTOptionsGetter, backend backend.Backend, log commonlog.Logger) *apiserver.APIGroupInfo {
+func NewAPIGroupInfo(restOptions generic.RESTOptionsGetter, backend backend.Backend, log commonlog.Logger) *serverpkg.APIGroupInfo {
 	templateStore := NewTemplateStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "template"))
 	siteStore := NewSiteStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "site"))
 	deploymentStore := NewDeploymentStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "deployment"))
 	pluginStore := NewPluginStore(backend, commonlog.NewKeyValueLogger(log, "resourceType", "plugin"))
 
-	apiGroupInfo := apiserver.NewDefaultAPIGroupInfo(krmgroup.GroupName, Scheme, meta.ParameterCodec, Codecs)
+	apiGroupInfo := serverpkg.NewDefaultAPIGroupInfo(krmgroup.GroupName, Scheme, meta.ParameterCodec, Codecs)
 	apiGroupInfo.VersionedResourcesStorageMap[krm.Version] = map[string]rest.Storage{
 		templateStore.TypePlural:   templateStore,
 		siteStore.TypePlural:       siteStore,

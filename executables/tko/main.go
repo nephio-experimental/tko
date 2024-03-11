@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nephio-experimental/tko/tko/commands"
+	"github.com/nephio-experimental/tko/executables/tko/commands"
 	"github.com/tliron/kutil/util"
 
 	_ "github.com/tliron/commonlog/simple"

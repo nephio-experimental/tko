@@ -26,8 +26,8 @@ type Server struct {
 	DefaultPackageFormat string
 	Log                  commonlog.Logger
 
-	grpcServers     []*grpc.Server
-	clientAddresses []string
+	grpcServers        []*grpc.Server
+	clientAddressPorts []string
 }
 
 func NewServer(backend backend.Backend, ipStack util.IPStack, address string, port int, defaultPackageFormat string, log commonlog.Logger) *Server {
@@ -68,7 +68,7 @@ func (self *Server) start(level2protocol string, address string) error {
 			grpcServer := grpc.NewServer()
 			api.RegisterAPIServer(grpcServer, self)
 			self.grpcServers = append(self.grpcServers, grpcServer)
-			self.clientAddresses = append(self.clientAddresses, util.IPAddressPortWithoutZone(addressPort))
+			self.clientAddressPorts = append(self.clientAddressPorts, util.IPAddressPortWithoutZone(addressPort))
 
 			go func() {
 				if err := grpcServer.Serve(listener); err != nil {

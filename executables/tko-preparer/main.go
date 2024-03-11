@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nephio-experimental/tko/tko-meta-scheduler/commands"
+	"github.com/nephio-experimental/tko/executables/tko-preparer/commands"
 	"github.com/tliron/kutil/util"
 )
 

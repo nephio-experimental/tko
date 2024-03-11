@@ -16,7 +16,7 @@ type About struct {
 
 type AboutGRPC struct {
 	IPStack              string   `json:"ipStack" yaml:"ipStack"`
-	Addresses            []string `json:"addresses" yaml:"addresses"`
+	AddressPorts         []string `json:"addressPorts" yaml:"addressPorts"`
 	DefaultPackageFormat string   `json:"defaultPackageFormat" yaml:"defaultPackageFormat"`
 }
 
@@ -34,7 +34,7 @@ func (self *Client) About() (About, error) {
 				Backend:             response.Backend,
 				GRPC: AboutGRPC{
 					IPStack:              response.IpStack,
-					Addresses:            response.Addresses,
+					AddressPorts:         response.AddressPorts,
 					DefaultPackageFormat: response.DefaultPackageFormat,
 				},
 			}, nil

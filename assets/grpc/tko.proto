@@ -40,7 +40,7 @@ message AboutResponse {
     string tkoVersion = 3;
     string backend = 4;
     string ipStack = 5;
-    repeated string addresses = 6;
+    repeated string addressPorts = 6;
     string defaultPackageFormat = 7;
 }
 
