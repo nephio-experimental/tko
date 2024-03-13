@@ -102,21 +102,21 @@ func (self *SQLBackend) DeleteDeployment(context contextpkg.Context, deploymentI
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (util.Results[backend.DeploymentInfo], error) {
+func (self *SQLBackend) ListDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments, window backend.Window) (util.Results[backend.DeploymentInfo], error) {
 	sql := self.statements.SelectDeployments
 	var with SqlWith
 	var where SqlWhere
 	var args SqlArgs
 
-	args.AddValue(listDeployments.Offset)
-	args.AddValue(listDeployments.MaxCount)
+	args.AddValue(window.Offset)
+	args.AddValue(window.MaxCount)
 
-	if (listDeployments.ParentDeploymentID != nil) && (*listDeployments.ParentDeploymentID != "") {
-		where.Add("parent_deployment_id = " + args.Add(listDeployments.ParentDeploymentID))
+	if (selectDeployments.ParentDeploymentID != nil) && (*selectDeployments.ParentDeploymentID != "") {
+		where.Add("parent_deployment_id = " + args.Add(selectDeployments.ParentDeploymentID))
 	}
 
-	if listDeployments.MetadataPatterns != nil {
-		for key, pattern := range listDeployments.MetadataPatterns {
+	if selectDeployments.MetadataPatterns != nil {
+		for key, pattern := range selectDeployments.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("SELECT deployment_id FROM deployments_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
@@ -124,13 +124,13 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		}
 	}
 
-	for _, pattern := range listDeployments.TemplateIDPatterns {
+	for _, pattern := range selectDeployments.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("deployments.template_id ~ " + pattern)
 	}
 
-	if listDeployments.TemplateMetadataPatterns != nil {
-		for key, pattern := range listDeployments.TemplateMetadataPatterns {
+	if selectDeployments.TemplateMetadataPatterns != nil {
+		for key, pattern := range selectDeployments.TemplateMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
@@ -138,13 +138,13 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		}
 	}
 
-	for _, pattern := range listDeployments.SiteIDPatterns {
+	for _, pattern := range selectDeployments.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("deployments.site_id ~ " + pattern)
 	}
 
-	if listDeployments.SiteMetadataPatterns != nil {
-		for key, pattern := range listDeployments.SiteMetadataPatterns {
+	if selectDeployments.SiteMetadataPatterns != nil {
+		for key, pattern := range selectDeployments.SiteMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
@@ -152,8 +152,8 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		}
 	}
 
-	if listDeployments.Prepared != nil {
-		switch *listDeployments.Prepared {
+	if selectDeployments.Prepared != nil {
+		switch *selectDeployments.Prepared {
 		case true:
 			where.Add("prepared")
 		case false:
@@ -161,8 +161,8 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 		}
 	}
 
-	if listDeployments.Approved != nil {
-		switch *listDeployments.Approved {
+	if selectDeployments.Approved != nil {
+		switch *selectDeployments.Approved {
 		case true:
 			where.Add("approved")
 		case false:
@@ -209,6 +209,11 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, listDeployme
 	}()
 
 	return stream, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SQLBackend) PurgeDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments) error {
+	return backend.NewNotImplementedError("PurgeDeployments")
 }
 
 // ([backend.Backend] interface)

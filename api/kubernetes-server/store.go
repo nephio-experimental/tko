@@ -60,6 +60,7 @@ type Store struct {
 	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
 	UpdateFunc func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) // optional
 	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
+	PurgeFunc  func(context contextpkg.Context, store *Store) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
 	ListFunc   func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error)
 	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
@@ -405,10 +406,22 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 		listOptions = listOptions.DeepCopy()
 	}
 
+	if self.PurgeFunc != nil {
+		if err := self.PurgeFunc(context, self); err == nil {
+			return nil, nil
+		} else if backendpkg.IsBadArgumentError(err) {
+			return nil, apierrors.NewBadRequest(err.Error())
+		} else {
+			return nil, apierrors.NewInternalError(err)
+		}
+	}
+
+	// If there is no PurgeFunc, we will simulate it
+
 	var deletedOjects []runtime.Object
 	var deletedObjectsLock sync.Mutex
 
-	deleter := util.NewParallelExecutor[runtime.Object](ParallelBufferSize, func(object runtime.Object) error {
+	deleter := util.NewParallelExecutor(ParallelBufferSize, func(object runtime.Object) error {
 		if accessor, err := metabase.Accessor(object); err == nil {
 			name := accessor.GetName()
 			self.Log.Infof("DeleteCollection: deleting %q", name)
@@ -457,6 +470,7 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 
 	list := self.NewList()
 	metabase.SetList(list, deletedOjects)
+	// TODO: which error type to return?
 	return list, errors.Join(errs...)
 }
 

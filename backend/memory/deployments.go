@@ -86,33 +86,7 @@ func (self *MemoryBackend) DeleteDeployment(context contextpkg.Context, deployme
 	defer self.lock.Unlock()
 
 	if deployment, ok := self.deployments[deploymentId]; ok {
-		delete(self.deployments, deploymentId)
-
-		// Remove association from template
-		if deployment.TemplateID != "" {
-			if template, ok := self.templates[deployment.TemplateID]; ok {
-				template.RemoveDeployment(deploymentId)
-			} else {
-				self.log.Warningf("missing template: %s", deployment.TemplateID)
-			}
-		}
-
-		// Remove association from site
-		if deployment.SiteID != "" {
-			if site, ok := self.sites[deployment.SiteID]; ok {
-				site.RemoveDeployment(deploymentId)
-			} else {
-				self.log.Warningf("missing site: %s", deployment.SiteID)
-			}
-		}
-
-		// Remove child deployment associations
-		for _, childDeployment := range self.deployments {
-			if childDeployment.ParentDeploymentID == deploymentId {
-				childDeployment.ParentDeploymentID = ""
-			}
-		}
-
+		self.deleteDeployment(context, deployment)
 		return nil
 	} else {
 		return backend.NewNotFoundErrorf("deployment: %s", deploymentId)
@@ -120,85 +94,38 @@ func (self *MemoryBackend) DeleteDeployment(context contextpkg.Context, deployme
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (util.Results[backend.DeploymentInfo], error) {
-	filterPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == true)
-	filterNotPrepared := (listDeployments.Prepared != nil) && (*listDeployments.Prepared == false)
-	filterApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == true)
-	filterNotApproved := (listDeployments.Approved != nil) && (*listDeployments.Approved == false)
-
+func (self *MemoryBackend) ListDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments, window backend.Window) (util.Results[backend.DeploymentInfo], error) {
 	self.lock.Lock()
 
 	var deploymentInfos []backend.DeploymentInfo
-	for _, deployment := range self.deployments {
-		if filterPrepared && !deployment.Prepared {
-			continue
-		}
-		if filterNotPrepared && deployment.Prepared {
-			continue
-		}
-
-		if filterApproved && !deployment.Approved {
-			continue
-		}
-		if filterNotApproved && deployment.Approved {
-			continue
-		}
-
-		if (listDeployments.ParentDeploymentID != nil) && (*listDeployments.ParentDeploymentID != "") {
-			if *listDeployments.ParentDeploymentID != deployment.ParentDeploymentID {
-				continue
-			}
-		}
-
-		if !backend.MetadataMatchesPatterns(deployment.Metadata, listDeployments.MetadataPatterns) {
-			continue
-		}
-
-		if !backend.IDMatchesPatterns(deployment.TemplateID, listDeployments.TemplateIDPatterns) {
-			continue
-		}
-
-		if (listDeployments.TemplateMetadataPatterns != nil) && (len(listDeployments.TemplateMetadataPatterns) > 0) {
-			if template, ok := self.templates[deployment.TemplateID]; ok {
-				if !backend.MetadataMatchesPatterns(template.Metadata, listDeployments.TemplateMetadataPatterns) {
-					continue
-				}
-			} else {
-				continue
-			}
-		}
-
-		if !backend.IDMatchesPatterns(deployment.SiteID, listDeployments.SiteIDPatterns) {
-			continue
-		}
-
-		if (listDeployments.SiteMetadataPatterns != nil) && (len(listDeployments.SiteMetadataPatterns) > 0) {
-			if site, ok := self.sites[deployment.SiteID]; ok {
-				if !backend.MetadataMatchesPatterns(site.Metadata, listDeployments.SiteMetadataPatterns) {
-					continue
-				}
-			} else {
-				continue
-			}
-		}
-
+	self.selectDeployments(context, selectDeployments, func(context contextpkg.Context, deployment *Deployment) {
 		deploymentInfos = append(deploymentInfos, deployment.DeploymentInfo)
-	}
+	})
 
 	self.lock.Unlock()
 
 	backend.SortDeploymentInfos(deploymentInfos)
 
 	length := uint(len(deploymentInfos))
-	if listDeployments.Offset > length {
+	if window.Offset > length {
 		deploymentInfos = nil
-	} else if end := listDeployments.Offset + listDeployments.MaxCount; end > length {
-		deploymentInfos = deploymentInfos[listDeployments.Offset:]
+	} else if end := window.Offset + window.MaxCount; end > length {
+		deploymentInfos = deploymentInfos[window.Offset:]
 	} else {
-		deploymentInfos = deploymentInfos[listDeployments.Offset:end]
+		deploymentInfos = deploymentInfos[window.Offset:end]
 	}
 
 	return util.NewResultsSlice(deploymentInfos), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgeDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	self.selectDeployments(context, selectDeployments, self.deleteDeployment)
+
+	return nil
 }
 
 // ([backend.Backend] interface)
@@ -331,6 +258,98 @@ func (self *MemoryBackend) CancelDeploymentModification(context contextpkg.Conte
 }
 
 // Utils
+
+func (self *MemoryBackend) deleteDeployment(context contextpkg.Context, deployment *Deployment) {
+	delete(self.deployments, deployment.DeploymentID)
+
+	// Remove association from template
+	if deployment.TemplateID != "" {
+		if template, ok := self.templates[deployment.TemplateID]; ok {
+			template.RemoveDeployment(deployment.DeploymentID)
+		} else {
+			self.log.Warningf("missing template: %s", deployment.TemplateID)
+		}
+	}
+
+	// Remove association from site
+	if deployment.SiteID != "" {
+		if site, ok := self.sites[deployment.SiteID]; ok {
+			site.RemoveDeployment(deployment.DeploymentID)
+		} else {
+			self.log.Warningf("missing site: %s", deployment.SiteID)
+		}
+	}
+
+	// Remove child deployment associations
+	for _, childDeployment := range self.deployments {
+		if childDeployment.ParentDeploymentID == deployment.DeploymentID {
+			childDeployment.ParentDeploymentID = ""
+		}
+	}
+}
+
+func (self *MemoryBackend) selectDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments, f func(context contextpkg.Context, deployment *Deployment)) {
+	filterPrepared := (selectDeployments.Prepared != nil) && (*selectDeployments.Prepared == true)
+	filterNotPrepared := (selectDeployments.Prepared != nil) && (*selectDeployments.Prepared == false)
+	filterApproved := (selectDeployments.Approved != nil) && (*selectDeployments.Approved == true)
+	filterNotApproved := (selectDeployments.Approved != nil) && (*selectDeployments.Approved == false)
+
+	for _, deployment := range self.deployments {
+		if filterPrepared && !deployment.Prepared {
+			continue
+		}
+		if filterNotPrepared && deployment.Prepared {
+			continue
+		}
+
+		if filterApproved && !deployment.Approved {
+			continue
+		}
+		if filterNotApproved && deployment.Approved {
+			continue
+		}
+
+		if (selectDeployments.ParentDeploymentID != nil) && (*selectDeployments.ParentDeploymentID != "") {
+			if *selectDeployments.ParentDeploymentID != deployment.ParentDeploymentID {
+				continue
+			}
+		}
+
+		if !backend.MetadataMatchesPatterns(deployment.Metadata, selectDeployments.MetadataPatterns) {
+			continue
+		}
+
+		if !backend.IDMatchesPatterns(deployment.TemplateID, selectDeployments.TemplateIDPatterns) {
+			continue
+		}
+
+		if (selectDeployments.TemplateMetadataPatterns != nil) && (len(selectDeployments.TemplateMetadataPatterns) > 0) {
+			if template, ok := self.templates[deployment.TemplateID]; ok {
+				if !backend.MetadataMatchesPatterns(template.Metadata, selectDeployments.TemplateMetadataPatterns) {
+					continue
+				}
+			} else {
+				continue
+			}
+		}
+
+		if !backend.IDMatchesPatterns(deployment.SiteID, selectDeployments.SiteIDPatterns) {
+			continue
+		}
+
+		if (selectDeployments.SiteMetadataPatterns != nil) && (len(selectDeployments.SiteMetadataPatterns) > 0) {
+			if site, ok := self.sites[deployment.SiteID]; ok {
+				if !backend.MetadataMatchesPatterns(site.Metadata, selectDeployments.SiteMetadataPatterns) {
+					continue
+				}
+			} else {
+				continue
+			}
+		}
+
+		f(context, deployment)
+	}
+}
 
 func (self *MemoryBackend) hasModificationExpired(deployment *Deployment) bool {
 	delta := time.Now().UnixMicro() - deployment.CurrentModificationTimestamp

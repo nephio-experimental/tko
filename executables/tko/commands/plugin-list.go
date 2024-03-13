@@ -41,14 +41,12 @@ func ListPlugins(offset uint, maxCount uint, type_ string, namePatterns []string
 		util.Failf("plugin type must be %s: %s", plugins.PluginTypesDescription, type_)
 	}
 
-	pluginInfos, err := NewClient().ListPlugins(client.ListPlugins{
-		Offset:       offset,
-		MaxCount:     maxCount,
+	pluginInfos, err := NewClient().ListPlugins(client.SelectPlugins{
 		Type:         &type_,
 		NamePatterns: namePatterns,
 		Executor:     &executor,
 		Trigger:      trigger,
-	})
+	}, offset, maxCount)
 	FailOnGRPCError(err)
 	pluginInfos_, err := util.GatherResults(pluginInfos)
 	util.FailOnError(err)

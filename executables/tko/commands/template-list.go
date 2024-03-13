@@ -26,12 +26,10 @@ var templateListCommand = &cobra.Command{
 }
 
 func ListTemplates(offset uint, maxCount uint, templateIdPatterns []string, templateMetadataPatterns map[string]string) {
-	templateInfos, err := NewClient().ListTemplates(client.ListTemplates{
-		Offset:             offset,
-		MaxCount:           maxCount,
+	templateInfos, err := NewClient().ListTemplates(client.SelectTemplates{
 		TemplateIDPatterns: templateIdPatterns,
 		MetadataPatterns:   templateMetadataPatterns,
-	})
+	}, offset, maxCount)
 	FailOnGRPCError(err)
 	templateInfos_, err := util.GatherResults(templateInfos)
 	util.FailOnError(err)

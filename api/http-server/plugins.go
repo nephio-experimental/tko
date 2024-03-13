@@ -11,7 +11,7 @@ import (
 )
 
 func (self *Server) ListPlugins(writer http.ResponseWriter, request *http.Request) {
-	if pluginResults, err := self.Backend.ListPlugins(request.Context(), backend.ListPlugins{}); err == nil {
+	if pluginResults, err := self.Backend.ListPlugins(request.Context(), backend.SelectPlugins{}, backend.Window{}); err == nil {
 		var plugins []ard.StringMap
 		if err := util.IterateResults(pluginResults, func(plugin backend.Plugin) error {
 			triggers := make([]string, len(plugin.Triggers))

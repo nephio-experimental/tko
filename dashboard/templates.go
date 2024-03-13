@@ -12,7 +12,7 @@ import (
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateTemplates(table *tview.Table) {
-	if templateInfos, err := self.client.ListTemplates(client.ListTemplates{}); err == nil {
+	if templateInfos, err := self.client.ListTemplates(client.SelectTemplates{}, 0, 0); err == nil {
 		if templateInfos_, err := util.GatherResults(templateInfos); err == nil {
 			slices.SortFunc(templateInfos_, func(a client.TemplateInfo, b client.TemplateInfo) int {
 				return strings.Compare(a.TemplateID, b.TemplateID)

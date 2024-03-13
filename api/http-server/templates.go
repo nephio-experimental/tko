@@ -11,7 +11,7 @@ import (
 )
 
 func (self *Server) ListTemplates(writer http.ResponseWriter, request *http.Request) {
-	if templateInfoResults, err := self.Backend.ListTemplates(request.Context(), backend.ListTemplates{}); err == nil {
+	if templateInfoResults, err := self.Backend.ListTemplates(request.Context(), backend.SelectTemplates{}, backend.Window{}); err == nil {
 		var templates []ard.StringMap
 		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
 			slices.Sort(templateInfo.DeploymentIDs)

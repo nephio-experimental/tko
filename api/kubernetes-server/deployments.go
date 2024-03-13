@@ -73,6 +73,10 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return store.Backend.DeleteDeployment(context, id)
 		},
 
+		PurgeFunc: func(context contextpkg.Context, store *Store) error {
+			return store.Backend.PurgeDeployments(context, backendpkg.SelectDeployments{})
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if deployment, err := store.Backend.GetDeployment(context, id); err == nil {
 				if krmDeployment, err := DeploymentToKRM(deployment); err == nil {
@@ -90,7 +94,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			krmDeploymentList.APIVersion = APIVersion
 			krmDeploymentList.Kind = "DeploymentList"
 
-			if results, err := store.Backend.ListDeployments(context, backendpkg.ListDeployments{Offset: offset, MaxCount: maxCount}); err == nil {
+			if results, err := store.Backend.ListDeployments(context, backendpkg.SelectDeployments{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(deploymentInfo backendpkg.DeploymentInfo) error {
 					if krmDeployment, err := DeploymentInfoToKRM(&deploymentInfo); err == nil {
 						krmDeploymentList.Items = append(krmDeploymentList.Items, *krmDeployment)

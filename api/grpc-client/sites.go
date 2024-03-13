@@ -106,16 +106,14 @@ func (self *Client) DeleteSite(siteId string) (bool, string, error) {
 	}
 }
 
-type ListSites struct {
-	Offset             uint
-	MaxCount           uint
+type SelectSites struct {
 	SiteIDPatterns     []string
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
 
 // ([fmt.Stringer] interface)
-func (self ListSites) String() string {
+func (self SelectSites) String() string {
 	var s []string
 	if len(self.SiteIDPatterns) > 0 {
 		s = append(s, "siteIdPatterns="+stringifyStringList(self.SiteIDPatterns))
@@ -129,18 +127,22 @@ func (self ListSites) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], error) {
+func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount uint) (util.Results[SiteInfo], error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listSites",
-			"listSites", listSites)
+			"selectSites", selectSites)
 		if client, err := apiClient.ListSites(context, &api.ListSites{
-			Offset:             uint32(listSites.Offset),
-			MaxCount:           uint32(listSites.MaxCount),
-			SiteIdPatterns:     listSites.SiteIDPatterns,
-			TemplateIdPatterns: listSites.TemplateIDPatterns,
-			MetadataPatterns:   listSites.MetadataPatterns,
+			Window: &api.Window{
+				Offset:   uint32(offset),
+				MaxCount: uint32(maxCount),
+			},
+			Select: &api.SelectSites{
+				SiteIdPatterns:     selectSites.SiteIDPatterns,
+				TemplateIdPatterns: selectSites.TemplateIDPatterns,
+				MetadataPatterns:   selectSites.MetadataPatterns,
+			},
 		}); err == nil {
 			stream := util.NewResultsStream[SiteInfo](cancel)
 
@@ -168,5 +170,26 @@ func (self *Client) ListSites(listSites ListSites) (util.Results[SiteInfo], erro
 		}
 	} else {
 		return nil, err
+	}
+}
+
+func (self *Client) PurgeSites(selectSites SelectSites) (bool, string, error) {
+	if apiClient, err := self.APIClient(); err == nil {
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+		defer cancel()
+
+		self.log.Info("purgeSites",
+			"selectSites", selectSites)
+		if response, err := apiClient.PurgeSites(context, &api.SelectSites{
+			SiteIdPatterns:     selectSites.SiteIDPatterns,
+			TemplateIdPatterns: selectSites.TemplateIDPatterns,
+			MetadataPatterns:   selectSites.MetadataPatterns,
+		}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
+	} else {
+		return false, "", err
 	}
 }

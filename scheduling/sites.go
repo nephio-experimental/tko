@@ -11,7 +11,7 @@ import (
 
 func (self *Scheduling) ScheduleSites() error {
 	//self.Log.Notice("scheduling sites")
-	if siteInfos, err := self.Client.ListSites(client.ListSites{}); err == nil {
+	if siteInfos, err := self.Client.ListSites(client.SelectSites{}, 0, 0); err == nil {
 		return util.IterateResults(siteInfos, func(siteInfo client.SiteInfo) error {
 			self.ScheduleSite(siteInfo)
 			return nil

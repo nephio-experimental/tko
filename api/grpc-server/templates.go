@@ -74,11 +74,12 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.API_ListTemplatesServer) error {
 	self.Log.Infof("listTemplates: %+v", listTemplates)
 
-	if templateInfoResults, err := self.Backend.ListTemplates(server.Context(), backend.ListTemplates{
-		Offset:             uint(listTemplates.Offset),
-		MaxCount:           uint(listTemplates.MaxCount),
-		TemplateIDPatterns: listTemplates.TemplateIdPatterns,
-		MetadataPatterns:   listTemplates.MetadataPatterns,
+	if templateInfoResults, err := self.Backend.ListTemplates(server.Context(), backend.SelectTemplates{
+		TemplateIDPatterns: listTemplates.Select.TemplateIdPatterns,
+		MetadataPatterns:   listTemplates.Select.MetadataPatterns,
+	}, backend.Window{
+		Offset:   uint(listTemplates.Window.Offset),
+		MaxCount: uint(listTemplates.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
 			return server.Send(&api.ListedTemplate{
@@ -95,4 +96,20 @@ func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.A
 	}
 
 	return nil
+}
+
+// ([api.APIServer] interface)
+func (self *Server) PurgeTemplates(context contextpkg.Context, selectTemplates *api.SelectTemplates) (*api.DeleteResponse, error) {
+	self.Log.Infof("purgeTemplates: %+v", selectTemplates)
+
+	if err := self.Backend.PurgeTemplates(context, backend.SelectTemplates{
+		TemplateIDPatterns: selectTemplates.TemplateIdPatterns,
+		MetadataPatterns:   selectTemplates.MetadataPatterns,
+	}); err == nil {
+		return &api.DeleteResponse{Deleted: true}, nil
+	} else if backend.IsNotDoneError(err) {
+		return &api.DeleteResponse{Deleted: false, NotDeletedReason: err.Error()}, nil
+	} else {
+		return new(api.DeleteResponse), ToGRPCError(err)
+	}
 }

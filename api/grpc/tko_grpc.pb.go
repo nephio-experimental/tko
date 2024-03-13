@@ -25,14 +25,17 @@ const (
 	API_DeleteTemplate_FullMethodName               = "/tko.API/deleteTemplate"
 	API_GetTemplate_FullMethodName                  = "/tko.API/getTemplate"
 	API_ListTemplates_FullMethodName                = "/tko.API/listTemplates"
+	API_PurgeTemplates_FullMethodName               = "/tko.API/purgeTemplates"
 	API_RegisterSite_FullMethodName                 = "/tko.API/registerSite"
 	API_DeleteSite_FullMethodName                   = "/tko.API/deleteSite"
 	API_GetSite_FullMethodName                      = "/tko.API/getSite"
 	API_ListSites_FullMethodName                    = "/tko.API/listSites"
+	API_PurgeSites_FullMethodName                   = "/tko.API/purgeSites"
 	API_CreateDeployment_FullMethodName             = "/tko.API/createDeployment"
 	API_DeleteDeployment_FullMethodName             = "/tko.API/deleteDeployment"
 	API_GetDeployment_FullMethodName                = "/tko.API/getDeployment"
 	API_ListDeployments_FullMethodName              = "/tko.API/listDeployments"
+	API_PurgeDeployments_FullMethodName             = "/tko.API/purgeDeployments"
 	API_StartDeploymentModification_FullMethodName  = "/tko.API/startDeploymentModification"
 	API_EndDeploymentModification_FullMethodName    = "/tko.API/endDeploymentModification"
 	API_CancelDeploymentModification_FullMethodName = "/tko.API/cancelDeploymentModification"
@@ -40,6 +43,7 @@ const (
 	API_DeletePlugin_FullMethodName                 = "/tko.API/deletePlugin"
 	API_GetPlugin_FullMethodName                    = "/tko.API/getPlugin"
 	API_ListPlugins_FullMethodName                  = "/tko.API/listPlugins"
+	API_PurgePlugins_FullMethodName                 = "/tko.API/purgePlugins"
 )
 
 // APIClient is the client API for API service.
@@ -51,14 +55,17 @@ type APIClient interface {
 	DeleteTemplate(ctx context.Context, in *TemplateID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetTemplate(ctx context.Context, in *GetTemplate, opts ...grpc.CallOption) (*Template, error)
 	ListTemplates(ctx context.Context, in *ListTemplates, opts ...grpc.CallOption) (API_ListTemplatesClient, error)
+	PurgeTemplates(ctx context.Context, in *SelectTemplates, opts ...grpc.CallOption) (*DeleteResponse, error)
 	RegisterSite(ctx context.Context, in *Site, opts ...grpc.CallOption) (*RegisterResponse, error)
 	DeleteSite(ctx context.Context, in *SiteID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetSite(ctx context.Context, in *GetSite, opts ...grpc.CallOption) (*Site, error)
 	ListSites(ctx context.Context, in *ListSites, opts ...grpc.CallOption) (API_ListSitesClient, error)
+	PurgeSites(ctx context.Context, in *SelectSites, opts ...grpc.CallOption) (*DeleteResponse, error)
 	CreateDeployment(ctx context.Context, in *CreateDeployment, opts ...grpc.CallOption) (*CreateDeploymentResponse, error)
 	DeleteDeployment(ctx context.Context, in *DeploymentID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetDeployment(ctx context.Context, in *GetDeployment, opts ...grpc.CallOption) (*Deployment, error)
 	ListDeployments(ctx context.Context, in *ListDeployments, opts ...grpc.CallOption) (API_ListDeploymentsClient, error)
+	PurgeDeployments(ctx context.Context, in *SelectDeployments, opts ...grpc.CallOption) (*DeleteResponse, error)
 	StartDeploymentModification(ctx context.Context, in *StartDeploymentModification, opts ...grpc.CallOption) (*StartDeploymentModificationResponse, error)
 	EndDeploymentModification(ctx context.Context, in *EndDeploymentModification, opts ...grpc.CallOption) (*EndDeploymentModificationResponse, error)
 	CancelDeploymentModification(ctx context.Context, in *CancelDeploymentModification, opts ...grpc.CallOption) (*CancelDeploymentModificationResponse, error)
@@ -66,6 +73,7 @@ type APIClient interface {
 	DeletePlugin(ctx context.Context, in *PluginID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	GetPlugin(ctx context.Context, in *PluginID, opts ...grpc.CallOption) (*Plugin, error)
 	ListPlugins(ctx context.Context, in *ListPlugins, opts ...grpc.CallOption) (API_ListPluginsClient, error)
+	PurgePlugins(ctx context.Context, in *SelectPlugins, opts ...grpc.CallOption) (*DeleteResponse, error)
 }
 
 type aPIClient struct {
@@ -144,6 +152,15 @@ func (x *aPIListTemplatesClient) Recv() (*ListedTemplate, error) {
 	return m, nil
 }
 
+func (c *aPIClient) PurgeTemplates(ctx context.Context, in *SelectTemplates, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, API_PurgeTemplates_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aPIClient) RegisterSite(ctx context.Context, in *Site, opts ...grpc.CallOption) (*RegisterResponse, error) {
 	out := new(RegisterResponse)
 	err := c.cc.Invoke(ctx, API_RegisterSite_FullMethodName, in, out, opts...)
@@ -203,6 +220,15 @@ func (x *aPIListSitesClient) Recv() (*ListedSite, error) {
 	return m, nil
 }
 
+func (c *aPIClient) PurgeSites(ctx context.Context, in *SelectSites, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, API_PurgeSites_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aPIClient) CreateDeployment(ctx context.Context, in *CreateDeployment, opts ...grpc.CallOption) (*CreateDeploymentResponse, error) {
 	out := new(CreateDeploymentResponse)
 	err := c.cc.Invoke(ctx, API_CreateDeployment_FullMethodName, in, out, opts...)
@@ -260,6 +286,15 @@ func (x *aPIListDeploymentsClient) Recv() (*ListedDeployment, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *aPIClient) PurgeDeployments(ctx context.Context, in *SelectDeployments, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, API_PurgeDeployments_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *aPIClient) StartDeploymentModification(ctx context.Context, in *StartDeploymentModification, opts ...grpc.CallOption) (*StartDeploymentModificationResponse, error) {
@@ -348,6 +383,15 @@ func (x *aPIListPluginsClient) Recv() (*Plugin, error) {
 	return m, nil
 }
 
+func (c *aPIClient) PurgePlugins(ctx context.Context, in *SelectPlugins, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, API_PurgePlugins_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // APIServer is the server API for API service.
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
@@ -357,14 +401,17 @@ type APIServer interface {
 	DeleteTemplate(context.Context, *TemplateID) (*DeleteResponse, error)
 	GetTemplate(context.Context, *GetTemplate) (*Template, error)
 	ListTemplates(*ListTemplates, API_ListTemplatesServer) error
+	PurgeTemplates(context.Context, *SelectTemplates) (*DeleteResponse, error)
 	RegisterSite(context.Context, *Site) (*RegisterResponse, error)
 	DeleteSite(context.Context, *SiteID) (*DeleteResponse, error)
 	GetSite(context.Context, *GetSite) (*Site, error)
 	ListSites(*ListSites, API_ListSitesServer) error
+	PurgeSites(context.Context, *SelectSites) (*DeleteResponse, error)
 	CreateDeployment(context.Context, *CreateDeployment) (*CreateDeploymentResponse, error)
 	DeleteDeployment(context.Context, *DeploymentID) (*DeleteResponse, error)
 	GetDeployment(context.Context, *GetDeployment) (*Deployment, error)
 	ListDeployments(*ListDeployments, API_ListDeploymentsServer) error
+	PurgeDeployments(context.Context, *SelectDeployments) (*DeleteResponse, error)
 	StartDeploymentModification(context.Context, *StartDeploymentModification) (*StartDeploymentModificationResponse, error)
 	EndDeploymentModification(context.Context, *EndDeploymentModification) (*EndDeploymentModificationResponse, error)
 	CancelDeploymentModification(context.Context, *CancelDeploymentModification) (*CancelDeploymentModificationResponse, error)
@@ -372,6 +419,7 @@ type APIServer interface {
 	DeletePlugin(context.Context, *PluginID) (*DeleteResponse, error)
 	GetPlugin(context.Context, *PluginID) (*Plugin, error)
 	ListPlugins(*ListPlugins, API_ListPluginsServer) error
+	PurgePlugins(context.Context, *SelectPlugins) (*DeleteResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -394,6 +442,9 @@ func (UnimplementedAPIServer) GetTemplate(context.Context, *GetTemplate) (*Templ
 func (UnimplementedAPIServer) ListTemplates(*ListTemplates, API_ListTemplatesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListTemplates not implemented")
 }
+func (UnimplementedAPIServer) PurgeTemplates(context.Context, *SelectTemplates) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PurgeTemplates not implemented")
+}
 func (UnimplementedAPIServer) RegisterSite(context.Context, *Site) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterSite not implemented")
 }
@@ -406,6 +457,9 @@ func (UnimplementedAPIServer) GetSite(context.Context, *GetSite) (*Site, error) 
 func (UnimplementedAPIServer) ListSites(*ListSites, API_ListSitesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListSites not implemented")
 }
+func (UnimplementedAPIServer) PurgeSites(context.Context, *SelectSites) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PurgeSites not implemented")
+}
 func (UnimplementedAPIServer) CreateDeployment(context.Context, *CreateDeployment) (*CreateDeploymentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDeployment not implemented")
 }
@@ -417,6 +471,9 @@ func (UnimplementedAPIServer) GetDeployment(context.Context, *GetDeployment) (*D
 }
 func (UnimplementedAPIServer) ListDeployments(*ListDeployments, API_ListDeploymentsServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListDeployments not implemented")
+}
+func (UnimplementedAPIServer) PurgeDeployments(context.Context, *SelectDeployments) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PurgeDeployments not implemented")
 }
 func (UnimplementedAPIServer) StartDeploymentModification(context.Context, *StartDeploymentModification) (*StartDeploymentModificationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartDeploymentModification not implemented")
@@ -438,6 +495,9 @@ func (UnimplementedAPIServer) GetPlugin(context.Context, *PluginID) (*Plugin, er
 }
 func (UnimplementedAPIServer) ListPlugins(*ListPlugins, API_ListPluginsServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListPlugins not implemented")
+}
+func (UnimplementedAPIServer) PurgePlugins(context.Context, *SelectPlugins) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PurgePlugins not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 
@@ -545,6 +605,24 @@ func (x *aPIListTemplatesServer) Send(m *ListedTemplate) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _API_PurgeTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SelectTemplates)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).PurgeTemplates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: API_PurgeTemplates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).PurgeTemplates(ctx, req.(*SelectTemplates))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _API_RegisterSite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Site)
 	if err := dec(in); err != nil {
@@ -620,6 +698,24 @@ func (x *aPIListSitesServer) Send(m *ListedSite) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _API_PurgeSites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SelectSites)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).PurgeSites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: API_PurgeSites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).PurgeSites(ctx, req.(*SelectSites))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _API_CreateDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateDeployment)
 	if err := dec(in); err != nil {
@@ -693,6 +789,24 @@ type aPIListDeploymentsServer struct {
 
 func (x *aPIListDeploymentsServer) Send(m *ListedDeployment) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func _API_PurgeDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SelectDeployments)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).PurgeDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: API_PurgeDeployments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).PurgeDeployments(ctx, req.(*SelectDeployments))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _API_StartDeploymentModification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -824,6 +938,24 @@ func (x *aPIListPluginsServer) Send(m *Plugin) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _API_PurgePlugins_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SelectPlugins)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).PurgePlugins(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: API_PurgePlugins_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).PurgePlugins(ctx, req.(*SelectPlugins))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // API_ServiceDesc is the grpc.ServiceDesc for API service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -848,6 +980,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _API_GetTemplate_Handler,
 		},
 		{
+			MethodName: "purgeTemplates",
+			Handler:    _API_PurgeTemplates_Handler,
+		},
+		{
 			MethodName: "registerSite",
 			Handler:    _API_RegisterSite_Handler,
 		},
@@ -860,6 +996,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _API_GetSite_Handler,
 		},
 		{
+			MethodName: "purgeSites",
+			Handler:    _API_PurgeSites_Handler,
+		},
+		{
 			MethodName: "createDeployment",
 			Handler:    _API_CreateDeployment_Handler,
 		},
@@ -870,6 +1010,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getDeployment",
 			Handler:    _API_GetDeployment_Handler,
+		},
+		{
+			MethodName: "purgeDeployments",
+			Handler:    _API_PurgeDeployments_Handler,
 		},
 		{
 			MethodName: "startDeploymentModification",
@@ -894,6 +1038,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getPlugin",
 			Handler:    _API_GetPlugin_Handler,
+		},
+		{
+			MethodName: "purgePlugins",
+			Handler:    _API_PurgePlugins_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

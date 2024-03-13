@@ -49,7 +49,7 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 		}
 
 		var err error
-		deploymentInfos, err = client.ListDeployments(clientpkg.ListDeployments{
+		deploymentInfos, err = client.ListDeployments(clientpkg.SelectDeployments{
 			ParentDeploymentID:       parentDemploymentId_,
 			TemplateIDPatterns:       templateIdPatterns,
 			TemplateMetadataPatterns: templateMetadataPatterns,
@@ -58,7 +58,7 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 			MetadataPatterns:         metadataPatterns,
 			Prepared:                 &trueBool,  // must be prepared
 			Approved:                 &falseBool, // avoid approving if already approved
-		})
+		}, 0, 0)
 		FailOnGRPCError(err)
 	}
 

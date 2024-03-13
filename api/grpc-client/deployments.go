@@ -122,9 +122,7 @@ func (self *Client) DeleteDeployment(deploymentId string) (bool, string, error) 
 	}
 }
 
-type ListDeployments struct {
-	Offset                   uint
-	MaxCount                 uint
+type SelectDeployments struct {
 	ParentDeploymentID       *string
 	TemplateIDPatterns       []string
 	TemplateMetadataPatterns map[string]string
@@ -136,7 +134,7 @@ type ListDeployments struct {
 }
 
 // ([fmt.Stringer] interface)
-func (self ListDeployments) String() string {
+func (self SelectDeployments) String() string {
 	var s []string
 	if self.ParentDeploymentID != nil {
 		s = append(s, "parentDeploymentID="+*self.ParentDeploymentID)
@@ -165,23 +163,27 @@ func (self ListDeployments) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListDeployments(listDeployments ListDeployments) (util.Results[DeploymentInfo], error) {
+func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset uint, maxCount uint) (util.Results[DeploymentInfo], error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listDeployments",
-			"listDeployments", listDeployments)
+			"selectDeployments", selectDeployments)
 		if client, err := apiClient.ListDeployments(context, &api.ListDeployments{
-			Offset:                   uint32(listDeployments.Offset),
-			MaxCount:                 uint32(listDeployments.MaxCount),
-			ParentDeploymentId:       listDeployments.ParentDeploymentID,
-			TemplateIdPatterns:       listDeployments.TemplateIDPatterns,
-			TemplateMetadataPatterns: listDeployments.TemplateMetadataPatterns,
-			SiteIdPatterns:           listDeployments.SiteIDPatterns,
-			SiteMetadataPatterns:     listDeployments.SiteMetadataPatterns,
-			MetadataPatterns:         listDeployments.MetadataPatterns,
-			Prepared:                 listDeployments.Prepared,
-			Approved:                 listDeployments.Approved,
+			Window: &api.Window{
+				Offset:   uint32(offset),
+				MaxCount: uint32(maxCount),
+			},
+			Select: &api.SelectDeployments{
+				ParentDeploymentId:       selectDeployments.ParentDeploymentID,
+				TemplateIdPatterns:       selectDeployments.TemplateIDPatterns,
+				TemplateMetadataPatterns: selectDeployments.TemplateMetadataPatterns,
+				SiteIdPatterns:           selectDeployments.SiteIDPatterns,
+				SiteMetadataPatterns:     selectDeployments.SiteMetadataPatterns,
+				MetadataPatterns:         selectDeployments.MetadataPatterns,
+				Prepared:                 selectDeployments.Prepared,
+				Approved:                 selectDeployments.Approved,
+			},
 		}); err == nil {
 			stream := util.NewResultsStream[DeploymentInfo](cancel)
 
@@ -213,6 +215,32 @@ func (self *Client) ListDeployments(listDeployments ListDeployments) (util.Resul
 		}
 	} else {
 		return nil, err
+	}
+}
+
+func (self *Client) PurgeDeployments(selectDeployments SelectDeployments) (bool, string, error) {
+	if apiClient, err := self.APIClient(); err == nil {
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+		defer cancel()
+
+		self.log.Info("purgeDeployments",
+			"selectDeployments", selectDeployments)
+		if response, err := apiClient.PurgeDeployments(context, &api.SelectDeployments{
+			ParentDeploymentId:       selectDeployments.ParentDeploymentID,
+			TemplateIdPatterns:       selectDeployments.TemplateIDPatterns,
+			TemplateMetadataPatterns: selectDeployments.TemplateMetadataPatterns,
+			SiteIdPatterns:           selectDeployments.SiteIDPatterns,
+			SiteMetadataPatterns:     selectDeployments.SiteMetadataPatterns,
+			MetadataPatterns:         selectDeployments.MetadataPatterns,
+			Prepared:                 selectDeployments.Prepared,
+			Approved:                 selectDeployments.Approved,
+		}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
+	} else {
+		return false, "", err
 	}
 }
 

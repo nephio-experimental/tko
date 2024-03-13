@@ -11,7 +11,7 @@ import (
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdatePlugins(table *tview.Table) {
-	if plugins, err := self.client.ListPlugins(client.ListPlugins{}); err == nil {
+	if plugins, err := self.client.ListPlugins(client.SelectPlugins{}, 0, 0); err == nil {
 		if plugins_, err := util.GatherResults(plugins); err == nil {
 			slices.SortFunc(plugins_, func(a client.Plugin, b client.Plugin) int {
 				return strings.Compare(a.Type+"|"+a.Name, b.Type+"|"+b.Name)

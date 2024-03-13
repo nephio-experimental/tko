@@ -14,16 +14,19 @@ service API {
     rpc deleteTemplate(TemplateID) returns (DeleteResponse);
     rpc getTemplate(GetTemplate) returns (Template);
     rpc listTemplates(ListTemplates) returns (stream ListedTemplate);
+    rpc purgeTemplates(SelectTemplates) returns (DeleteResponse);
 
     rpc registerSite(Site) returns (RegisterResponse);
     rpc deleteSite(SiteID) returns (DeleteResponse);
     rpc getSite(GetSite) returns (Site);
     rpc listSites(ListSites) returns (stream ListedSite);
+    rpc purgeSites(SelectSites) returns (DeleteResponse);
 
     rpc createDeployment(CreateDeployment) returns (CreateDeploymentResponse);
     rpc deleteDeployment(DeploymentID) returns (DeleteResponse);
     rpc getDeployment(GetDeployment) returns (Deployment);
     rpc listDeployments(ListDeployments) returns (stream ListedDeployment);
+    rpc purgeDeployments(SelectDeployments) returns (DeleteResponse);
     rpc startDeploymentModification(StartDeploymentModification) returns (StartDeploymentModificationResponse);
     rpc endDeploymentModification(EndDeploymentModification) returns (EndDeploymentModificationResponse);
     rpc cancelDeploymentModification(CancelDeploymentModification) returns (CancelDeploymentModificationResponse);
@@ -32,6 +35,7 @@ service API {
     rpc deletePlugin(PluginID) returns (DeleteResponse);
     rpc getPlugin(PluginID) returns (Plugin);
     rpc listPlugins(ListPlugins) returns (stream Plugin);
+    rpc purgePlugins(SelectPlugins) returns (DeleteResponse);
 }
 
 message AboutResponse {
@@ -52,6 +56,11 @@ message RegisterResponse {
 message DeleteResponse {
     bool deleted = 1;
     string notDeletedReason = 2;
+}
+
+message Window {
+	uint32 offset = 1;
+	uint32 maxCount = 2;
 }
 
 // Templates
@@ -81,11 +90,14 @@ message GetTemplate {
     string preferredPackageFormat = 2;
 }
 
-message ListTemplates {
-	uint32 offset = 1;
-	uint32 maxCount = 2;
+message SelectTemplates {
     repeated string templateIdPatterns = 3;
     map<string, string> metadataPatterns = 4;
+}
+
+message ListTemplates {
+    Window window = 1;
+    SelectTemplates select = 2;
 }
 
 // Sites
@@ -117,12 +129,15 @@ message GetSite {
     string preferredPackageFormat = 2;
 }
 
-message ListSites {
-	uint32 offset = 1;
-	uint32 maxCount = 2;
+message SelectSites {
     repeated string siteIdPatterns = 3;
     repeated string templateIdPatterns = 4;
     map<string, string> metadataPatterns = 5;
+}
+
+message ListSites {
+    Window window = 1;
+    SelectSites select = 2;
 }
 
 // Deployments
@@ -179,9 +194,7 @@ message GetDeployment {
     string preferredPackageFormat = 2;
 }
 
-message ListDeployments {
-	uint32 offset = 1;
-	uint32 maxCount = 2;
+message SelectDeployments {
     optional string parentDeploymentId = 3;
     map<string, string> metadataPatterns = 4;
     repeated string templateIdPatterns = 5;
@@ -190,6 +203,11 @@ message ListDeployments {
     map<string, string> siteMetadataPatterns = 8;
     optional bool prepared = 9;
     optional bool approved = 10;
+}
+
+message ListDeployments {
+    Window window = 1;
+    SelectDeployments select = 2;
 }
 
 message StartDeploymentModification {
@@ -249,11 +267,14 @@ message Plugin {
     repeated GVK triggers = 6;
 }
 
-message ListPlugins {
-	uint32 offset = 1;
-	uint32 maxCount = 2;
+message SelectPlugins {
     optional string type = 3;
     repeated string namePatterns = 4;
     optional string executor = 5;
     optional GVK trigger = 6;
+}
+
+message ListPlugins {
+    Window window = 1;
+    SelectPlugins select = 2;
 }

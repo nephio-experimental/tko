@@ -73,19 +73,20 @@ func (self *Server) GetPlugin(context contextpkg.Context, pluginId *api.PluginID
 func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_ListPluginsServer) error {
 	self.Log.Infof("listPlugins: %+v", listPlugins)
 
-	if listPlugins.Type != nil {
-		if !plugins.IsValidPluginType(*listPlugins.Type, true) {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Type))
+	if listPlugins.Select.Type != nil {
+		if !plugins.IsValidPluginType(*listPlugins.Select.Type, true) {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Select.Type))
 		}
 	}
 
-	if pluginResults, err := self.Backend.ListPlugins(server.Context(), backend.ListPlugins{
-		Offset:       uint(listPlugins.Offset),
-		MaxCount:     uint(listPlugins.MaxCount),
-		Type:         listPlugins.Type,
-		NamePatterns: listPlugins.NamePatterns,
-		Executor:     listPlugins.Executor,
-		Trigger:      tkoutil.TriggerFromAPI(listPlugins.Trigger),
+	if pluginResults, err := self.Backend.ListPlugins(server.Context(), backend.SelectPlugins{
+		Type:         listPlugins.Select.Type,
+		NamePatterns: listPlugins.Select.NamePatterns,
+		Executor:     listPlugins.Select.Executor,
+		Trigger:      tkoutil.TriggerFromAPI(listPlugins.Select.Trigger),
+	}, backend.Window{
+		Offset:   uint(listPlugins.Window.Offset),
+		MaxCount: uint(listPlugins.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(pluginResults, func(plugin backend.Plugin) error {
 			return server.Send(&api.Plugin{
@@ -106,4 +107,22 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 	}
 
 	return nil
+}
+
+// ([api.APIServer] interface)
+func (self *Server) PurgePlugins(context contextpkg.Context, selectPlugins *api.SelectPlugins) (*api.DeleteResponse, error) {
+	self.Log.Infof("purgePlugins: %+v", selectPlugins)
+
+	if err := self.Backend.PurgePlugins(context, backend.SelectPlugins{
+		Type:         selectPlugins.Type,
+		NamePatterns: selectPlugins.NamePatterns,
+		Executor:     selectPlugins.Executor,
+		Trigger:      tkoutil.TriggerFromAPI(selectPlugins.Trigger),
+	}); err == nil {
+		return &api.DeleteResponse{Deleted: true}, nil
+	} else if backend.IsNotDoneError(err) {
+		return &api.DeleteResponse{Deleted: false, NotDeletedReason: err.Error()}, nil
+	} else {
+		return new(api.DeleteResponse), ToGRPCError(err)
+	}
 }

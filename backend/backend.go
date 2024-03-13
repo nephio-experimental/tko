@@ -30,7 +30,11 @@ type Backend interface {
 	DeleteTemplate(context contextpkg.Context, templateId string) error
 
 	// Can return BadArgumentError.
-	ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (util.Results[TemplateInfo], error)
+	ListTemplates(context contextpkg.Context, selectTemplates SelectTemplates, window Window) (util.Results[TemplateInfo], error)
+
+	// Does *not* delete associated deployments, but removes associations.
+	// Can return BadArgumentError, NotDoneError.
+	PurgeTemplates(context contextpkg.Context, selectTemplates SelectTemplates) error
 
 	// Owns and may change the contents of the site argument.
 	// Ignores site DeploymentIDs.
@@ -45,7 +49,11 @@ type Backend interface {
 	DeleteSite(context contextpkg.Context, siteId string) error
 
 	// Can return BadArgumentError.
-	ListSites(context contextpkg.Context, listSites ListSites) (util.Results[SiteInfo], error)
+	ListSites(context contextpkg.Context, selectSites SelectSites, window Window) (util.Results[SiteInfo], error)
+
+	// Does *not* delete associated deployments, but removes association.
+	// Can return BadArgumentError, NotDoneError.
+	PurgeSites(context contextpkg.Context, selectSites SelectSites) error
 
 	// Owns and may change the contents of the deployment argument.
 	// Can return BadArgumentError, NotDoneError.
@@ -58,7 +66,12 @@ type Backend interface {
 	// Can return BadArgumentError, NotFoundError, NotDoneError.
 	DeleteDeployment(context contextpkg.Context, deploymentId string) error
 
-	ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (util.Results[DeploymentInfo], error)
+	// Can return BadArgumentError.
+	ListDeployments(context contextpkg.Context, selectDeployments SelectDeployments, window Window) (util.Results[DeploymentInfo], error)
+
+	// Does *not* delete child deployments, but orphans them.
+	// Can return BadArgumentError, NotDoneError.
+	PurgeDeployments(context contextpkg.Context, selectDeployments SelectDeployments) error
 
 	// Can return BadArgumentError, NotFoundError, NotDoneError, BusyError.
 	StartDeploymentModification(context contextpkg.Context, deploymentId string) (string, *Deployment, error)
@@ -84,27 +97,29 @@ type Backend interface {
 	DeletePlugin(context contextpkg.Context, pluginId PluginID) error
 
 	// Can return BadArgumentError.
-	ListPlugins(context contextpkg.Context, listPlugins ListPlugins) (util.Results[Plugin], error)
+	ListPlugins(context contextpkg.Context, selectPlugins SelectPlugins, window Window) (util.Results[Plugin], error)
+
+	// Can return BadArgumentError, NotDoneError.
+	PurgePlugins(context contextpkg.Context, selectPlugins SelectPlugins) error
 }
 
-type ListTemplates struct {
-	Offset             uint
-	MaxCount           uint
+type Window struct {
+	Offset   uint
+	MaxCount uint
+}
+
+type SelectTemplates struct {
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
 
-type ListSites struct {
-	Offset             uint
-	MaxCount           uint
+type SelectSites struct {
 	SiteIDPatterns     []string
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
 
-type ListDeployments struct {
-	Offset                   uint
-	MaxCount                 uint
+type SelectDeployments struct {
 	ParentDeploymentID       *string
 	TemplateIDPatterns       []string
 	TemplateMetadataPatterns map[string]string
@@ -115,9 +130,7 @@ type ListDeployments struct {
 	Approved                 *bool
 }
 
-type ListPlugins struct {
-	Offset       uint
-	MaxCount     uint
+type SelectPlugins struct {
 	Type         *string
 	NamePatterns []string
 	Executor     *string

@@ -13,7 +13,7 @@ var falseBool = false
 
 func (self *Preparation) PrepareDeployments() error {
 	//self.Log.Notice("preparing deployments")
-	if deploymentInfos, err := self.Client.ListDeployments(client.ListDeployments{Prepared: &falseBool}); err == nil {
+	if deploymentInfos, err := self.Client.ListDeployments(client.SelectDeployments{Prepared: &falseBool}, 0, 0); err == nil {
 		return util.IterateResults(deploymentInfos, func(deploymentInfo client.DeploymentInfo) error {
 			self.PrepareDeployment(deploymentInfo)
 			return nil

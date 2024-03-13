@@ -102,15 +102,13 @@ func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
 	}
 }
 
-type ListTemplates struct {
-	Offset             uint
-	MaxCount           uint
+type SelectTemplates struct {
 	TemplateIDPatterns []string
 	MetadataPatterns   map[string]string
 }
 
 // ([fmt.Stringer] interface)
-func (self ListTemplates) String() string {
+func (self SelectTemplates) String() string {
 	var s []string
 	if len(self.TemplateIDPatterns) > 0 {
 		s = append(s, "templateIdPatterns="+strings.Join(self.TemplateIDPatterns, ","))
@@ -121,17 +119,21 @@ func (self ListTemplates) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
+func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, maxCount uint) (util.Results[TemplateInfo], error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listTemplates",
-			"listTemplates", listTemplates)
+			"selectTemplates", selectTemplates)
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
-			Offset:             uint32(listTemplates.Offset),
-			MaxCount:           uint32(listTemplates.MaxCount),
-			TemplateIdPatterns: listTemplates.TemplateIDPatterns,
-			MetadataPatterns:   listTemplates.MetadataPatterns,
+			Window: &api.Window{
+				Offset:   uint32(offset),
+				MaxCount: uint32(maxCount),
+			},
+			Select: &api.SelectTemplates{
+				TemplateIdPatterns: selectTemplates.TemplateIDPatterns,
+				MetadataPatterns:   selectTemplates.MetadataPatterns,
+			},
 		}); err == nil {
 			stream := util.NewResultsStream[TemplateInfo](cancel)
 
@@ -158,5 +160,25 @@ func (self *Client) ListTemplates(listTemplates ListTemplates) (util.Results[Tem
 		}
 	} else {
 		return nil, err
+	}
+}
+
+func (self *Client) PurgeTemplates(selectTemplates SelectTemplates) (bool, string, error) {
+	if apiClient, err := self.APIClient(); err == nil {
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+		defer cancel()
+
+		self.log.Info("purgeTemplates",
+			"selectTemplates", selectTemplates)
+		if response, err := apiClient.PurgeTemplates(context, &api.SelectTemplates{
+			TemplateIdPatterns: selectTemplates.TemplateIDPatterns,
+			MetadataPatterns:   selectTemplates.MetadataPatterns,
+		}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
+	} else {
+		return false, "", err
 	}
 }

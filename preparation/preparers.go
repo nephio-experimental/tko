@@ -35,10 +35,10 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) (Preparers, error) {
 		preparers = append(preparers, preparers_...)
 	}
 
-	if plugins, err := self.Client.ListPlugins(client.ListPlugins{
+	if plugins, err := self.Client.ListPlugins(client.SelectPlugins{
 		Type:    &prepareString,
 		Trigger: &gvk,
-	}); err == nil {
+	}, 0, 0); err == nil {
 		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
 			if prepare, err := NewPluginPreparer(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
 				preparers = append(preparers, prepare)

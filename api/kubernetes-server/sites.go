@@ -51,6 +51,10 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return store.Backend.DeleteSite(context, id)
 		},
 
+		PurgeFunc: func(context contextpkg.Context, store *Store) error {
+			return store.Backend.PurgePlugins(context, backendpkg.SelectPlugins{})
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if site, err := store.Backend.GetSite(context, id); err == nil {
 				if krmSite, err := SiteToKRM(site); err == nil {
@@ -68,7 +72,7 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			krmSiteList.APIVersion = APIVersion
 			krmSiteList.Kind = "SiteList"
 
-			if results, err := store.Backend.ListSites(context, backendpkg.ListSites{Offset: offset, MaxCount: maxCount}); err == nil {
+			if results, err := store.Backend.ListSites(context, backendpkg.SelectSites{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(siteInfo backendpkg.SiteInfo) error {
 					if krmSite, err := SiteInfoToKRM(&siteInfo); err == nil {
 						krmSiteList.Items = append(krmSiteList.Items, *krmSite)

@@ -21,7 +21,7 @@ func GetSiteIDs(preparationContext *preparation.Context, name string) ([]string,
 				metadataPatterns[key] = util.ToString(value)
 			}
 
-			if siteInfos, err := preparationContext.Preparation.Client.ListSites(clientpkg.ListSites{MetadataPatterns: metadataPatterns}); err == nil {
+			if siteInfos, err := preparationContext.Preparation.Client.ListSites(clientpkg.SelectSites{MetadataPatterns: metadataPatterns}, 0, 0); err == nil {
 				var siteIds []string
 				if err := util.IterateResults(siteInfos, func(siteInfo clientpkg.SiteInfo) error {
 					siteIds = append(siteIds, siteInfo.SiteID)

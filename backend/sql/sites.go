@@ -80,27 +80,27 @@ func (self *SQLBackend) DeleteSite(context contextpkg.Context, siteId string) er
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (util.Results[backend.SiteInfo], error) {
+func (self *SQLBackend) ListSites(context contextpkg.Context, selectSites backend.SelectSites, window backend.Window) (util.Results[backend.SiteInfo], error) {
 	sql := self.statements.SelectSites
 	var args SqlArgs
 	var with SqlWith
 	var where SqlWhere
 
-	args.AddValue(listSites.Offset)
-	args.AddValue(listSites.MaxCount)
+	args.AddValue(window.Offset)
+	args.AddValue(window.MaxCount)
 
-	for _, pattern := range listSites.SiteIDPatterns {
+	for _, pattern := range selectSites.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("sites.site_id ~ " + pattern)
 	}
 
-	for _, pattern := range listSites.TemplateIDPatterns {
+	for _, pattern := range selectSites.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("template_id ~ " + pattern)
 	}
 
-	if listSites.MetadataPatterns != nil {
-		for key, pattern := range listSites.MetadataPatterns {
+	if selectSites.MetadataPatterns != nil {
+		for key, pattern := range selectSites.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
@@ -144,6 +144,11 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, listSites backend.
 	}()
 
 	return stream, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SQLBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
+	return backend.NewNotImplementedError("PurgeSites")
 }
 
 // Utils

@@ -82,34 +82,34 @@ func (self *SQLBackend) DeletePlugin(context contextpkg.Context, pluginId backen
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListPlugins(context contextpkg.Context, listPlugins backend.ListPlugins) (util.Results[backend.Plugin], error) {
+func (self *SQLBackend) ListPlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins, window backend.Window) (util.Results[backend.Plugin], error) {
 	sql := self.statements.SelectPlugins
 	var with SqlWith
 	var where SqlWhere
 	var args SqlArgs
 
-	args.AddValue(listPlugins.Offset)
-	args.AddValue(listPlugins.MaxCount)
+	args.AddValue(window.Offset)
+	args.AddValue(window.MaxCount)
 
-	if (listPlugins.Type != nil) && (*listPlugins.Type != "") {
-		type_ := args.Add(*listPlugins.Type)
+	if (selectPlugins.Type != nil) && (*selectPlugins.Type != "") {
+		type_ := args.Add(*selectPlugins.Type)
 		where.Add("plugins.type = " + type_)
 	}
 
-	for _, pattern := range listPlugins.NamePatterns {
+	for _, pattern := range selectPlugins.NamePatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("plugins.name ~ " + pattern)
 	}
 
-	if (listPlugins.Executor != nil) && (*listPlugins.Executor != "") {
-		executor := args.Add(*listPlugins.Executor)
+	if (selectPlugins.Executor != nil) && (*selectPlugins.Executor != "") {
+		executor := args.Add(*selectPlugins.Executor)
 		where.Add("plugins.executor = " + executor)
 	}
 
-	if listPlugins.Trigger != nil {
-		group := args.Add(listPlugins.Trigger.Group)
-		version := args.Add(listPlugins.Trigger.Version)
-		kind := args.Add(listPlugins.Trigger.Kind)
+	if selectPlugins.Trigger != nil {
+		group := args.Add(selectPlugins.Trigger.Group)
+		version := args.Add(selectPlugins.Trigger.Version)
+		kind := args.Add(selectPlugins.Trigger.Kind)
 		with.Add("SELECT plugin_type AS type, plugin_name AS name FROM plugins_triggers WHERE (\"group\" = "+group+") AND (version = "+version+") AND (kind = "+kind+")",
 			"plugins", "type", "name")
 	}
@@ -148,6 +148,11 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context, listPlugins back
 	}()
 
 	return stream, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SQLBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
+	return backend.NewNotImplementedError("PurgePlugins")
 }
 
 // Utils

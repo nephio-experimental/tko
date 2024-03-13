@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ api.APIServer = new(Server)
+
 // ([api.APIServer] interface)
 func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerSite: %+v", site)
@@ -75,12 +77,13 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSitesServer) error {
 	self.Log.Infof("listSites: %+v", listSites)
 
-	if siteInfoResults, err := self.Backend.ListSites(server.Context(), backend.ListSites{
-		Offset:             uint(listSites.Offset),
-		MaxCount:           uint(listSites.MaxCount),
-		SiteIDPatterns:     listSites.SiteIdPatterns,
-		TemplateIDPatterns: listSites.TemplateIdPatterns,
-		MetadataPatterns:   listSites.MetadataPatterns,
+	if siteInfoResults, err := self.Backend.ListSites(server.Context(), backend.SelectSites{
+		SiteIDPatterns:     listSites.Select.SiteIdPatterns,
+		TemplateIDPatterns: listSites.Select.TemplateIdPatterns,
+		MetadataPatterns:   listSites.Select.MetadataPatterns,
+	}, backend.Window{
+		Offset:   uint(listSites.Window.Offset),
+		MaxCount: uint(listSites.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(siteInfoResults, func(siteInfo backend.SiteInfo) error {
 			return server.Send(&api.ListedSite{
@@ -98,4 +101,21 @@ func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSites
 	}
 
 	return nil
+}
+
+// ([api.APIServer] interface)
+func (self *Server) PurgeSites(context contextpkg.Context, selectSites *api.SelectSites) (*api.DeleteResponse, error) {
+	self.Log.Infof("purgeSites: %+v", selectSites)
+
+	if err := self.Backend.PurgeSites(context, backend.SelectSites{
+		SiteIDPatterns:     selectSites.SiteIdPatterns,
+		TemplateIDPatterns: selectSites.TemplateIdPatterns,
+		MetadataPatterns:   selectSites.MetadataPatterns,
+	}); err == nil {
+		return &api.DeleteResponse{Deleted: true}, nil
+	} else if backend.IsNotDoneError(err) {
+		return &api.DeleteResponse{Deleted: false, NotDeletedReason: err.Error()}, nil
+	} else {
+		return new(api.DeleteResponse), ToGRPCError(err)
+	}
 }

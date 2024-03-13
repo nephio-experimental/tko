@@ -60,6 +60,10 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			return store.Backend.DeletePlugin(context, pluginId)
 		},
 
+		PurgeFunc: func(context contextpkg.Context, store *Store) error {
+			return store.Backend.PurgePlugins(context, backendpkg.SelectPlugins{})
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			pluginId, ok := backendpkg.ParsePluginID(id)
 			if !ok {
@@ -82,7 +86,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			krmPluginList.APIVersion = APIVersion
 			krmPluginList.Kind = "PluginList"
 
-			if results, err := store.Backend.ListPlugins(context, backendpkg.ListPlugins{Offset: offset, MaxCount: maxCount}); err == nil {
+			if results, err := store.Backend.ListPlugins(context, backendpkg.SelectPlugins{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(plugin backendpkg.Plugin) error {
 					if krmPlugin, err := PluginToKRM(&plugin); err == nil {
 						krmPluginList.Items = append(krmPluginList.Items, *krmPlugin)

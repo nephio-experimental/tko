@@ -77,17 +77,18 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.API_ListDeploymentsServer) error {
 	self.Log.Infof("listDeployments: %+v", listDeployments)
 
-	if deploymentInfoResults, err := self.Backend.ListDeployments(server.Context(), backend.ListDeployments{
-		Offset:                   uint(listDeployments.Offset),
-		MaxCount:                 uint(listDeployments.MaxCount),
-		ParentDeploymentID:       listDeployments.ParentDeploymentId,
-		MetadataPatterns:         listDeployments.MetadataPatterns,
-		TemplateIDPatterns:       listDeployments.TemplateIdPatterns,
-		TemplateMetadataPatterns: listDeployments.TemplateMetadataPatterns,
-		SiteIDPatterns:           listDeployments.SiteIdPatterns,
-		SiteMetadataPatterns:     listDeployments.SiteMetadataPatterns,
-		Prepared:                 listDeployments.Prepared,
-		Approved:                 listDeployments.Approved,
+	if deploymentInfoResults, err := self.Backend.ListDeployments(server.Context(), backend.SelectDeployments{
+		ParentDeploymentID:       listDeployments.Select.ParentDeploymentId,
+		MetadataPatterns:         listDeployments.Select.MetadataPatterns,
+		TemplateIDPatterns:       listDeployments.Select.TemplateIdPatterns,
+		TemplateMetadataPatterns: listDeployments.Select.TemplateMetadataPatterns,
+		SiteIDPatterns:           listDeployments.Select.SiteIdPatterns,
+		SiteMetadataPatterns:     listDeployments.Select.SiteMetadataPatterns,
+		Prepared:                 listDeployments.Select.Prepared,
+		Approved:                 listDeployments.Select.Approved,
+	}, backend.Window{
+		Offset:   uint(listDeployments.Window.Offset),
+		MaxCount: uint(listDeployments.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
 			return server.Send(&api.ListedDeployment{
@@ -109,6 +110,28 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 	}
 
 	return nil
+}
+
+// ([api.APIServer] interface)
+func (self *Server) PurgeDeployments(context contextpkg.Context, selectDeployments *api.SelectDeployments) (*api.DeleteResponse, error) {
+	self.Log.Infof("purgeDeployments: %+v", selectDeployments)
+
+	if err := self.Backend.PurgeDeployments(context, backend.SelectDeployments{
+		ParentDeploymentID:       selectDeployments.ParentDeploymentId,
+		MetadataPatterns:         selectDeployments.MetadataPatterns,
+		TemplateIDPatterns:       selectDeployments.TemplateIdPatterns,
+		TemplateMetadataPatterns: selectDeployments.TemplateMetadataPatterns,
+		SiteIDPatterns:           selectDeployments.SiteIdPatterns,
+		SiteMetadataPatterns:     selectDeployments.SiteMetadataPatterns,
+		Prepared:                 selectDeployments.Prepared,
+		Approved:                 selectDeployments.Approved,
+	}); err == nil {
+		return &api.DeleteResponse{Deleted: true}, nil
+	} else if backend.IsNotDoneError(err) {
+		return &api.DeleteResponse{Deleted: false, NotDeletedReason: err.Error()}, nil
+	} else {
+		return new(api.DeleteResponse), ToGRPCError(err)
+	}
 }
 
 // ([api.APIServer] interface)

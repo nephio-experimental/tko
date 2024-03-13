@@ -61,9 +61,7 @@ func ListDeployments(offset uint, maxCount uint, parentDemploymentId string, tem
 		parentDemploymentId_ = &parentDemploymentId
 	}
 
-	deploymentInfos, err := NewClient().ListDeployments(client.ListDeployments{
-		Offset:                   offset,
-		MaxCount:                 maxCount,
+	deploymentInfos, err := NewClient().ListDeployments(client.SelectDeployments{
 		ParentDeploymentID:       parentDemploymentId_,
 		TemplateIDPatterns:       templateIdPatterns,
 		TemplateMetadataPatterns: templateMetadataPatterns,
@@ -72,7 +70,7 @@ func ListDeployments(offset uint, maxCount uint, parentDemploymentId string, tem
 		MetadataPatterns:         metadataPatterns,
 		Prepared:                 prepared,
 		Approved:                 approved,
-	})
+	}, offset, maxCount)
 	FailOnGRPCError(err)
 	deploymentInfos_, err := util.GatherResults(deploymentInfos)
 	util.FailOnError(err)

@@ -43,31 +43,31 @@ func (self *MemoryBackend) DeletePlugin(context contextpkg.Context, pluginId bac
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListPlugins(context contextpkg.Context, listPlugins backend.ListPlugins) (util.Results[backend.Plugin], error) {
+func (self *MemoryBackend) ListPlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins, window backend.Window) (util.Results[backend.Plugin], error) {
 	self.lock.Lock()
 
 	var plugins []backend.Plugin
 	for _, plugin := range self.plugins {
-		if (listPlugins.Type != nil) && (*listPlugins.Type != "") {
-			if *listPlugins.Type != plugin.Type {
+		if (selectPlugins.Type != nil) && (*selectPlugins.Type != "") {
+			if *selectPlugins.Type != plugin.Type {
 				continue
 			}
 		}
 
-		if (listPlugins.Executor != nil) && (*listPlugins.Executor != "") {
-			if *listPlugins.Executor != plugin.Executor {
+		if (selectPlugins.Executor != nil) && (*selectPlugins.Executor != "") {
+			if *selectPlugins.Executor != plugin.Executor {
 				continue
 			}
 		}
 
-		if !backend.IDMatchesPatterns(plugin.Name, listPlugins.NamePatterns) {
+		if !backend.IDMatchesPatterns(plugin.Name, selectPlugins.NamePatterns) {
 			continue
 		}
 
-		if listPlugins.Trigger != nil {
+		if selectPlugins.Trigger != nil {
 			var found bool
 			for _, trigger := range plugin.Triggers {
-				if listPlugins.Trigger.Equals(trigger) {
+				if selectPlugins.Trigger.Equals(trigger) {
 					found = true
 					break
 				}
@@ -85,13 +85,18 @@ func (self *MemoryBackend) ListPlugins(context contextpkg.Context, listPlugins b
 	backend.SortPlugins(plugins)
 
 	length := uint(len(plugins))
-	if listPlugins.Offset > length {
+	if window.Offset > length {
 		plugins = nil
-	} else if end := listPlugins.Offset + listPlugins.MaxCount; end > length {
-		plugins = plugins[listPlugins.Offset:]
+	} else if end := window.Offset + window.MaxCount; end > length {
+		plugins = plugins[window.Offset:]
 	} else {
-		plugins = plugins[listPlugins.Offset:end]
+		plugins = plugins[window.Offset:end]
 	}
 
 	return util.NewResultsSlice(plugins), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
+	return backend.NewNotImplementedError("PurgePlugins")
 }

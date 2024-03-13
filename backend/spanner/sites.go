@@ -23,6 +23,11 @@ func (self *SpannerBackend) DeleteSite(context contextpkg.Context, siteId string
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (util.Results[backend.SiteInfo], error) {
+func (self *SpannerBackend) ListSites(context contextpkg.Context, selectSites backend.SelectSites, window backend.Window) (util.Results[backend.SiteInfo], error) {
 	return nil, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SpannerBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
+	return nil
 }

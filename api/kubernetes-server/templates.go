@@ -50,6 +50,10 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			return store.Backend.DeleteTemplate(context, id)
 		},
 
+		PurgeFunc: func(context contextpkg.Context, store *Store) error {
+			return store.Backend.PurgeTemplates(context, backendpkg.SelectTemplates{})
+		},
+
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			if template, err := store.Backend.GetTemplate(context, id); err == nil {
 				if krmTemplate, err := TemplateToKRM(template); err == nil {
@@ -67,7 +71,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			krmTemplateList.APIVersion = APIVersion
 			krmTemplateList.Kind = "TemplateList"
 
-			if results, err := store.Backend.ListTemplates(context, backendpkg.ListTemplates{Offset: offset, MaxCount: maxCount}); err == nil {
+			if results, err := store.Backend.ListTemplates(context, backendpkg.SelectTemplates{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(templateInfo backendpkg.TemplateInfo) error {
 					if krmTemplate, err := TemplateInfoToKRM(&templateInfo); err == nil {
 						krmTemplateList.Items = append(krmTemplateList.Items, *krmTemplate)

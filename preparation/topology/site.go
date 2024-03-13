@@ -40,7 +40,7 @@ func PrepareSite(context contextpkg.Context, preparationContext *preparation.Con
 				metadataPatterns[key] = util.ToString(value)
 			}
 
-			if siteInfos, err := preparationContext.Preparation.Client.ListSites(clientpkg.ListSites{MetadataPatterns: metadataPatterns}); err == nil {
+			if siteInfos, err := preparationContext.Preparation.Client.ListSites(clientpkg.SelectSites{MetadataPatterns: metadataPatterns}, 0, 1); err == nil {
 				// First one we find
 				if siteInfo, err := siteInfos.Next(); err == nil {
 					siteInfos.Release()

@@ -2,6 +2,7 @@ package backend
 
 import (
 	contextpkg "context"
+	"errors"
 	"regexp"
 
 	"github.com/nephio-experimental/tko/plugins"
@@ -13,6 +14,9 @@ import (
 var (
 	DefaultMaxCount uint = 100
 	MaxMaxCount     uint = 1000
+
+	ParallelBufferSize = 1000
+	ParallelWorkers    = 10
 
 	_ Backend = new(ValidatingBackend)
 )
@@ -92,16 +96,34 @@ func (self *ValidatingBackend) DeleteTemplate(context contextpkg.Context, templa
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, listTemplates ListTemplates) (util.Results[TemplateInfo], error) {
-	if listTemplates.MaxCount > MaxMaxCount {
-		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listTemplates.MaxCount, MaxMaxCount)
+func (self *ValidatingBackend) ListTemplates(context contextpkg.Context, selectTemplates SelectTemplates, window Window) (util.Results[TemplateInfo], error) {
+	if err := ValidateWindow(&window); err != nil {
+		return nil, err
 	}
 
-	if listTemplates.MaxCount == 0 {
-		listTemplates.MaxCount = DefaultMaxCount
-	}
+	return self.Backend.ListTemplates(context, selectTemplates, window)
+}
 
-	return self.Backend.ListTemplates(context, listTemplates)
+// ([Backend] interface)
+func (self *ValidatingBackend) PurgeTemplates(context contextpkg.Context, selectTemplates SelectTemplates) error {
+	if err := self.Backend.PurgeTemplates(context, selectTemplates); err == nil {
+		return nil
+	} else if IsNotImplementedError(err) {
+		if results, err := self.Backend.ListTemplates(context, selectTemplates, Window{MaxCount: DefaultMaxCount}); err == nil {
+			return ParallelDelete(context, results,
+				func(templateInfo TemplateInfo) string {
+					return templateInfo.TemplateID
+				},
+				func(templateId string) error {
+					return self.Backend.DeleteTemplate(context, templateId)
+				},
+			)
+		} else {
+			return err
+		}
+	} else {
+		return err
+	}
 }
 
 // ([Backend] interface)
@@ -145,16 +167,34 @@ func (self *ValidatingBackend) DeleteSite(context contextpkg.Context, siteId str
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListSites(context contextpkg.Context, listSites ListSites) (util.Results[SiteInfo], error) {
-	if listSites.MaxCount > MaxMaxCount {
-		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listSites.MaxCount, MaxMaxCount)
+func (self *ValidatingBackend) ListSites(context contextpkg.Context, selectSites SelectSites, window Window) (util.Results[SiteInfo], error) {
+	if err := ValidateWindow(&window); err != nil {
+		return nil, err
 	}
 
-	if listSites.MaxCount == 0 {
-		listSites.MaxCount = DefaultMaxCount
-	}
+	return self.Backend.ListSites(context, selectSites, window)
+}
 
-	return self.Backend.ListSites(context, listSites)
+// ([Backend] interface)
+func (self *ValidatingBackend) PurgeSites(context contextpkg.Context, selectSites SelectSites) error {
+	if err := self.Backend.PurgeSites(context, selectSites); err == nil {
+		return nil
+	} else if IsNotImplementedError(err) {
+		if results, err := self.Backend.ListSites(context, selectSites, Window{MaxCount: DefaultMaxCount}); err == nil {
+			return ParallelDelete(context, results,
+				func(siteInfo SiteInfo) string {
+					return siteInfo.SiteID
+				},
+				func(siteId string) error {
+					return self.Backend.DeleteSite(context, siteId)
+				},
+			)
+		} else {
+			return err
+		}
+	} else {
+		return err
+	}
 }
 
 // ([Backend] interface)
@@ -198,16 +238,34 @@ func (self *ValidatingBackend) DeleteDeployment(context contextpkg.Context, depl
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, listDeployments ListDeployments) (util.Results[DeploymentInfo], error) {
-	if listDeployments.MaxCount > MaxMaxCount {
-		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listDeployments.MaxCount, MaxMaxCount)
+func (self *ValidatingBackend) ListDeployments(context contextpkg.Context, selectDeployments SelectDeployments, window Window) (util.Results[DeploymentInfo], error) {
+	if err := ValidateWindow(&window); err != nil {
+		return nil, err
 	}
 
-	if listDeployments.MaxCount == 0 {
-		listDeployments.MaxCount = DefaultMaxCount
-	}
+	return self.Backend.ListDeployments(context, selectDeployments, window)
+}
 
-	return self.Backend.ListDeployments(context, listDeployments)
+// ([Backend] interface)
+func (self *ValidatingBackend) PurgeDeployments(context contextpkg.Context, selectDeployments SelectDeployments) error {
+	if err := self.Backend.PurgeDeployments(context, selectDeployments); err == nil {
+		return nil
+	} else if IsNotImplementedError(err) {
+		if results, err := self.Backend.ListDeployments(context, selectDeployments, Window{MaxCount: DefaultMaxCount}); err == nil {
+			return ParallelDelete(context, results,
+				func(deploymentInfo DeploymentInfo) string {
+					return deploymentInfo.DeploymentID
+				},
+				func(deploymentId string) error {
+					return self.Backend.DeleteDeployment(context, deploymentId)
+				},
+			)
+		} else {
+			return err
+		}
+	} else {
+		return err
+	}
 }
 
 // ([Backend] interface)
@@ -267,7 +325,7 @@ func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *Plu
 	for _, trigger := range plugin.Triggers {
 		// Note: plugin.Group can be empty (for default group)
 		if trigger.Version == "" {
-			return NewBadArgumentError("vtrigger ersion is empty")
+			return NewBadArgumentError("trigger ersion is empty")
 		}
 		if trigger.Kind == "" {
 			return NewBadArgumentError("trigger kind is empty")
@@ -310,32 +368,50 @@ func (self *ValidatingBackend) DeletePlugin(context contextpkg.Context, pluginId
 }
 
 // ([Backend] interface)
-func (self *ValidatingBackend) ListPlugins(context contextpkg.Context, listPlugins ListPlugins) (util.Results[Plugin], error) {
-	if listPlugins.MaxCount > MaxMaxCount {
-		return nil, NewBadArgumentErrorf("maxCount is too large: %d > %d", listPlugins.MaxCount, MaxMaxCount)
+func (self *ValidatingBackend) ListPlugins(context contextpkg.Context, selectPlugins SelectPlugins, window Window) (util.Results[Plugin], error) {
+	if err := ValidateWindow(&window); err != nil {
+		return nil, err
 	}
 
-	if listPlugins.MaxCount == 0 {
-		listPlugins.MaxCount = DefaultMaxCount
-	}
-
-	if listPlugins.Type != nil {
-		if !plugins.IsValidPluginType(*listPlugins.Type, true) {
-			return nil, NewBadArgumentErrorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Type)
+	if selectPlugins.Type != nil {
+		if !plugins.IsValidPluginType(*selectPlugins.Type, true) {
+			return nil, NewBadArgumentErrorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *selectPlugins.Type)
 		}
 	}
 
-	if listPlugins.Trigger != nil {
+	if selectPlugins.Trigger != nil {
 		// Note: plugin.Group can be empty (for default group)
-		if listPlugins.Trigger.Version == "" {
+		if selectPlugins.Trigger.Version == "" {
 			return nil, NewBadArgumentError("trigger version is empty")
 		}
-		if listPlugins.Trigger.Kind == "" {
+		if selectPlugins.Trigger.Kind == "" {
 			return nil, NewBadArgumentError("trigger kind is empty")
 		}
 	}
 
-	return self.Backend.ListPlugins(context, listPlugins)
+	return self.Backend.ListPlugins(context, selectPlugins, window)
+}
+
+// ([Backend] interface)
+func (self *ValidatingBackend) PurgePlugins(context contextpkg.Context, selectPlugins SelectPlugins) error {
+	if err := self.Backend.PurgePlugins(context, selectPlugins); err == nil {
+		return nil
+	} else if IsNotImplementedError(err) {
+		if results, err := self.Backend.ListPlugins(context, selectPlugins, Window{MaxCount: DefaultMaxCount}); err == nil {
+			return ParallelDelete(context, results,
+				func(plugin Plugin) PluginID {
+					return plugin.PluginID
+				},
+				func(pluginId PluginID) error {
+					return self.Backend.DeletePlugin(context, pluginId)
+				},
+			)
+		} else {
+			return err
+		}
+	} else {
+		return err
+	}
 }
 
 // Utils
@@ -344,4 +420,38 @@ var validIdRe = regexp.MustCompile(`^[0-9A-Za-z_.\-\/:]+$`)
 
 func IsValidID(id string) bool {
 	return validIdRe.MatchString(id)
+}
+
+func ValidateWindow(window *Window) error {
+	if window.MaxCount > MaxMaxCount {
+		return NewBadArgumentErrorf("maxCount is too large: %d > %d", window.MaxCount, MaxMaxCount)
+	}
+
+	if window.MaxCount == 0 {
+		window.MaxCount = DefaultMaxCount
+	}
+
+	return nil
+}
+
+func ParallelDelete[R any, T any](context contextpkg.Context, results util.Results[R], getTask func(result R) T, delete_ func(task T) error) error {
+	deleter := util.NewParallelExecutor[T](ParallelBufferSize, func(task T) error {
+		err := delete_(task)
+		if IsNotFoundError(err) {
+			err = nil
+		}
+		return err
+	})
+
+	deleter.Start(ParallelWorkers)
+
+	if err := util.IterateResults(results, func(result R) error {
+		deleter.Queue(getTask(result))
+		return nil
+	}); err != nil {
+		deleter.Close()
+		return err
+	}
+
+	return errors.Join(deleter.Wait()...)
 }

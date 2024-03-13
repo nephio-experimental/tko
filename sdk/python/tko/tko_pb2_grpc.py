@@ -40,6 +40,11 @@ class APIStub(object):
                 request_serializer=tko_dot_tko__pb2.ListTemplates.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.ListedTemplate.FromString,
                 )
+        self.purgeTemplates = channel.unary_unary(
+                '/tko.API/purgeTemplates',
+                request_serializer=tko_dot_tko__pb2.SelectTemplates.SerializeToString,
+                response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
+                )
         self.registerSite = channel.unary_unary(
                 '/tko.API/registerSite',
                 request_serializer=tko_dot_tko__pb2.Site.SerializeToString,
@@ -60,6 +65,11 @@ class APIStub(object):
                 request_serializer=tko_dot_tko__pb2.ListSites.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.ListedSite.FromString,
                 )
+        self.purgeSites = channel.unary_unary(
+                '/tko.API/purgeSites',
+                request_serializer=tko_dot_tko__pb2.SelectSites.SerializeToString,
+                response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
+                )
         self.createDeployment = channel.unary_unary(
                 '/tko.API/createDeployment',
                 request_serializer=tko_dot_tko__pb2.CreateDeployment.SerializeToString,
@@ -79,6 +89,11 @@ class APIStub(object):
                 '/tko.API/listDeployments',
                 request_serializer=tko_dot_tko__pb2.ListDeployments.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.ListedDeployment.FromString,
+                )
+        self.purgeDeployments = channel.unary_unary(
+                '/tko.API/purgeDeployments',
+                request_serializer=tko_dot_tko__pb2.SelectDeployments.SerializeToString,
+                response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
                 )
         self.startDeploymentModification = channel.unary_unary(
                 '/tko.API/startDeploymentModification',
@@ -115,6 +130,11 @@ class APIStub(object):
                 request_serializer=tko_dot_tko__pb2.ListPlugins.SerializeToString,
                 response_deserializer=tko_dot_tko__pb2.Plugin.FromString,
                 )
+        self.purgePlugins = channel.unary_unary(
+                '/tko.API/purgePlugins',
+                request_serializer=tko_dot_tko__pb2.SelectPlugins.SerializeToString,
+                response_deserializer=tko_dot_tko__pb2.DeleteResponse.FromString,
+                )
 
 
 class APIServicer(object):
@@ -150,6 +170,12 @@ class APIServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def purgeTemplates(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def registerSite(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -174,6 +200,12 @@ class APIServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def purgeSites(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def createDeployment(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -193,6 +225,12 @@ class APIServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def listDeployments(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def purgeDeployments(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -240,6 +278,12 @@ class APIServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def purgePlugins(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_APIServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -268,6 +312,11 @@ def add_APIServicer_to_server(servicer, server):
                     request_deserializer=tko_dot_tko__pb2.ListTemplates.FromString,
                     response_serializer=tko_dot_tko__pb2.ListedTemplate.SerializeToString,
             ),
+            'purgeTemplates': grpc.unary_unary_rpc_method_handler(
+                    servicer.purgeTemplates,
+                    request_deserializer=tko_dot_tko__pb2.SelectTemplates.FromString,
+                    response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
+            ),
             'registerSite': grpc.unary_unary_rpc_method_handler(
                     servicer.registerSite,
                     request_deserializer=tko_dot_tko__pb2.Site.FromString,
@@ -288,6 +337,11 @@ def add_APIServicer_to_server(servicer, server):
                     request_deserializer=tko_dot_tko__pb2.ListSites.FromString,
                     response_serializer=tko_dot_tko__pb2.ListedSite.SerializeToString,
             ),
+            'purgeSites': grpc.unary_unary_rpc_method_handler(
+                    servicer.purgeSites,
+                    request_deserializer=tko_dot_tko__pb2.SelectSites.FromString,
+                    response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
+            ),
             'createDeployment': grpc.unary_unary_rpc_method_handler(
                     servicer.createDeployment,
                     request_deserializer=tko_dot_tko__pb2.CreateDeployment.FromString,
@@ -307,6 +361,11 @@ def add_APIServicer_to_server(servicer, server):
                     servicer.listDeployments,
                     request_deserializer=tko_dot_tko__pb2.ListDeployments.FromString,
                     response_serializer=tko_dot_tko__pb2.ListedDeployment.SerializeToString,
+            ),
+            'purgeDeployments': grpc.unary_unary_rpc_method_handler(
+                    servicer.purgeDeployments,
+                    request_deserializer=tko_dot_tko__pb2.SelectDeployments.FromString,
+                    response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
             ),
             'startDeploymentModification': grpc.unary_unary_rpc_method_handler(
                     servicer.startDeploymentModification,
@@ -342,6 +401,11 @@ def add_APIServicer_to_server(servicer, server):
                     servicer.listPlugins,
                     request_deserializer=tko_dot_tko__pb2.ListPlugins.FromString,
                     response_serializer=tko_dot_tko__pb2.Plugin.SerializeToString,
+            ),
+            'purgePlugins': grpc.unary_unary_rpc_method_handler(
+                    servicer.purgePlugins,
+                    request_deserializer=tko_dot_tko__pb2.SelectPlugins.FromString,
+                    response_serializer=tko_dot_tko__pb2.DeleteResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -439,6 +503,23 @@ class API(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def purgeTemplates(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tko.API/purgeTemplates',
+            tko_dot_tko__pb2.SelectTemplates.SerializeToString,
+            tko_dot_tko__pb2.DeleteResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def registerSite(request,
             target,
             options=(),
@@ -507,6 +588,23 @@ class API(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def purgeSites(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tko.API/purgeSites',
+            tko_dot_tko__pb2.SelectSites.SerializeToString,
+            tko_dot_tko__pb2.DeleteResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def createDeployment(request,
             target,
             options=(),
@@ -571,6 +669,23 @@ class API(object):
         return grpc.experimental.unary_stream(request, target, '/tko.API/listDeployments',
             tko_dot_tko__pb2.ListDeployments.SerializeToString,
             tko_dot_tko__pb2.ListedDeployment.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def purgeDeployments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tko.API/purgeDeployments',
+            tko_dot_tko__pb2.SelectDeployments.SerializeToString,
+            tko_dot_tko__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -690,5 +805,22 @@ class API(object):
         return grpc.experimental.unary_stream(request, target, '/tko.API/listPlugins',
             tko_dot_tko__pb2.ListPlugins.SerializeToString,
             tko_dot_tko__pb2.Plugin.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def purgePlugins(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tko.API/purgePlugins',
+            tko_dot_tko__pb2.SelectPlugins.SerializeToString,
+            tko_dot_tko__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

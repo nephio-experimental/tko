@@ -11,7 +11,7 @@ import (
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateDeployments(table *tview.Table) {
-	if deploymentInfos, err := self.client.ListDeployments(client.ListDeployments{}); err == nil {
+	if deploymentInfos, err := self.client.ListDeployments(client.SelectDeployments{}, 0, 0); err == nil {
 		if deploymentInfos_, err := util.GatherResults(deploymentInfos); err == nil {
 			slices.SortFunc(deploymentInfos_, func(a client.DeploymentInfo, b client.DeploymentInfo) int {
 				return strings.Compare(a.DeploymentID, b.DeploymentID)

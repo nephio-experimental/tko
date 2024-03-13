@@ -70,20 +70,20 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backend.ListSites) (util.Results[backend.SiteInfo], error) {
+func (self *MemoryBackend) ListSites(context contextpkg.Context, selectSites backend.SelectSites, window backend.Window) (util.Results[backend.SiteInfo], error) {
 	self.lock.Lock()
 
 	var siteInfos []backend.SiteInfo
 	for _, site := range self.sites {
-		if !backend.IDMatchesPatterns(site.TemplateID, listSites.TemplateIDPatterns) {
+		if !backend.IDMatchesPatterns(site.TemplateID, selectSites.TemplateIDPatterns) {
 			continue
 		}
 
-		if !backend.IDMatchesPatterns(site.SiteID, listSites.SiteIDPatterns) {
+		if !backend.IDMatchesPatterns(site.SiteID, selectSites.SiteIDPatterns) {
 			continue
 		}
 
-		if !backend.MetadataMatchesPatterns(site.Metadata, listSites.MetadataPatterns) {
+		if !backend.MetadataMatchesPatterns(site.Metadata, selectSites.MetadataPatterns) {
 			continue
 		}
 
@@ -95,13 +95,18 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, listSites backe
 	backend.SortSiteInfos(siteInfos)
 
 	length := uint(len(siteInfos))
-	if listSites.Offset > length {
+	if window.Offset > length {
 		siteInfos = nil
-	} else if end := listSites.Offset + listSites.MaxCount; end > length {
-		siteInfos = siteInfos[listSites.Offset:]
+	} else if end := window.Offset + window.MaxCount; end > length {
+		siteInfos = siteInfos[window.Offset:]
 	} else {
-		siteInfos = siteInfos[listSites.Offset:end]
+		siteInfos = siteInfos[window.Offset:end]
 	}
 
 	return util.NewResultsSlice(siteInfos), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
+	return backend.NewNotImplementedError("PurgeSites")
 }

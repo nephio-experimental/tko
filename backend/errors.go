@@ -5,6 +5,28 @@ import (
 )
 
 //
+// NotImplementedError
+//
+
+type NotImplementedError struct {
+	message string
+}
+
+func NewNotImplementedError(feature string) *NotImplementedError {
+	return &NotImplementedError{"not implemented: " + feature}
+}
+
+func IsNotImplementedError(err error) bool {
+	_, ok := err.(*NotImplementedError)
+	return ok
+}
+
+// (error interface)
+func (self *NotImplementedError) Error() string {
+	return self.message
+}
+
+//
 // BadArgumentError
 //
 

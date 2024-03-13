@@ -58,22 +58,22 @@ func (self *SQLBackend) DeleteTemplate(context contextpkg.Context, templateId st
 }
 
 // ([backend.Backend] interface)
-func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (util.Results[backend.TemplateInfo], error) {
+func (self *SQLBackend) ListTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates, window backend.Window) (util.Results[backend.TemplateInfo], error) {
 	sql := self.statements.SelectTemplates
 	var with SqlWith
 	var where SqlWhere
 	var args SqlArgs
 
-	args.AddValue(listTemplates.Offset)
-	args.AddValue(listTemplates.MaxCount)
+	args.AddValue(window.Offset)
+	args.AddValue(window.MaxCount)
 
-	for _, pattern := range listTemplates.TemplateIDPatterns {
+	for _, pattern := range selectTemplates.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
 		where.Add("templates.template_id ~ " + pattern)
 	}
 
-	if listTemplates.MetadataPatterns != nil {
-		for key, pattern := range listTemplates.MetadataPatterns {
+	if selectTemplates.MetadataPatterns != nil {
+		for key, pattern := range selectTemplates.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
 			with.Add("SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
@@ -116,6 +116,11 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, listTemplates 
 	}()
 
 	return stream, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SQLBackend) PurgeTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates) error {
+	return backend.NewNotImplementedError("PurgeTemplates")
 }
 
 // Utils

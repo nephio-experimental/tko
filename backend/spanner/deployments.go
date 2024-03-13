@@ -25,8 +25,13 @@ func (self *SpannerBackend) DeleteDeployment(context contextpkg.Context, deploym
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListDeployments(context contextpkg.Context, listDeployments backend.ListDeployments) (util.Results[backend.DeploymentInfo], error) {
+func (self *SpannerBackend) ListDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments, window backend.Window) (util.Results[backend.DeploymentInfo], error) {
 	return nil, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SpannerBackend) PurgeDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments) error {
+	return nil
 }
 
 // ([backend.Backend] interface)

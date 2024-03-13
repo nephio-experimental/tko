@@ -65,16 +65,16 @@ func (self *MemoryBackend) DeleteTemplate(context contextpkg.Context, templateId
 }
 
 // ([backend.Backend] interface)
-func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (util.Results[backend.TemplateInfo], error) {
+func (self *MemoryBackend) ListTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates, window backend.Window) (util.Results[backend.TemplateInfo], error) {
 	self.lock.Lock()
 
 	var templateInfos []backend.TemplateInfo
 	for _, template := range self.templates {
-		if !backend.IDMatchesPatterns(template.TemplateID, listTemplates.TemplateIDPatterns) {
+		if !backend.IDMatchesPatterns(template.TemplateID, selectTemplates.TemplateIDPatterns) {
 			continue
 		}
 
-		if !backend.MetadataMatchesPatterns(template.Metadata, listTemplates.MetadataPatterns) {
+		if !backend.MetadataMatchesPatterns(template.Metadata, selectTemplates.MetadataPatterns) {
 			continue
 		}
 
@@ -86,13 +86,18 @@ func (self *MemoryBackend) ListTemplates(context contextpkg.Context, listTemplat
 	backend.SortTemplateInfos(templateInfos)
 
 	length := uint(len(templateInfos))
-	if listTemplates.Offset > length {
+	if window.Offset > length {
 		templateInfos = nil
-	} else if end := listTemplates.Offset + listTemplates.MaxCount; end > length {
-		templateInfos = templateInfos[listTemplates.Offset:]
+	} else if end := window.Offset + window.MaxCount; end > length {
+		templateInfos = templateInfos[window.Offset:]
 	} else {
-		templateInfos = templateInfos[listTemplates.Offset:end]
+		templateInfos = templateInfos[window.Offset:end]
 	}
 
 	return util.NewResultsSlice(templateInfos), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgeTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates) error {
+	return backend.NewNotImplementedError("PurgeTemplates")
 }

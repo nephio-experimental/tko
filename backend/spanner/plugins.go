@@ -23,6 +23,11 @@ func (self *SpannerBackend) DeletePlugin(context contextpkg.Context, pluginId ba
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListPlugins(context contextpkg.Context, listPlugins backend.ListPlugins) (util.Results[backend.Plugin], error) {
+func (self *SpannerBackend) ListPlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins, window backend.Window) (util.Results[backend.Plugin], error) {
 	return nil, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SpannerBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
+	return nil
 }

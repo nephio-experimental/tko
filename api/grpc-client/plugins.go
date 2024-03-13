@@ -124,9 +124,7 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 	}
 }
 
-type ListPlugins struct {
-	Offset       uint
-	MaxCount     uint
+type SelectPlugins struct {
 	Type         *string
 	NamePatterns []string
 	Executor     *string
@@ -134,7 +132,7 @@ type ListPlugins struct {
 }
 
 // ([fmt.Stringer] interface)
-func (self ListPlugins) String() string {
+func (self SelectPlugins) String() string {
 	var s []string
 	if self.Type != nil {
 		s = append(s, "type="+*self.Type)
@@ -151,10 +149,10 @@ func (self ListPlugins) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], error) {
-	if listPlugins.Type != nil {
-		if !plugins.IsValidPluginType(*listPlugins.Type, true) {
-			return nil, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *listPlugins.Type)
+func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCount uint) (util.Results[Plugin], error) {
+	if selectPlugins.Type != nil {
+		if !plugins.IsValidPluginType(*selectPlugins.Type, true) {
+			return nil, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *selectPlugins.Type)
 		}
 	}
 
@@ -162,14 +160,18 @@ func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], 
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listPlugins",
-			"listPlugins", listPlugins)
+			"selectPlugins", selectPlugins)
 		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
-			Offset:       uint32(listPlugins.Offset),
-			MaxCount:     uint32(listPlugins.MaxCount),
-			Type:         listPlugins.Type,
-			NamePatterns: listPlugins.NamePatterns,
-			Executor:     listPlugins.Executor,
-			Trigger:      tkoutil.TriggerToAPI(listPlugins.Trigger),
+			Window: &api.Window{
+				Offset:   uint32(offset),
+				MaxCount: uint32(maxCount),
+			},
+			Select: &api.SelectPlugins{
+				Type:         selectPlugins.Type,
+				NamePatterns: selectPlugins.NamePatterns,
+				Executor:     selectPlugins.Executor,
+				Trigger:      tkoutil.TriggerToAPI(selectPlugins.Trigger),
+			},
 		}); err == nil {
 			stream := util.NewResultsStream[Plugin](cancel)
 
@@ -197,5 +199,33 @@ func (self *Client) ListPlugins(listPlugins ListPlugins) (util.Results[Plugin], 
 		}
 	} else {
 		return nil, err
+	}
+}
+
+func (self *Client) PurgePlugins(selectPlugins SelectPlugins) (bool, string, error) {
+	if selectPlugins.Type != nil {
+		if !plugins.IsValidPluginType(*selectPlugins.Type, true) {
+			return false, "", fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *selectPlugins.Type)
+		}
+	}
+
+	if apiClient, err := self.APIClient(); err == nil {
+		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
+		defer cancel()
+
+		self.log.Info("purgePlugins",
+			"selectPlugins", selectPlugins)
+		if response, err := apiClient.PurgePlugins(context, &api.SelectPlugins{
+			Type:         selectPlugins.Type,
+			NamePatterns: selectPlugins.NamePatterns,
+			Executor:     selectPlugins.Executor,
+			Trigger:      tkoutil.TriggerToAPI(selectPlugins.Trigger),
+		}); err == nil {
+			return response.Deleted, response.NotDeletedReason, nil
+		} else {
+			return false, "", err
+		}
+	} else {
+		return false, "", err
 	}
 }

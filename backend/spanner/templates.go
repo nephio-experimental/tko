@@ -23,6 +23,11 @@ func (self *SpannerBackend) DeleteTemplate(context contextpkg.Context, templateI
 }
 
 // ([backend.Backend] interface)
-func (self *SpannerBackend) ListTemplates(context contextpkg.Context, listTemplates backend.ListTemplates) (util.Results[backend.TemplateInfo], error) {
+func (self *SpannerBackend) ListTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates, window backend.Window) (util.Results[backend.TemplateInfo], error) {
 	return nil, nil
+}
+
+// ([backend.Backend] interface)
+func (self *SpannerBackend) PurgeTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates) error {
+	return nil
 }

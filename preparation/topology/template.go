@@ -25,7 +25,7 @@ func GetTemplateID(preparationContext *preparation.Context, name string) (string
 				metadataPatterns[key] = util.ToString(value)
 			}
 
-			if templateInfos, err := preparationContext.Preparation.Client.ListTemplates(clientpkg.ListTemplates{MetadataPatterns: metadataPatterns}); err == nil {
+			if templateInfos, err := preparationContext.Preparation.Client.ListTemplates(clientpkg.SelectTemplates{MetadataPatterns: metadataPatterns}, 0, 1); err == nil {
 				defer templateInfos.Release()
 
 				// First one we find

@@ -27,13 +27,11 @@ var siteListCommand = &cobra.Command{
 }
 
 func ListSites(offset uint, maxCount uint, siteIdPatterns []string, templateIdPatterns []string, siteMetadataPatterns map[string]string) {
-	siteIds, err := NewClient().ListSites(client.ListSites{
-		Offset:             offset,
-		MaxCount:           maxCount,
+	siteIds, err := NewClient().ListSites(client.SelectSites{
 		SiteIDPatterns:     siteIdPatterns,
 		TemplateIDPatterns: templateIdPatterns,
 		MetadataPatterns:   siteMetadataPatterns,
-	})
+	}, offset, maxCount)
 	FailOnGRPCError(err)
 	siteIds_, err := util.GatherResults(siteIds)
 	util.FailOnError(err)

@@ -12,7 +12,7 @@ import (
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateSites(table *tview.Table) {
-	if siteInfos, err := self.client.ListSites(client.ListSites{}); err == nil {
+	if siteInfos, err := self.client.ListSites(client.SelectSites{}, 0, 0); err == nil {
 		if siteInfos_, err := util.GatherResults(siteInfos); err == nil {
 			slices.SortFunc(siteInfos_, func(a client.SiteInfo, b client.SiteInfo) int {
 				return strings.Compare(a.SiteID, b.SiteID)
