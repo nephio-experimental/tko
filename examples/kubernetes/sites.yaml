@@ -3,8 +3,6 @@ kind: Site
 
 metadata:
   name: k8s-002flab1 # k8s/lab1
-
-spec:
-  metadata:
+  labels:
     m1: hello
     m2: world

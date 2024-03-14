@@ -21,11 +21,14 @@ import (
 	metabase "k8s.io/apimachinery/pkg/api/meta"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/storage"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 )
 
@@ -57,13 +60,14 @@ type Store struct {
 	NewListObjectFunc func() runtime.Object
 
 	// These can return backend errors
-	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
-	UpdateFunc func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) // optional
-	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
-	PurgeFunc  func(context contextpkg.Context, store *Store) error
-	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
-	ListFunc   func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error)
-	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
+	CreateFunc  func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
+	UpdateFunc  func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) // optional
+	DeleteFunc  func(context contextpkg.Context, store *Store, id string) error
+	PurgeFunc   func(context contextpkg.Context, store *Store) error
+	GetFunc     func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
+	ListFunc    func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error)
+	TableFunc   func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
+	GetAttrFunc func(object runtime.Object) (labels.Set, fields.Set, error)
 
 	groupResource schema.GroupResource
 }
@@ -223,21 +227,36 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 		}
 	}
 
-	/*
-		label := labels.Everything()
-		field := fields.Everything()
+	labelSelector := labels.Everything()
+	fieldSelector := fields.Everything()
 
-		if options != nil {
-			if options.LabelSelector != nil {
-				label = options.LabelSelector
-			}
-			if options.FieldSelector != nil {
-				field = options.FieldSelector
-			}
+	if options != nil {
+		if options.LabelSelector != nil {
+			labelSelector = options.LabelSelector
 		}
-	*/
+		if options.FieldSelector != nil {
+			fieldSelector = options.FieldSelector
+		}
+	}
 
-	if list, err := self.ListFunc(context, self, offset, maxCount); err == nil {
+	selectionPredicate := storage.SelectionPredicate{
+		Label:    labelSelector,
+		Field:    fieldSelector,
+		GetAttrs: self.GetAttrFunc,
+		//GetAttrs: storage.DefaultClusterScopedAttr,
+	}
+
+	// Note: it seems kubectl only supports "metadata.name" and "metadata.namespace" fields
+	// (this function won't even be called with other values)
+	//
+	// There is a new such feature for CRDs (https://github.com/kubernetes/kubernetes/pull/122717)
+	// but it's unclear how to achieve this with aggregated APIs.
+	//
+	// Maybe something like this in types.go?
+	//
+	//   +k8s:openapi-gen=x-kubernetes-selectable-fields:?
+
+	if list, err := self.ListFunc(context, self, &selectionPredicate, offset, maxCount); err == nil {
 		// Check if there are potentially more results
 		if objects, err := metabase.ExtractList(list); err == nil {
 			count := uint(len(objects))

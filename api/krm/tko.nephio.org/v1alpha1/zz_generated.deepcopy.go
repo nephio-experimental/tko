@@ -93,13 +93,6 @@ func (in *DeploymentSpec) DeepCopyInto(out *DeploymentSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Metadata != nil {
-		in, out := &in.Metadata, &out.Metadata
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
-	}
 	if in.Package != nil {
 		in, out := &in.Package, &out.Package
 		*out = (*in).DeepCopy()
@@ -212,8 +205,8 @@ func (in *PluginSpec) DeepCopyInto(out *PluginSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.PluginID != nil {
-		in, out := &in.PluginID, &out.PluginID
+	if in.PluginId != nil {
+		in, out := &in.PluginId, &out.PluginId
 		*out = new(string)
 		**out = **in
 	}
@@ -342,13 +335,6 @@ func (in *SiteSpec) DeepCopyInto(out *SiteSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Metadata != nil {
-		in, out := &in.Metadata, &out.Metadata
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
-	}
 	if in.Package != nil {
 		in, out := &in.Package, &out.Package
 		*out = (*in).DeepCopy()
@@ -455,13 +441,6 @@ func (in *TemplateSpec) DeepCopyInto(out *TemplateSpec) {
 		in, out := &in.TemplateId, &out.TemplateId
 		*out = new(string)
 		**out = **in
-	}
-	if in.Metadata != nil {
-		in, out := &in.Metadata, &out.Metadata
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
 	}
 	if in.Package != nil {
 		in, out := &in.Package, &out.Package

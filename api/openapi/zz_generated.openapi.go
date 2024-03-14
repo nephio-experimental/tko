@@ -93,7 +93,7 @@ func schema_api_krm_tkonephioorg_v1alpha1_Deployment(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "TKO deployment.",
+				Description: "TKO deployment.\n\nNote that the deployment metadata is represented as ObjectMeta labels.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -129,7 +129,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_Deployment(ref common.ReferenceCallbac
 						},
 					},
 				},
-				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -219,22 +218,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_DeploymentSpec(ref common.ReferenceCal
 							Format:      "",
 						},
 					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deployment metadata.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
 					"package": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Deployment KRM package. When \"prepared\" is true the KRM must be completely valid. Otherwise, the KRM must be at least *partially* valid, meaning that required properties at any level of nesting are allowed to be missing, but properties that are assigned must have valid values.",
@@ -315,7 +298,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_Plugin(ref common.ReferenceCallback) c
 						},
 					},
 				},
-				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -384,7 +366,7 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref common.ReferenceCallbac
 							Format:      "",
 						},
 					},
-					"id": {
+					"pluginId": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Plugin ID. Must be unique per \"type\" per TKO instance.",
 							Type:        []string{"string"},
@@ -444,7 +426,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_PluginSpec(ref common.ReferenceCallbac
 						},
 					},
 				},
-				Required: []string{"type", "executor"},
 			},
 		},
 		Dependencies: []string{
@@ -466,7 +447,7 @@ func schema_api_krm_tkonephioorg_v1alpha1_Site(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "TKO site.",
+				Description: "TKO site.\n\nNote that the site metadata is represented as ObjectMeta labels.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -502,7 +483,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_Site(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -578,22 +558,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_SiteSpec(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Site metadata.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
 					"package": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Site KRM package. The KRM must be completely valid.",
@@ -639,7 +603,7 @@ func schema_api_krm_tkonephioorg_v1alpha1_Template(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "TKO template.",
+				Description: "TKO template.\n\nNote that the template metadata is represented as ObjectMeta labels.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -675,7 +639,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_Template(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -742,22 +705,6 @@ func schema_api_krm_tkonephioorg_v1alpha1_TemplateSpec(ref common.ReferenceCallb
 							Description: "Template ID. Must be unique per TKO instance.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Template metadata.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
 						},
 					},
 					"package": {

@@ -437,6 +437,7 @@ func ValidateWindow(window *Window) error {
 func ParallelDelete[R any, T any](context contextpkg.Context, results util.Results[R], getTask func(result R) T, delete_ func(task T) error) error {
 	deleter := util.NewParallelExecutor[T](ParallelBufferSize, func(task T) error {
 		err := delete_(task)
+		// Swallow not-found errors
 		if IsNotFoundError(err) {
 			err = nil
 		}

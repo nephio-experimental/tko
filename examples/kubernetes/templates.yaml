@@ -3,8 +3,36 @@ kind: Template
 
 metadata:
   name: k8s-002fhello-003av1.0.0 # k8s/hello:v1.0.0
-
-spec:
-  metadata:
+  labels:
     m1: hello
     m2: world
+
+spec:
+  package:
+    resources:
+    - apiVersion: v1
+      kind: Namespace
+
+      metadata:
+        name: hello-world
+
+    - apiVersion: apps/v1
+      kind: Deployment
+
+      metadata:
+        name: hello-world
+        namespace: hello-world
+
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: hello-world
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: hello-world
+          spec:
+            containers:
+            - name: nginx
+              image: nginx:latest

@@ -29,5 +29,5 @@ func (self *SpannerBackend) ListTemplates(context contextpkg.Context, selectTemp
 
 // ([backend.Backend] interface)
 func (self *SpannerBackend) PurgeTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates) error {
-	return nil
+	return backend.NewNotImplementedError("PurgeTemplates")
 }

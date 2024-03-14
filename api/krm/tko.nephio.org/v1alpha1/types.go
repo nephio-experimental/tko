@@ -16,6 +16,9 @@ import (
 //
 
 // TKO template.
+//
+// Note that the template metadata is represented as ObjectMeta labels.
+//
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -23,25 +26,21 @@ type Template struct {
 	meta.TypeMeta   `json:",inline"`
 	meta.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TemplateSpec   `json:"spec"`
+	Spec   TemplateSpec   `json:"spec,omitempty"`
 	Status TemplateStatus `json:"status,omitempty"`
 }
 
 type TemplateSpec struct {
 	// Template ID. Must be unique per TKO instance.
 	// +optional
-	TemplateId *string `json:"templateId"`
-
-	// Template metadata.
-	// +optional
-	Metadata map[string]string `json:"metadata"`
+	TemplateId *string `json:"templateId,omitempty"`
 
 	// Template KRM package. The KRM must be at least *partially* valid,
 	// meaning that required properties at any level of nesting are allowed
 	// to be missing, but properties that are assigned must have valid
 	// values.
 	// +optional
-	Package *Package `json:"package"`
+	Package *Package `json:"package,omitempty"`
 }
 
 type TemplateStatus struct {
@@ -63,6 +62,9 @@ type TemplateList struct {
 //
 
 // TKO site.
+//
+// Note that the site metadata is represented as ObjectMeta labels.
+//
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -70,26 +72,22 @@ type Site struct {
 	meta.TypeMeta   `json:",inline"`
 	meta.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SiteSpec   `json:"spec"`
+	Spec   SiteSpec   `json:"spec,omitempty"`
 	Status SiteStatus `json:"status,omitempty"`
 }
 
 type SiteSpec struct {
 	// Site ID. Must be unique per TKO instance.
 	// +optional
-	SiteId *string `json:"siteId"`
+	SiteId *string `json:"siteId,omitempty"`
 
 	// ID of the template from which this site was created.
 	// +optional
 	TemplateId *string `json:"templateId,omitempty"`
 
-	// Site metadata.
-	// +optional
-	Metadata map[string]string `json:"metadata"`
-
 	// Site KRM package. The KRM must be completely valid.
 	// +optional
-	Package *Package `json:"package"`
+	Package *Package `json:"package,omitempty"`
 }
 
 type SiteStatus struct {
@@ -111,13 +109,16 @@ type SiteList struct {
 //
 
 // TKO deployment.
+//
+// Note that the deployment metadata is represented as ObjectMeta labels.
+//
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Deployment struct {
 	meta.TypeMeta   `json:",inline"`
 	meta.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DeploymentSpec   `json:"spec"`
+	Spec   DeploymentSpec   `json:"spec,omitempty"`
 	Status DeploymentStatus `json:"status,omitempty"`
 }
 
@@ -125,7 +126,7 @@ type DeploymentSpec struct {
 	// (Read only) Deployment ID. A random UUID generated when the
 	// deployment is created.
 	// +optional
-	DeploymentId *string `json:"deploymentId"`
+	DeploymentId *string `json:"deploymentId,omitempty"`
 
 	// ID of the deployment that created this deployment during the
 	// preparation process.
@@ -140,17 +141,13 @@ type DeploymentSpec struct {
 	// +optional
 	SiteId *string `json:"siteId,omitempty"`
 
-	// Deployment metadata.
-	// +optional
-	Metadata map[string]string `json:"metadata"`
-
 	// Deployment KRM package. When "prepared" is true the KRM must be
 	// completely valid. Otherwise, the KRM must be at least *partially*
 	// valid, meaning that required properties at any level of nesting are
 	// allowed to be missing, but properties that are assigned must have
 	// valid values.
 	// +optional
-	Package *Package `json:"package"`
+	Package *Package `json:"package,omitempty"`
 }
 
 type DeploymentStatus struct {
@@ -177,31 +174,32 @@ type DeploymentList struct {
 //
 
 // TKO plugin.
+//
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Plugin struct {
 	meta.TypeMeta   `json:",inline"`
 	meta.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PluginSpec   `json:"spec"`
+	Spec   PluginSpec   `json:"spec,omitempty"`
 	Status PluginStatus `json:"status,omitempty"`
 }
 
 type PluginSpec struct {
 	// Can be "validate", "prepare", or "schedule".
-	Type *string `json:"type"`
+	Type *string `json:"type,omitempty"`
 
 	// Plugin ID. Must be unique per "type" per TKO instance.
 	// +optional
-	PluginID *string `json:"id"`
+	PluginId *string `json:"pluginId,omitempty"`
 
 	// Plugin executor. Each executor has its own requirements for
 	// "arguments" and "properties".
-	Executor *string `json:"executor"`
+	Executor *string `json:"executor,omitempty"`
 
 	// Sequence of arguments for the executor.
 	// +optional
-	Arguments []string `json:"arguments"`
+	Arguments []string `json:"arguments,omitempty"`
 
 	// Map of properties for the executor.
 	// +optional

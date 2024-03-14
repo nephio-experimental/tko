@@ -31,7 +31,7 @@ func (self *SpannerBackend) ListDeployments(context contextpkg.Context, selectDe
 
 // ([backend.Backend] interface)
 func (self *SpannerBackend) PurgeDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments) error {
-	return nil
+	return backend.NewNotImplementedError("PurgeDeployments")
 }
 
 // ([backend.Backend] interface)

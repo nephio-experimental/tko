@@ -11,8 +11,11 @@ import (
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apiserver/pkg/storage"
 )
 
 func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -81,7 +84,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmPluginList krm.PluginList
 			krmPluginList.APIVersion = APIVersion
 			krmPluginList.Kind = "PluginList"
@@ -89,8 +92,14 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			if results, err := store.Backend.ListPlugins(context, backendpkg.SelectPlugins{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(plugin backendpkg.Plugin) error {
 					if krmPlugin, err := PluginToKRM(&plugin); err == nil {
-						krmPluginList.Items = append(krmPluginList.Items, *krmPlugin)
-						return nil
+						if ok, err := selectionPredicate.Matches(krmPlugin); err == nil {
+							if ok {
+								krmPluginList.Items = append(krmPluginList.Items, *krmPlugin)
+							}
+							return nil
+						} else {
+							return err
+						}
 					} else {
 						return err
 					}
@@ -127,7 +136,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 					Cells: []any{
 						krmPlugin.Name,
 						krmPlugin.Spec.Type,
-						krmPlugin.Spec.PluginID,
+						krmPlugin.Spec.PluginId,
 						krmPlugin.Spec.Executor,
 					},
 				}
@@ -138,6 +147,26 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 
 			return table, nil
+		},
+
+		GetAttrFunc: func(object runtime.Object) (labels.Set, fields.Set, error) {
+			if krmPlugin, ok := object.(*krm.Plugin); ok {
+				fields := fields.Set{
+					"metadata.name": krmPlugin.Name,
+				}
+				if krmPlugin.Spec.Type != nil {
+					fields["spec.type"] = *krmPlugin.Spec.Type
+				}
+				if krmPlugin.Spec.PluginId != nil {
+					fields["spec.pluginId"] = *krmPlugin.Spec.PluginId
+				}
+				if krmPlugin.Spec.Executor != nil {
+					fields["spec.executor"] = *krmPlugin.Spec.Executor
+				}
+				return nil, fields, nil
+			} else {
+				return nil, nil, fmt.Errorf("not a plugin: %T", object)
+			}
 		},
 	}
 
@@ -171,7 +200,7 @@ func PluginToKRM(plugin *backendpkg.Plugin) (*krm.Plugin, error) {
 
 	pluginId := plugin.PluginID
 	krmPlugin.Spec.Type = &pluginId.Type
-	krmPlugin.Spec.PluginID = &pluginId.Name
+	krmPlugin.Spec.PluginId = &pluginId.Name
 	krmPlugin.Spec.Executor = &plugin.Executor
 	krmPlugin.Spec.Arguments = plugin.Arguments
 	krmPlugin.Spec.Properties = plugin.Properties

@@ -2,6 +2,7 @@ package server
 
 import (
 	contextpkg "context"
+	"fmt"
 	"time"
 
 	krm "github.com/nephio-experimental/tko/api/krm/tko.nephio.org/v1alpha1"
@@ -10,8 +11,11 @@ import (
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apiserver/pkg/storage"
 )
 
 func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
@@ -66,7 +70,7 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmTemplateList krm.TemplateList
 			krmTemplateList.APIVersion = APIVersion
 			krmTemplateList.Kind = "TemplateList"
@@ -74,8 +78,14 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 			if results, err := store.Backend.ListTemplates(context, backendpkg.SelectTemplates{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
 				if err := util.IterateResults(results, func(templateInfo backendpkg.TemplateInfo) error {
 					if krmTemplate, err := TemplateInfoToKRM(&templateInfo); err == nil {
-						krmTemplateList.Items = append(krmTemplateList.Items, *krmTemplate)
-						return nil
+						if ok, err := selectionPredicate.Matches(krmTemplate); err == nil {
+							if ok {
+								krmTemplateList.Items = append(krmTemplateList.Items, *krmTemplate)
+							}
+							return nil
+						} else {
+							return err
+						}
 					} else {
 						return err
 					}
@@ -128,6 +138,23 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 
 			return table, nil
 		},
+
+		GetAttrFunc: func(object runtime.Object) (labels.Set, fields.Set, error) {
+			if krmTemplate, ok := object.(*krm.Template); ok {
+				labels := labels.Set(krmTemplate.Labels)
+
+				fields := fields.Set{
+					"metadata.name": krmTemplate.Name,
+				}
+				if krmTemplate.Spec.TemplateId != nil {
+					fields["spec.templateId"] = *krmTemplate.Spec.TemplateId
+				}
+
+				return labels, fields, nil
+			} else {
+				return nil, nil, fmt.Errorf("not a template: %T", object)
+			}
+		},
 	}
 
 	store.Init()
@@ -157,10 +184,10 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (*krm.Template, er
 	krmTemplate.Name = name
 	krmTemplate.UID = types.UID("tko|template|" + templateInfo.TemplateID)
 	krmTemplate.ResourceVersion = ToResourceVersion(templateInfo.Updated)
+	krmTemplate.Labels = templateInfo.Metadata
 
 	templateId := templateInfo.TemplateID
 	krmTemplate.Spec.TemplateId = &templateId
-	krmTemplate.Spec.Metadata = templateInfo.Metadata
 	krmTemplate.Status.DeploymentIds = templateInfo.DeploymentIDs
 
 	return &krmTemplate, nil
@@ -205,7 +232,7 @@ func TemplateFromKRM(object runtime.Object) (*backendpkg.Template, error) {
 	template := backendpkg.Template{
 		TemplateInfo: backendpkg.TemplateInfo{
 			TemplateID: templateId,
-			Metadata:   krmTemplate.Spec.Metadata,
+			Metadata:   krmTemplate.Labels,
 			Updated:    updated,
 		},
 	}

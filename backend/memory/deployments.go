@@ -105,16 +105,7 @@ func (self *MemoryBackend) ListDeployments(context contextpkg.Context, selectDep
 	self.lock.Unlock()
 
 	backend.SortDeploymentInfos(deploymentInfos)
-
-	length := uint(len(deploymentInfos))
-	if window.Offset > length {
-		deploymentInfos = nil
-	} else if end := window.Offset + window.MaxCount; end > length {
-		deploymentInfos = deploymentInfos[window.Offset:]
-	} else {
-		deploymentInfos = deploymentInfos[window.Offset:end]
-	}
-
+	deploymentInfos = backend.ApplyWindow(deploymentInfos, window)
 	return util.NewResultsSlice(deploymentInfos), nil
 }
 

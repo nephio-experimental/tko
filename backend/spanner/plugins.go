@@ -29,5 +29,5 @@ func (self *SpannerBackend) ListPlugins(context contextpkg.Context, selectPlugin
 
 // ([backend.Backend] interface)
 func (self *SpannerBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
-	return nil
+	return backend.NewNotImplementedError("PurgePlugins")
 }

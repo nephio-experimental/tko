@@ -29,5 +29,5 @@ func (self *SpannerBackend) ListSites(context contextpkg.Context, selectSites ba
 
 // ([backend.Backend] interface)
 func (self *SpannerBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
-	return nil
+	return backend.NewNotImplementedError("PurgeSites")
 }

@@ -53,16 +53,8 @@ func (self *MemoryBackend) DeleteSite(context contextpkg.Context, siteId string)
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	if _, ok := self.sites[siteId]; ok {
-		delete(self.sites, siteId)
-
-		// Remove deployment associations
-		for _, deployment := range self.deployments {
-			if deployment.SiteID == siteId {
-				deployment.SiteID = ""
-			}
-		}
-
+	if site, ok := self.sites[siteId]; ok {
+		self.deleteSite(context, site)
 		return nil
 	} else {
 		return backend.NewNotFoundErrorf("site: %s", siteId)
@@ -74,6 +66,41 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, selectSites bac
 	self.lock.Lock()
 
 	var siteInfos []backend.SiteInfo
+	self.selectSites(context, selectSites, func(context contextpkg.Context, site *backend.Site) {
+		siteInfos = append(siteInfos, site.SiteInfo)
+	})
+
+	self.lock.Unlock()
+
+	backend.SortSiteInfos(siteInfos)
+	siteInfos = backend.ApplyWindow(siteInfos, window)
+	return util.NewResultsSlice(siteInfos), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	self.selectSites(context, selectSites, self.deleteSite)
+
+	return nil
+}
+
+// Utils
+
+func (self *MemoryBackend) deleteSite(context contextpkg.Context, site *backend.Site) {
+	delete(self.sites, site.SiteID)
+
+	// Remove deployment associations
+	for _, deployment := range self.deployments {
+		if deployment.SiteID == site.SiteID {
+			deployment.SiteID = ""
+		}
+	}
+}
+
+func (self *MemoryBackend) selectSites(context contextpkg.Context, selectSites backend.SelectSites, f func(context contextpkg.Context, site *backend.Site)) {
 	for _, site := range self.sites {
 		if !backend.IDMatchesPatterns(site.TemplateID, selectSites.TemplateIDPatterns) {
 			continue
@@ -87,26 +114,6 @@ func (self *MemoryBackend) ListSites(context contextpkg.Context, selectSites bac
 			continue
 		}
 
-		siteInfos = append(siteInfos, site.SiteInfo)
+		f(context, site)
 	}
-
-	self.lock.Unlock()
-
-	backend.SortSiteInfos(siteInfos)
-
-	length := uint(len(siteInfos))
-	if window.Offset > length {
-		siteInfos = nil
-	} else if end := window.Offset + window.MaxCount; end > length {
-		siteInfos = siteInfos[window.Offset:]
-	} else {
-		siteInfos = siteInfos[window.Offset:end]
-	}
-
-	return util.NewResultsSlice(siteInfos), nil
-}
-
-// ([backend.Backend] interface)
-func (self *MemoryBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
-	return backend.NewNotImplementedError("PurgeSites")
 }

@@ -1,6 +1,13 @@
 TKO's KRM API
 =============
 
+The group-version is `tko.nephio.org/v1alpha1`. Supported kinds:
+
+* `Template`
+* `Site`
+* `Deployment`
+* `Plugin`
+
 TKO's types are non-namespaced. They are associated with the cluster as a whole.
 
 They are all in the `tko` category, so it's possible to access them collectively:
@@ -40,7 +47,7 @@ The `tko` command can do this conversion for you:
     > demo/hello-world:v1.0.0
 
 Plugin IDs consist of the plugin type plus `|` plus the name, so when using a shell make sure to
-wrap the it in quotes so that your shell won't interpret the `|`:
+wrap it in quotes so that your shell won't interpret the `|`:
 
     tko name to 'validate|free5gc/smf'
     > validate-007cfree5gc-002fsmf
@@ -63,30 +70,58 @@ latest `resourceVersion`), then edit, then apply:
 
 Or, do it all in one step using `kubectl edit`.
 
-Template Type
--------------
+Metadata
+--------
 
-We can create/update a template like so:
+Metadata for templates, sites, and deployments are all represented as KRM labels. Example:
 
 ```yaml
 apiVersion: tko.nephio.org/v1alpha1
 kind: Template
+
 metadata:
   name: k8s-002fhello-003av1.0.0 # k8s/hello:v1.0.0
+  labels:
+    m1: hello
+    m2: world
+```
+
+You can use label selectors to filter your results:
+
+    kubectl get template --selector m1=hello
+
+Packages
+--------
+
+KRM packages for templates, sites, and deployments are in the `spec` under the
+`package.resources` list, and are simply agnostic raw data. Example in YAML:
+
+```yaml
+apiVersion: tko.nephio.org/v1alpha1
+kind: Template
+
+metadata:
+  name: k8s-002fhello-003av1.0.0 # k8s/hello:v1.0.0
+  labels:
+    m1: hello
+    m2: world
+
 spec:
-  metadata:
-    type: demo
   package:
     resources:
     - apiVersion: v1
       kind: Namespace
+
       metadata:
         name: hello-world
+
     - apiVersion: apps/v1
       kind: Deployment
+
       metadata:
         name: hello-world
         namespace: hello-world
+
       spec:
         replicas: 1
         selector:
@@ -98,15 +133,6 @@ spec:
               app.kubernetes.io/name: hello-world
           spec:
             containers:
-            - image: nginx:latest
-              name: nginx
+            - name: nginx
+              image: nginx:latest
 ```
-
-Site Type
----------
-
-Deployment Type
----------------
-
-Plugin Type
------------

@@ -47,6 +47,32 @@ func (self *MemoryBackend) ListPlugins(context contextpkg.Context, selectPlugins
 	self.lock.Lock()
 
 	var plugins []backend.Plugin
+	self.selectPlugins(context, selectPlugins, func(context contextpkg.Context, plugin *backend.Plugin) {
+		plugins = append(plugins, *plugin)
+	})
+
+	self.lock.Unlock()
+
+	backend.SortPlugins(plugins)
+	plugins = backend.ApplyWindow(plugins, window)
+	return util.NewResultsSlice(plugins), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	self.selectPlugins(context, selectPlugins, func(context contextpkg.Context, plugin *backend.Plugin) {
+		delete(self.plugins, plugin.PluginID)
+	})
+
+	return nil
+}
+
+// Utils
+
+func (self *MemoryBackend) selectPlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins, f func(context contextpkg.Context, plugin *backend.Plugin)) {
 	for _, plugin := range self.plugins {
 		if (selectPlugins.Type != nil) && (*selectPlugins.Type != "") {
 			if *selectPlugins.Type != plugin.Type {
@@ -77,26 +103,7 @@ func (self *MemoryBackend) ListPlugins(context contextpkg.Context, selectPlugins
 			}
 		}
 
-		plugins = append(plugins, *plugin)
+		f(context, plugin)
 	}
 
-	self.lock.Unlock()
-
-	backend.SortPlugins(plugins)
-
-	length := uint(len(plugins))
-	if window.Offset > length {
-		plugins = nil
-	} else if end := window.Offset + window.MaxCount; end > length {
-		plugins = plugins[window.Offset:]
-	} else {
-		plugins = plugins[window.Offset:end]
-	}
-
-	return util.NewResultsSlice(plugins), nil
-}
-
-// ([backend.Backend] interface)
-func (self *MemoryBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
-	return backend.NewNotImplementedError("PurgePlugins")
 }

@@ -17,6 +17,12 @@ type Backend interface {
 	Release(context contextpkg.Context) error
 	String() string
 
+	// All the following methods can return NotImplementedError.
+
+	//
+	// Templates
+	//
+
 	// Owns and may change the contents of the template argument.
 	// Ignores template DeploymentIDs.
 	// Can return BadArgumentError, NotDoneError.
@@ -36,6 +42,10 @@ type Backend interface {
 	// Can return BadArgumentError, NotDoneError.
 	PurgeTemplates(context contextpkg.Context, selectTemplates SelectTemplates) error
 
+	//
+	// Sites
+	//
+
 	// Owns and may change the contents of the site argument.
 	// Ignores site DeploymentIDs.
 	// Can return BadArgumentError, NotDoneError.
@@ -54,6 +64,10 @@ type Backend interface {
 	// Does *not* delete associated deployments, but removes association.
 	// Can return BadArgumentError, NotDoneError.
 	PurgeSites(context contextpkg.Context, selectSites SelectSites) error
+
+	//
+	// Deployments
+	//
 
 	// Owns and may change the contents of the deployment argument.
 	// Can return BadArgumentError, NotDoneError.
@@ -86,6 +100,10 @@ type Backend interface {
 	// Can return BadArgumentError, NotFoundError, NotDoneError.
 	CancelDeploymentModification(context contextpkg.Context, modificationToken string) error
 
+	//
+	// Plugins
+	//
+
 	// Owns and may change the contents of the plugin argument.
 	// Can return BadArgumentError, NotDoneError.
 	SetPlugin(context contextpkg.Context, plugin *Plugin) error
@@ -106,6 +124,17 @@ type Backend interface {
 type Window struct {
 	Offset   uint
 	MaxCount uint
+}
+
+func ApplyWindow[E any](list []E, window Window) []E {
+	length := uint(len(list))
+	if window.Offset > length {
+		return nil
+	} else if end := window.Offset + window.MaxCount; end > length {
+		return list[window.Offset:]
+	} else {
+		return list[window.Offset:end]
+	}
 }
 
 type SelectTemplates struct {

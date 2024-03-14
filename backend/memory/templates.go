@@ -41,23 +41,8 @@ func (self *MemoryBackend) DeleteTemplate(context contextpkg.Context, templateId
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	if _, ok := self.templates[templateId]; ok {
-		delete(self.templates, templateId)
-
-		// Remove site associations
-		for _, site := range self.sites {
-			if site.TemplateID == templateId {
-				site.TemplateID = ""
-			}
-		}
-
-		// Remove deployment associations
-		for _, deployment := range self.deployments {
-			if deployment.TemplateID == templateId {
-				deployment.TemplateID = ""
-			}
-		}
-
+	if template, ok := self.templates[templateId]; ok {
+		self.deleteTemplate(context, template)
 		return nil
 	} else {
 		return backend.NewNotFoundErrorf("template: %s", templateId)
@@ -69,6 +54,48 @@ func (self *MemoryBackend) ListTemplates(context contextpkg.Context, selectTempl
 	self.lock.Lock()
 
 	var templateInfos []backend.TemplateInfo
+	self.selectTemplates(context, selectTemplates, func(context contextpkg.Context, template *backend.Template) {
+		templateInfos = append(templateInfos, template.TemplateInfo)
+	})
+
+	self.lock.Unlock()
+
+	backend.SortTemplateInfos(templateInfos)
+	templateInfos = backend.ApplyWindow(templateInfos, window)
+	return util.NewResultsSlice(templateInfos), nil
+}
+
+// ([backend.Backend] interface)
+func (self *MemoryBackend) PurgeTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	self.selectTemplates(context, selectTemplates, self.deleteTemplate)
+
+	return nil
+}
+
+// Utils
+
+func (self *MemoryBackend) deleteTemplate(context contextpkg.Context, template *backend.Template) {
+	delete(self.templates, template.TemplateID)
+
+	// Remove site associations
+	for _, site := range self.sites {
+		if site.TemplateID == template.TemplateID {
+			site.TemplateID = ""
+		}
+	}
+
+	// Remove deployment associations
+	for _, deployment := range self.deployments {
+		if deployment.TemplateID == template.TemplateID {
+			deployment.TemplateID = ""
+		}
+	}
+}
+
+func (self *MemoryBackend) selectTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates, f func(context contextpkg.Context, template *backend.Template)) {
 	for _, template := range self.templates {
 		if !backend.IDMatchesPatterns(template.TemplateID, selectTemplates.TemplateIDPatterns) {
 			continue
@@ -78,26 +105,6 @@ func (self *MemoryBackend) ListTemplates(context contextpkg.Context, selectTempl
 			continue
 		}
 
-		templateInfos = append(templateInfos, template.TemplateInfo)
+		f(context, template)
 	}
-
-	self.lock.Unlock()
-
-	backend.SortTemplateInfos(templateInfos)
-
-	length := uint(len(templateInfos))
-	if window.Offset > length {
-		templateInfos = nil
-	} else if end := window.Offset + window.MaxCount; end > length {
-		templateInfos = templateInfos[window.Offset:]
-	} else {
-		templateInfos = templateInfos[window.Offset:end]
-	}
-
-	return util.NewResultsSlice(templateInfos), nil
-}
-
-// ([backend.Backend] interface)
-func (self *MemoryBackend) PurgeTemplates(context contextpkg.Context, selectTemplates backend.SelectTemplates) error {
-	return backend.NewNotImplementedError("PurgeTemplates")
 }
