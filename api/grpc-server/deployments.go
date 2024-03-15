@@ -88,7 +88,7 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 		Approved:                 listDeployments.Select.Approved,
 	}, backend.Window{
 		Offset:   uint(listDeployments.Window.Offset),
-		MaxCount: uint(listDeployments.Window.MaxCount),
+		MaxCount: int(listDeployments.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
 			return server.Send(&api.ListedDeployment{

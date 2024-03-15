@@ -11,12 +11,11 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
+	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/storage"
 )
 
 func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -37,6 +36,23 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 		NewListObjectFunc: func() runtime.Object {
 			return new(krm.SiteList)
+		},
+
+		GetFieldsFunc: func(object runtime.Object) (fields.Set, error) {
+			if krmSite, ok := object.(*krm.Site); ok {
+				fields := fields.Set{
+					"metadata.name": krmSite.Name,
+				}
+				if krmSite.Spec.SiteId != nil {
+					fields["spec.siteId"] = *krmSite.Spec.SiteId
+				}
+				if krmSite.Spec.TemplateId != nil {
+					fields["spec.templateId"] = *krmSite.Spec.TemplateId
+				}
+				return fields, nil
+			} else {
+				return nil, fmt.Errorf("not a site: %T", object)
+			}
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
@@ -71,12 +87,17 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmSiteList krm.SiteList
-			krmSiteList.APIVersion = APIVersion
-			krmSiteList.Kind = "SiteList"
 
-			if results, err := store.Backend.ListSites(context, backendpkg.SelectSites{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
+			var metadataPatterns map[string]string
+			var err error
+			if metadataPatterns, err = ToMetadataPatterns(options); err != nil {
+				return nil, err
+			}
+			selectionPredicate := store.NewSelectionPredicate(options, false)
+
+			if results, err := store.Backend.ListSites(context, backendpkg.SelectSites{MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(siteInfo backendpkg.SiteInfo) error {
 					if krmSite, err := SiteInfoToKRM(&siteInfo); err == nil {
 						if ok, err := selectionPredicate.Matches(krmSite); err == nil {
@@ -97,6 +118,8 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
+			krmSiteList.APIVersion = APIVersion
+			krmSiteList.Kind = "SiteList"
 			return &krmSiteList, nil
 		},
 
@@ -141,26 +164,6 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 			return table, nil
 		},
-
-		GetAttrFunc: func(object runtime.Object) (labels.Set, fields.Set, error) {
-			if krmSite, ok := object.(*krm.Site); ok {
-				labels := labels.Set(krmSite.Labels)
-
-				fields := fields.Set{
-					"metadata.name": krmSite.Name,
-				}
-				if krmSite.Spec.SiteId != nil {
-					fields["spec.siteId"] = *krmSite.Spec.SiteId
-				}
-				if krmSite.Spec.TemplateId != nil {
-					fields["spec.templateId"] = *krmSite.Spec.TemplateId
-				}
-
-				return labels, fields, nil
-			} else {
-				return nil, nil, fmt.Errorf("not a site: %T", object)
-			}
-		},
 	}
 
 	store.Init()
@@ -190,7 +193,7 @@ func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (*krm.Site, error) {
 	krmSite.Name = name
 	krmSite.UID = types.UID("tko|site|" + siteInfo.SiteID)
 	krmSite.ResourceVersion = ToResourceVersion(siteInfo.Updated)
-	krmSite.Labels = siteInfo.Metadata
+	krmSite.Labels, _ = tkoutil.ToKubernetesNames(siteInfo.Metadata)
 
 	siteId := siteInfo.SiteID
 	krmSite.Spec.SiteId = &siteId
@@ -231,17 +234,17 @@ func SiteFromKRM(object runtime.Object) (*backendpkg.Site, error) {
 
 	site := backendpkg.Site{
 		SiteInfo: backendpkg.SiteInfo{
-			SiteID:   siteId,
-			Metadata: krmSite.Labels,
-			Updated:  updated,
+			SiteID:  siteId,
+			Updated: updated,
 		},
 	}
+
+	site.Metadata, _ = tkoutil.FromKubernetesNames(krmSite.Labels)
+	site.Package = PackageFromKRM(krmSite.Spec.Package)
 
 	if krmSite.Spec.TemplateId != nil {
 		site.TemplateID = *krmSite.Spec.TemplateId
 	}
-
-	site.Package = PackageFromKRM(krmSite.Spec.Package)
 
 	return &site, nil
 }

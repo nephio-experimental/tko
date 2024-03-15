@@ -58,16 +58,16 @@ type Store struct {
 
 	NewObjectFunc     func() runtime.Object
 	NewListObjectFunc func() runtime.Object
+	GetFieldsFunc     func(object runtime.Object) (fields.Set, error)
 
 	// These can return backend errors
-	CreateFunc  func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
-	UpdateFunc  func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) // optional
-	DeleteFunc  func(context contextpkg.Context, store *Store, id string) error
-	PurgeFunc   func(context contextpkg.Context, store *Store) error
-	GetFunc     func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
-	ListFunc    func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error)
-	TableFunc   func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
-	GetAttrFunc func(object runtime.Object) (labels.Set, fields.Set, error)
+	CreateFunc func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error)
+	UpdateFunc func(context contextpkg.Context, store *Store, updatedObject runtime.Object) (runtime.Object, error) // optional
+	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
+	PurgeFunc  func(context contextpkg.Context, store *Store) error
+	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
+	ListFunc   func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error)
+	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
 
 	groupResource schema.GroupResource
 }
@@ -198,7 +198,7 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 	}
 
 	var offset uint
-	var maxCount uint
+	maxCount := backendpkg.DefaultMaxCount
 
 	if options != nil {
 		if options.Watch {
@@ -206,11 +206,11 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 		}
 
 		if options.Continue != "" {
-			// Note: Every call results in a new query to the backend (we are not setting
-			// ResourceVersion), so there is no guarantee that we are indeed continuing the
-			// same result set. Thus it may be possible that certain names may repeat more
-			// than once for a client that is concatenating result chunks. Clients concerned
-			// about duplicates should thus do their own de-duping.
+			// Note: Every call results in a new query to the backend, so there is no guarantee
+			// that we are indeed continuing the exact same result set. Thus it may be possible
+			// that certain object may repeat more than once for a client that is concatenating
+			// results from multiple calls. Clients concerned about duplicates should thus do
+			// their own de-duping.
 			if offset_, err := strconv.ParseUint(options.Continue, 10, 64); err == nil {
 				offset = uint(offset_)
 			} else {
@@ -227,36 +227,18 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 		}
 	}
 
-	labelSelector := labels.Everything()
-	fieldSelector := fields.Everything()
-
-	if options != nil {
-		if options.LabelSelector != nil {
-			labelSelector = options.LabelSelector
-		}
-		if options.FieldSelector != nil {
-			fieldSelector = options.FieldSelector
-		}
-	}
-
-	selectionPredicate := storage.SelectionPredicate{
-		Label:    labelSelector,
-		Field:    fieldSelector,
-		GetAttrs: self.GetAttrFunc,
-		//GetAttrs: storage.DefaultClusterScopedAttr,
-	}
-
-	// Note: it seems kubectl only supports "metadata.name" and "metadata.namespace" fields
-	// (this function won't even be called with other values)
+	// Note about options.FieldSelector: It seems kubectl only supports "metadata.name" and
+	// "metadata.namespace" fields (this function won't even be called with other values).
 	//
-	// There is a new such feature for CRDs (https://github.com/kubernetes/kubernetes/pull/122717)
+	// There is a new feature for extending the selectable field list for CRDs
+	// (https://github.com/kubernetes/kubernetes/pull/122717)
 	// but it's unclear how to achieve this with aggregated APIs.
 	//
 	// Maybe something like this in types.go?
 	//
 	//   +k8s:openapi-gen=x-kubernetes-selectable-fields:?
 
-	if list, err := self.ListFunc(context, self, &selectionPredicate, offset, maxCount); err == nil {
+	if list, err := self.ListFunc(context, self, options, offset, maxCount); err == nil {
 		// Check if there are potentially more results
 		if objects, err := metabase.ExtractList(list); err == nil {
 			count := uint(len(objects))
@@ -271,7 +253,7 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 			if count == maxCount {
 				// Note: If all the results fit exactly in maxCount then we don't actually have more results
 				// and there's no need to continue, but optimizing for that case here would be challenging.
-				// Ssome backends, such as SQL, might not report additional results within the query window.
+				// Some backends, such as SQL, might not report if additional results within the query window.
 				if list_, err := metabase.ListAccessor(list); err == nil {
 					continue_ := strconv.FormatUint(uint64(offset+count), 10)
 					self.Log.Infof("List: setting continue: %s", continue_)
@@ -808,4 +790,59 @@ func (self *Store) Validate(context contextpkg.Context, object runtime.Object) f
 func (self *Store) WarningsOnCreate(context contextpkg.Context, object runtime.Object) []string {
 	self.Log.Info("WarningsOnCreate")
 	return nil
+}
+
+// Utils
+
+func (self *Store) NewSelectionPredicate(options *metainternalversion.ListOptions, withLabels bool) storage.SelectionPredicate {
+	labelSelector := labels.Everything()
+	fieldSelector := fields.Everything()
+
+	if options != nil {
+		if withLabels && (options.LabelSelector != nil) {
+			labelSelector = options.LabelSelector
+		}
+		if options.FieldSelector != nil {
+			fieldSelector = options.FieldSelector
+		}
+	}
+
+	return storage.SelectionPredicate{
+		Label: labelSelector,
+		Field: fieldSelector,
+		GetAttrs: func(object runtime.Object) (labels.Set, fields.Set, error) {
+			if fields, err := self.GetFieldsFunc(object); err == nil {
+				return nil, fields, nil
+			} else {
+				return nil, nil, err
+			}
+		},
+		//GetAttrs: storage.DefaultClusterScopedAttr,
+	}
+}
+
+func ToMetadataPatterns(options *metainternalversion.ListOptions) (map[string]string, error) {
+	if (options == nil) || (options.LabelSelector == nil) {
+		return nil, nil
+	}
+
+	metadataPatterns := make(map[string]string)
+	if requirements, ok := options.LabelSelector.Requirements(); ok {
+		for _, requirement := range requirements {
+			if values := requirement.Values(); (values != nil) && (values.Len() > 0) {
+				// TODO: handle more than one value?
+				value := values.UnsortedList()[0]
+				if value_, err := tkoutil.FromKubernetesName(value); err == nil {
+					if key, err := tkoutil.FromKubernetesName(requirement.Key()); err == nil {
+						metadataPatterns[key] = value_
+					} else {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
+			}
+		}
+	}
+	return metadataPatterns, nil
 }

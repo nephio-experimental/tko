@@ -83,7 +83,7 @@ func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSites
 		MetadataPatterns:   listSites.Select.MetadataPatterns,
 	}, backend.Window{
 		Offset:   uint(listSites.Window.Offset),
-		MaxCount: uint(listSites.Window.MaxCount),
+		MaxCount: int(listSites.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(siteInfoResults, func(siteInfo backend.SiteInfo) error {
 			return server.Send(&api.ListedSite{

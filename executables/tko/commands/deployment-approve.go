@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	clientpkg "github.com/nephio-experimental/tko/api/grpc-client"
+	"github.com/nephio-experimental/tko/backend"
+	"github.com/nephio-experimental/tko/backend/validating"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/util"
@@ -40,6 +42,8 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 
 	client := NewClient()
 
+	// TODO: it would be more efficient to add an ApproveDeployments API to the backend
+
 	if deploymentId != "" {
 		deploymentInfos = util.NewResultsSlice([]clientpkg.DeploymentInfo{{DeploymentID: deploymentId}})
 	} else {
@@ -62,10 +66,8 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 		FailOnGRPCError(err)
 	}
 
-	empty := true
-	util.FailOnError(util.IterateResults(deploymentInfos, func(deploymentInfo clientpkg.DeploymentInfo) error {
-		empty = false
-		if approved, err := client.ModifyDeployment(deploymentInfo.DeploymentID, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
+	approver := util.NewParallelExecutor(validating.ParallelBufferSize, func(deploymentId string) error {
+		if approved, err := client.ModifyDeployment(deploymentId, func(package_ tkoutil.Package) (bool, tkoutil.Package, error) {
 			if deployment, ok := tkoutil.DeploymentResourceIdentifier.GetResource(package_); ok {
 				if tkoutil.SetApprovedAnnotation(deployment, true) {
 					return true, package_, nil
@@ -77,15 +79,30 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 			}
 		}); err == nil {
 			if approved {
-				Print(fmt.Sprintf("approved: %s", deploymentInfo.DeploymentID))
+				Print(fmt.Sprintf("approved: %s", deploymentId))
 			} else {
-				Print(fmt.Sprintf("already approved: %s", deploymentInfo.DeploymentID))
+				Print(fmt.Sprintf("already approved: %s", deploymentId))
 			}
 			return nil
 		} else {
+			// Swallow not-found errors
+			if backend.IsNotFoundError(err) {
+				return nil
+			}
 			return err
 		}
+	})
+
+	approver.Start(validating.ParallelWorkers)
+
+	empty := true
+	util.FailOnError(util.IterateResults(deploymentInfos, func(deploymentInfo clientpkg.DeploymentInfo) error {
+		empty = false
+		approver.Queue(deploymentInfo.DeploymentID)
+		return nil
 	}))
+
+	util.FailOnError(errors.Join(approver.Wait()...))
 
 	if empty {
 		Print("no deployments to approve")

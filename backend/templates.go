@@ -98,3 +98,12 @@ func (self *Template) RemoveDeployment(deploymentId string) bool {
 	self.DeploymentIDs, ok = util.RemoveFromStringSet(self.DeploymentIDs, deploymentId)
 	return ok
 }
+
+//
+// SelectTemplates
+//
+
+type SelectTemplates struct {
+	TemplateIDPatterns []string
+	MetadataPatterns   map[string]string
+}

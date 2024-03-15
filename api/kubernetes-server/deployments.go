@@ -11,12 +11,11 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
+	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/storage"
 )
 
 func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -37,6 +36,20 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 		NewListObjectFunc: func() runtime.Object {
 			return new(krm.DeploymentList)
+		},
+
+		GetFieldsFunc: func(object runtime.Object) (fields.Set, error) {
+			if krmDeployment, ok := object.(*krm.Deployment); ok {
+				fields := fields.Set{
+					"metadata.name": krmDeployment.Name,
+				}
+				if krmDeployment.Spec.TemplateId != nil {
+					fields["spec.templateId"] = *krmDeployment.Spec.TemplateId
+				}
+				return fields, nil
+			} else {
+				return nil, fmt.Errorf("not a deployment: %T", object)
+			}
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
@@ -93,12 +106,17 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmDeploymentList krm.DeploymentList
-			krmDeploymentList.APIVersion = APIVersion
-			krmDeploymentList.Kind = "DeploymentList"
 
-			if results, err := store.Backend.ListDeployments(context, backendpkg.SelectDeployments{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
+			var metadataPatterns map[string]string
+			var err error
+			if metadataPatterns, err = ToMetadataPatterns(options); err != nil {
+				return nil, err
+			}
+			selectionPredicate := store.NewSelectionPredicate(options, false)
+
+			if results, err := store.Backend.ListDeployments(context, backendpkg.SelectDeployments{MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(deploymentInfo backendpkg.DeploymentInfo) error {
 					if krmDeployment, err := DeploymentInfoToKRM(&deploymentInfo); err == nil {
 						if ok, err := selectionPredicate.Matches(krmDeployment); err == nil {
@@ -119,6 +137,8 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
+			krmDeploymentList.APIVersion = APIVersion
+			krmDeploymentList.Kind = "DeploymentList"
 			return &krmDeploymentList, nil
 		},
 
@@ -172,23 +192,6 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 			return table, nil
 		},
-
-		GetAttrFunc: func(object runtime.Object) (labels.Set, fields.Set, error) {
-			if krmDeployment, ok := object.(*krm.Deployment); ok {
-				labels := labels.Set(krmDeployment.Labels)
-
-				fields := fields.Set{
-					"metadata.name": krmDeployment.Name,
-				}
-				if krmDeployment.Spec.TemplateId != nil {
-					fields["spec.templateId"] = *krmDeployment.Spec.TemplateId
-				}
-
-				return labels, fields, nil
-			} else {
-				return nil, nil, fmt.Errorf("not a deployment: %T", object)
-			}
-		},
 	}
 
 	store.Init()
@@ -219,7 +222,7 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (*krm.Deploy
 	krmDeployment.UID = types.UID("tko|deployment|" + deploymentInfo.DeploymentID)
 	krmDeployment.CreationTimestamp = meta.NewTime(deploymentInfo.Created)
 	krmDeployment.ResourceVersion = ToResourceVersion(deploymentInfo.Updated)
-	krmDeployment.Labels = deploymentInfo.Metadata
+	krmDeployment.Labels, _ = tkoutil.ToKubernetesNames(deploymentInfo.Metadata)
 
 	deploymentId := deploymentInfo.DeploymentID
 	krmDeployment.Spec.DeploymentId = &deploymentId
@@ -270,11 +273,13 @@ func DeploymentFromKRM(object runtime.Object) (*backendpkg.Deployment, error) {
 	deployment := backendpkg.Deployment{
 		DeploymentInfo: backendpkg.DeploymentInfo{
 			DeploymentID: deploymentId,
-			Metadata:     krmDeployment.Labels,
 			Created:      krmDeployment.CreationTimestamp.Time,
 			Updated:      updated,
 		},
 	}
+
+	deployment.Metadata, _ = tkoutil.FromKubernetesNames(krmDeployment.Labels)
+	deployment.Package = PackageFromKRM(krmDeployment.Spec.Package)
 
 	if krmDeployment.Spec.ParentDeploymentId != nil {
 		deployment.ParentDeploymentID = *krmDeployment.Spec.ParentDeploymentId
@@ -295,8 +300,6 @@ func DeploymentFromKRM(object runtime.Object) (*backendpkg.Deployment, error) {
 	if krmDeployment.Status.Approved != nil {
 		deployment.Approved = *krmDeployment.Status.Approved
 	}
-
-	deployment.Package = PackageFromKRM(krmDeployment.Spec.Package)
 
 	return &deployment, nil
 }

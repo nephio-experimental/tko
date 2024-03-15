@@ -79,7 +79,7 @@ func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.A
 		MetadataPatterns:   listTemplates.Select.MetadataPatterns,
 	}, backend.Window{
 		Offset:   uint(listTemplates.Window.Offset),
-		MaxCount: uint(listTemplates.Window.MaxCount),
+		MaxCount: int(listTemplates.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
 			return server.Send(&api.ListedTemplate{

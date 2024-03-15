@@ -13,15 +13,25 @@ const KubernetesNameEscapeRune rune = '-'
 var KubernetesNameAllowedRE = regexp.MustCompile(`[^0-9A-Za-z\.]`)
 var KubernetesNameEscapeString = runeToString(KubernetesNameEscapeRune)
 
+// Name rules:
+//   https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
+
+// Label rules:
+//   https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+//
+// A valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start
+// and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation
+// is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')
+
 // Converts an arbitrary string into a valid Kubernetes name, if possible.
 // This works by escaping illegal characters using "-" plus the Unicode code
 // in hex, left-padded with spaces to 4 characters.
 //
 // If the result is longer than is allows (253 characters), returns an error.
 func ToKubernetesName(name string) (string, error) {
-	escapedName := escapeName(name)
-	if length := len(escapedName); length <= KubernetesNameMaxLength {
-		return escapedName, nil
+	kubernetesName := escapeName(name)
+	if length := len(kubernetesName); length <= KubernetesNameMaxLength {
+		return kubernetesName, nil
 	} else {
 		return "", fmt.Errorf("Kubernetes name too long: %d", length)
 	}
@@ -31,9 +41,9 @@ func ToKubernetesName(name string) (string, error) {
 // by unescaping the escape sequences.
 //
 // Will return an error if an escape sequence is malformed.
-func FromKubernetesName(escapedName string) (string, error) {
+func FromKubernetesName(kubernetesName string) (string, error) {
 	var builder strings.Builder
-	runes := []rune(escapedName)
+	runes := []rune(kubernetesName)
 	length := len(runes)
 	for index := 0; index < length; index++ {
 		r := runes[index]
@@ -41,7 +51,7 @@ func FromKubernetesName(escapedName string) (string, error) {
 			if r, err := hexToRune(runes[index+1 : index+5]); err == nil {
 				builder.WriteRune(r)
 			} else {
-				return "", fmt.Errorf("malformed escaped Kubernetes name: %s, %w", escapedName, err)
+				return "", fmt.Errorf("malformed escaped Kubernetes name: %s, %w", kubernetesName, err)
 			}
 			index += 4
 		} else {
@@ -49,6 +59,48 @@ func FromKubernetesName(escapedName string) (string, error) {
 		}
 	}
 	return builder.String(), nil
+}
+
+func ToKubernetesNames(map_ map[string]string) (map[string]string, error) {
+	if map_ == nil {
+		return nil, nil
+	}
+
+	kubernetesMap := make(map[string]string)
+	for key, value := range map_ {
+		var err error
+		if key, err = ToKubernetesName(key); err == nil {
+			if value, err = ToKubernetesName(value); err == nil {
+				kubernetesMap[key] = value
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	return kubernetesMap, nil
+}
+
+func FromKubernetesNames(kubernetesMap map[string]string) (map[string]string, error) {
+	if kubernetesMap == nil {
+		return nil, nil
+	}
+
+	map_ := make(map[string]string)
+	for key, value := range kubernetesMap {
+		var err error
+		if key, err = FromKubernetesName(key); err == nil {
+			if value, err = FromKubernetesName(value); err == nil {
+				map_[key] = value
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	return map_, nil
 }
 
 // Utils

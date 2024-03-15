@@ -13,6 +13,7 @@ import (
 	"github.com/nephio-experimental/tko/backend/memory"
 	"github.com/nephio-experimental/tko/backend/spanner"
 	"github.com/nephio-experimental/tko/backend/sql"
+	"github.com/nephio-experimental/tko/backend/validating"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	validationpkg "github.com/nephio-experimental/tko/validation"
 	"github.com/spf13/cobra"
@@ -146,7 +147,7 @@ func Serve() {
 	util.FailOnError(err)
 	validationTicker := tkoutil.NewTicker(ResetValidationPluginCacheFrequency, validation.ResetPluginCache)
 	util.OnExit(validationTicker.Stop)
-	backend = backendpkg.NewValidatingBackend(backend, validation)
+	backend = validating.NewValidatingBackend(backend, validation)
 
 	util.FailOnError(func() error {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), tkoutil.SecondsToDuration(backendConnectTimeout))

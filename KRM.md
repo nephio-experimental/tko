@@ -52,11 +52,16 @@ wrap it in quotes so that your shell won't interpret the `|`:
     tko name to 'validate|free5gc/smf'
     > validate-007cfree5gc-002fsmf
 
-Finally, deployment names have special semantics. When you create a new deployment, e.g. with
-`kubectl create`, the KRM name is discarded, because the backend will generate a UUID for the
-name. So, simply write in a placeholder name, e.g. `placeholder-1`. However, note that every time
-you create it, it will create a brand new deployment, even though you are using the same placeholder
-name!
+You can use `tko name` inside a Bash expression, like so:
+
+    kubectl get plugin $(tko name to 'validate|free5gc/smf')
+
+Finally, note that deployment names have special semantics. When you create a new deployment, e.g.
+with `kubectl create`, the KRM name is discarded, because the backend will generate a new random ID
+for the name. So, simply write in a placeholder name, e.g. `placeholder-1`. However, note that every
+time you create it, it will create a brand new deployment, even though you are using the same
+placeholder name! This is similar to using
+[`generateName`](https://kubernetes.io/docs/reference/using-api/api-concepts/#generated-values).
 
 `kubectl apply` will *never* create new deployments and is *only* used for updates, in which case
 you *do* need to specify the correct name and *also* the correct `metadata.resourceVersion`, which
@@ -73,22 +78,32 @@ Or, do it all in one step using `kubectl edit`.
 Metadata
 --------
 
-Metadata for templates, sites, and deployments are all represented as KRM labels. Example:
+Metadata for templates, sites, and deployments are all represented as KRM labels.
+
+However, note that KRM labels (both keys and values) have similar restrictions to names, thus they
+must also be translated back and forth using `tko name`.
+
+Example:
 
 ```yaml
 apiVersion: tko.nephio.org/v1alpha1
 kind: Template
 
 metadata:
-  name: k8s-002fhello-003av1.0.0 # k8s/hello:v1.0.0
+  name: site-002fgdce-003av1.0.0 # site/gdce:v1.0.0
   labels:
-    m1: hello
-    m2: world
+    Site.cloud: GDC-002dE # GDC-E
+    Site.region: chicago
+    type: site
 ```
 
 You can use label selectors to filter your results:
 
-    kubectl get template --selector m1=hello
+    kubectl get template --selector Site.cloud=$(tko name to GDC-E)
+
+Also note that the filter accepts wildcards:
+
+    kubectl get template --selector Site.cloud=$(tko name to G*)
 
 Packages
 --------

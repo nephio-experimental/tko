@@ -143,3 +143,18 @@ func (self *Deployment) MergeTemplate(template *Template) {
 func (self *Deployment) MergeDeploymentResource() {
 	self.Package = util.MergePackage(self.Package, self.NewDeploymentResource())
 }
+
+//
+// SelectDeployments
+//
+
+type SelectDeployments struct {
+	ParentDeploymentID       *string
+	TemplateIDPatterns       []string
+	TemplateMetadataPatterns map[string]string
+	SiteIDPatterns           []string
+	SiteMetadataPatterns     map[string]string
+	MetadataPatterns         map[string]string
+	Prepared                 *bool
+	Approved                 *bool
+}

@@ -86,7 +86,7 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 		Trigger:      tkoutil.TriggerFromAPI(listPlugins.Select.Trigger),
 	}, backend.Window{
 		Offset:   uint(listPlugins.Window.Offset),
-		MaxCount: uint(listPlugins.Window.MaxCount),
+		MaxCount: int(listPlugins.Window.MaxCount),
 	}); err == nil {
 		if err := util.IterateResults(pluginResults, func(plugin backend.Plugin) error {
 			return server.Send(&api.Plugin{

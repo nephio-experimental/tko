@@ -93,3 +93,14 @@ func SortPlugins(plugins []Plugin) {
 		}
 	})
 }
+
+//
+// SelectPlugins
+//
+
+type SelectPlugins struct {
+	Type         *string
+	NamePatterns []string
+	Executor     *string
+	Trigger      *util.GVK
+}

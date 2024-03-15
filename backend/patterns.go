@@ -42,10 +42,20 @@ func PatternRE(pattern string) string {
 	var re strings.Builder
 	re.WriteRune('^')
 
-	for _, rune_ := range pattern {
+	pattern_ := []rune(pattern)
+	length := len(pattern_)
+	for index := 0; index < length; index++ {
+		rune_ := pattern_[index]
 		switch rune_ {
+		case '\\':
+			// Escape
+			if index < length-1 {
+				index++
+			}
+
 		case '*':
 			re.WriteString(`.*`)
+
 		default:
 			re.WriteString(regexp.QuoteMeta(string(rune_)))
 		}
@@ -53,6 +63,10 @@ func PatternRE(pattern string) string {
 
 	re.WriteRune('$')
 	return re.String()
+}
+
+func EscapePatternRE(s string) string {
+	return strings.ReplaceAll(s, "*", "\\*")
 }
 
 func IDMatchesPattern(s string, pattern string) bool {
@@ -64,10 +78,16 @@ func IDPatternRE(pattern string) string {
 	re.WriteRune('^')
 
 	pattern_ := []rune(pattern)
-	length := len(pattern)
+	length := len(pattern_)
 	for index := 0; index < length; index++ {
 		rune_ := pattern_[index]
 		switch rune_ {
+		case '\\':
+			// Escape
+			if index < length-1 {
+				index++
+			}
+
 		case '*':
 			if (index < length-1) && (pattern_[index+1] == '*') {
 				// Double asterisk crosses "/" and ":" boundaries
@@ -76,6 +96,7 @@ func IDPatternRE(pattern string) string {
 			} else {
 				re.WriteString(`[0-9A-Za-z_.\-]*`)
 			}
+
 		default:
 			re.WriteString(regexp.QuoteMeta(string(rune_)))
 		}

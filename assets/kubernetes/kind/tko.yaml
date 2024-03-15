@@ -6,9 +6,9 @@ nodes:
 - role: control-plane
   extraMounts:
   - containerPath: /mnt/postgresql
-    hostPath: /tmp/tko-postgresql # will be owned by root user
+    hostPath: /tmp/tko-postgresql # will be created by root user
   - containerPath: /mnt/docker
-    hostPath: /tmp/tko-docker # will be owned by root user
+    hostPath: /tmp/tko-docker # will be created by root user
   extraPortMappings:
   - containerPort: 30050
     hostPort: 30050

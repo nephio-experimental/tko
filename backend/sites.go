@@ -125,3 +125,13 @@ func (self *Site) MergeTemplate(template *Template) {
 
 	self.Package = package_
 }
+
+//
+// SelectSites
+//
+
+type SelectSites struct {
+	SiteIDPatterns     []string
+	TemplateIDPatterns []string
+	MetadataPatterns   map[string]string
+}

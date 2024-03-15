@@ -10,12 +10,11 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
+	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/storage"
 )
 
 func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -36,6 +35,26 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 		NewListObjectFunc: func() runtime.Object {
 			return new(krm.PluginList)
+		},
+
+		GetFieldsFunc: func(object runtime.Object) (fields.Set, error) {
+			if krmPlugin, ok := object.(*krm.Plugin); ok {
+				fields := fields.Set{
+					"metadata.name": krmPlugin.Name,
+				}
+				if krmPlugin.Spec.Type != nil {
+					fields["spec.type"] = *krmPlugin.Spec.Type
+				}
+				if krmPlugin.Spec.PluginId != nil {
+					fields["spec.pluginId"] = *krmPlugin.Spec.PluginId
+				}
+				if krmPlugin.Spec.Executor != nil {
+					fields["spec.executor"] = *krmPlugin.Spec.Executor
+				}
+				return fields, nil
+			} else {
+				return nil, fmt.Errorf("not a plugin: %T", object)
+			}
 		},
 
 		CreateFunc: func(context contextpkg.Context, store *Store, object runtime.Object) (runtime.Object, error) {
@@ -84,12 +103,11 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, selectionPredicate *storage.SelectionPredicate, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmPluginList krm.PluginList
-			krmPluginList.APIVersion = APIVersion
-			krmPluginList.Kind = "PluginList"
+			selectionPredicate := store.NewSelectionPredicate(options, false)
 
-			if results, err := store.Backend.ListPlugins(context, backendpkg.SelectPlugins{}, backendpkg.Window{Offset: offset, MaxCount: maxCount}); err == nil {
+			if results, err := store.Backend.ListPlugins(context, backendpkg.SelectPlugins{}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(plugin backendpkg.Plugin) error {
 					if krmPlugin, err := PluginToKRM(&plugin); err == nil {
 						if ok, err := selectionPredicate.Matches(krmPlugin); err == nil {
@@ -110,6 +128,8 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 				return nil, err
 			}
 
+			krmPluginList.APIVersion = APIVersion
+			krmPluginList.Kind = "PluginList"
 			return &krmPluginList, nil
 		},
 
@@ -147,26 +167,6 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 
 			return table, nil
-		},
-
-		GetAttrFunc: func(object runtime.Object) (labels.Set, fields.Set, error) {
-			if krmPlugin, ok := object.(*krm.Plugin); ok {
-				fields := fields.Set{
-					"metadata.name": krmPlugin.Name,
-				}
-				if krmPlugin.Spec.Type != nil {
-					fields["spec.type"] = *krmPlugin.Spec.Type
-				}
-				if krmPlugin.Spec.PluginId != nil {
-					fields["spec.pluginId"] = *krmPlugin.Spec.PluginId
-				}
-				if krmPlugin.Spec.Executor != nil {
-					fields["spec.executor"] = *krmPlugin.Spec.Executor
-				}
-				return nil, fields, nil
-			} else {
-				return nil, nil, fmt.Errorf("not a plugin: %T", object)
-			}
 		},
 	}
 
