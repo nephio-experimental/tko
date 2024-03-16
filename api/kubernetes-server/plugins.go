@@ -76,7 +76,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 		DeleteFunc: func(context contextpkg.Context, store *Store, id string) error {
 			pluginId, ok := backendpkg.ParsePluginID(id)
 			if !ok {
-				return fmt.Errorf("malformed plugin ID: %s", id)
+				return backendpkg.NewBadArgumentErrorf("malformed plugin ID: %s", id)
 			}
 
 			return store.Backend.DeletePlugin(context, pluginId)
@@ -89,7 +89,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 		GetFunc: func(context contextpkg.Context, store *Store, id string) (runtime.Object, error) {
 			pluginId, ok := backendpkg.ParsePluginID(id)
 			if !ok {
-				return nil, fmt.Errorf("malformed plugin ID: %s", id)
+				return nil, backendpkg.NewBadArgumentErrorf("malformed plugin ID: %s", id)
 			}
 
 			if plugin, err := store.Backend.GetPlugin(context, pluginId); err == nil {
@@ -105,19 +105,33 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 
 		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmPluginList krm.PluginList
-			selectionPredicate := store.NewSelectionPredicate(options, false)
 
-			if results, err := store.Backend.ListPlugins(context, backendpkg.SelectPlugins{}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
+			id, err := IDFromListOptions(options)
+			if err != nil {
+				return nil, err
+			}
+
+			if id != nil {
+				// Get single plugin
+				pluginId, ok := backendpkg.ParsePluginID(*id)
+				if !ok {
+					return nil, backendpkg.NewBadArgumentErrorf("malformed plugin ID: %s", *id)
+				}
+
+				if plugin, err := store.Backend.GetPlugin(context, pluginId); err == nil {
+					if krmPlugin, err := PluginToKRM(plugin); err == nil {
+						krmPluginList.Items = []krm.Plugin{*krmPlugin}
+					} else {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
+			} else if results, err := store.Backend.ListPlugins(context, backendpkg.SelectPlugins{}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(plugin backendpkg.Plugin) error {
 					if krmPlugin, err := PluginToKRM(&plugin); err == nil {
-						if ok, err := selectionPredicate.Matches(krmPlugin); err == nil {
-							if ok {
-								krmPluginList.Items = append(krmPluginList.Items, *krmPlugin)
-							}
-							return nil
-						} else {
-							return err
-						}
+						krmPluginList.Items = append(krmPluginList.Items, *krmPlugin)
+						return nil
 					} else {
 						return err
 					}

@@ -56,6 +56,10 @@ You can use `tko name` inside a Bash expression, like so:
 
     kubectl get plugin $(tko name to 'validate|free5gc/smf')
 
+Note that you can select by the `metadata.name` field, which also accepts wildcards:
+
+    kubectl get template --field-selector=metadata.name=$(tko name to nf/**)
+
 Finally, note that deployment names have special semantics. When you create a new deployment, e.g.
 with `kubectl create`, the KRM name is discarded, because the backend will generate a new random ID
 for the name. So, simply write in a placeholder name, e.g. `placeholder-1`. However, note that every
@@ -69,9 +73,9 @@ TKO will use to verify that other changes haven't been made before yours. These 
 proper KRM update semantics. Thus, the update workflow is to first retrieve (this will get you the
 latest `resourceVersion`), then edit, then apply:
 
-    kubectl get deployment.tko/2d4fkjPFRYDKnvNGgKpuZs7kwGQ -o yaml > d.yaml
+    kubectl get deployment.tko/2d4fkjPFRYDKnvNGgKpuZs7kwGQ --output=yaml > d.yaml
     (edit d.yaml)
-    kubectl apply -f d.yaml
+    kubectl apply --filename=d.yaml
 
 Or, do it all in one step using `kubectl edit`.
 
@@ -99,17 +103,17 @@ metadata:
 
 You can use label selectors to filter your results:
 
-    kubectl get template --selector Site.cloud=$(tko name to GDC-E)
+    kubectl get template --selector=Site.cloud=$(tko name to GDC-E)
 
 Also note that the filter accepts wildcards:
 
-    kubectl get template --selector Site.cloud=$(tko name to G*)
+    kubectl get template --selector=Site.cloud=$(tko name to G*)
 
 Packages
 --------
 
-KRM packages for templates, sites, and deployments are in the `spec` under the
-`package.resources` list, and are simply agnostic raw data. Example in YAML:
+KRM packages for templates, sites, and deployments are in the `spec` under the `package.resources`
+list, and are simply agnostic raw data. Example in YAML:
 
 ```yaml
 apiVersion: tko.nephio.org/v1alpha1

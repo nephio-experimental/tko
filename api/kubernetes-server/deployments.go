@@ -109,24 +109,35 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmDeploymentList krm.DeploymentList
 
-			var metadataPatterns map[string]string
-			var err error
-			if metadataPatterns, err = ToMetadataPatterns(options); err != nil {
+			metadataPatterns, err := MetadataPatternsFromListOptions(options)
+			if err != nil {
 				return nil, err
 			}
-			selectionPredicate := store.NewSelectionPredicate(options, false)
 
-			if results, err := store.Backend.ListDeployments(context, backendpkg.SelectDeployments{MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
+			id, err := IDFromListOptions(options)
+			if err != nil {
+				return nil, err
+			}
+
+			if id != nil {
+				// Get single deployment
+				if deployment, err := store.Backend.GetDeployment(context, *id); err == nil {
+					// Make sure it matches metadata
+					if backendpkg.MetadataMatchesPatterns(deployment.Metadata, metadataPatterns) {
+						if krmDeployment, err := DeploymentToKRM(deployment); err == nil {
+							krmDeploymentList.Items = []krm.Deployment{*krmDeployment}
+						} else {
+							return nil, err
+						}
+					}
+				} else {
+					return nil, err
+				}
+			} else if results, err := store.Backend.ListDeployments(context, backendpkg.SelectDeployments{MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(deploymentInfo backendpkg.DeploymentInfo) error {
 					if krmDeployment, err := DeploymentInfoToKRM(&deploymentInfo); err == nil {
-						if ok, err := selectionPredicate.Matches(krmDeployment); err == nil {
-							if ok {
-								krmDeploymentList.Items = append(krmDeploymentList.Items, *krmDeployment)
-							}
-							return nil
-						} else {
-							return err
-						}
+						krmDeploymentList.Items = append(krmDeploymentList.Items, *krmDeployment)
+						return nil
 					} else {
 						return err
 					}

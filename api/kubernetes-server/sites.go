@@ -90,24 +90,20 @@ func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
 		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmSiteList krm.SiteList
 
-			var metadataPatterns map[string]string
-			var err error
-			if metadataPatterns, err = ToMetadataPatterns(options); err != nil {
+			idPatterns, err := IDPatternsFromListOptions(options)
+			if err != nil {
 				return nil, err
 			}
-			selectionPredicate := store.NewSelectionPredicate(options, false)
+			metadataPatterns, err := MetadataPatternsFromListOptions(options)
+			if err != nil {
+				return nil, err
+			}
 
-			if results, err := store.Backend.ListSites(context, backendpkg.SelectSites{MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
+			if results, err := store.Backend.ListSites(context, backendpkg.SelectSites{SiteIDPatterns: idPatterns, MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(siteInfo backendpkg.SiteInfo) error {
 					if krmSite, err := SiteInfoToKRM(&siteInfo); err == nil {
-						if ok, err := selectionPredicate.Matches(krmSite); err == nil {
-							if ok {
-								krmSiteList.Items = append(krmSiteList.Items, *krmSite)
-							}
-							return nil
-						} else {
-							return err
-						}
+						krmSiteList.Items = append(krmSiteList.Items, *krmSite)
+						return nil
 					} else {
 						return err
 					}

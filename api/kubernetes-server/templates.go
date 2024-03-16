@@ -86,24 +86,20 @@ func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
 		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmTemplateList krm.TemplateList
 
-			var metadataPatterns map[string]string
-			var err error
-			if metadataPatterns, err = ToMetadataPatterns(options); err != nil {
+			idPatterns, err := IDPatternsFromListOptions(options)
+			if err != nil {
 				return nil, err
 			}
-			selectionPredicate := store.NewSelectionPredicate(options, false)
+			metadataPatterns, err := MetadataPatternsFromListOptions(options)
+			if err != nil {
+				return nil, err
+			}
 
-			if results, err := store.Backend.ListTemplates(context, backendpkg.SelectTemplates{MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
+			if results, err := store.Backend.ListTemplates(context, backendpkg.SelectTemplates{TemplateIDPatterns: idPatterns, MetadataPatterns: metadataPatterns}, backendpkg.Window{Offset: offset, MaxCount: int(maxCount)}); err == nil {
 				if err := util.IterateResults(results, func(templateInfo backendpkg.TemplateInfo) error {
 					if krmTemplate, err := TemplateInfoToKRM(&templateInfo); err == nil {
-						if ok, err := selectionPredicate.Matches(krmTemplate); err == nil {
-							if ok {
-								krmTemplateList.Items = append(krmTemplateList.Items, *krmTemplate)
-							}
-							return nil
-						} else {
-							return err
-						}
+						krmTemplateList.Items = append(krmTemplateList.Items, *krmTemplate)
+						return nil
 					} else {
 						return err
 					}
