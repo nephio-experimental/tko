@@ -8,7 +8,6 @@ import (
 	"github.com/nephio-experimental/tko/backend"
 	tkoutil "github.com/nephio-experimental/tko/util"
 	validationpkg "github.com/nephio-experimental/tko/validation"
-	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
 
@@ -67,7 +66,7 @@ func (self *SQLBackend) GetDeployment(context contextpkg.Context, deploymentId s
 	if err != nil {
 		return nil, err
 	}
-	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
+	defer self.closeRows(rows)
 
 	if rows.Next() {
 		var parentDeploymentId, templateId, siteId *string
@@ -112,61 +111,61 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, selectDeploy
 	args.AddValue(window.MaxCount)
 
 	if (selectDeployments.ParentDeploymentID != nil) && (*selectDeployments.ParentDeploymentID != "") {
-		where.Add("parent_deployment_id = " + args.Add(selectDeployments.ParentDeploymentID))
+		where.Add(`parent_deployment_id = ` + args.Add(selectDeployments.ParentDeploymentID))
 	}
 
-	if selectDeployments.MetadataPatterns != nil {
+	if len(selectDeployments.MetadataPatterns) > 0 {
 		for key, pattern := range selectDeployments.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("SELECT deployment_id FROM deployments_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
-				"deployments", "deployment_id")
+			with.Add(`SELECT deployment_id FROM deployments_metadata WHERE (key = `+key+`) AND (value ~ `+pattern+`)`,
+				`deployments`, `deployment_id`)
 		}
 	}
 
 	for _, pattern := range selectDeployments.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("deployments.template_id ~ " + pattern)
+		where.Add(`deployments.template_id ~ ` + pattern)
 	}
 
-	if selectDeployments.TemplateMetadataPatterns != nil {
+	if len(selectDeployments.TemplateMetadataPatterns) > 0 {
 		for key, pattern := range selectDeployments.TemplateMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("SELECT template_id FROM templates_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
-				"deployments", "template_id")
+			with.Add(`SELECT template_id FROM templates_metadata WHERE (key = `+key+`) AND (value ~ `+pattern+`)`,
+				`deployments`, `template_id`)
 		}
 	}
 
 	for _, pattern := range selectDeployments.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("deployments.site_id ~ " + pattern)
+		where.Add(`deployments.site_id ~ ` + pattern)
 	}
 
-	if selectDeployments.SiteMetadataPatterns != nil {
+	if len(selectDeployments.SiteMetadataPatterns) > 0 {
 		for key, pattern := range selectDeployments.SiteMetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
-				"deployments", "site_id")
+			with.Add(`SELECT site_id FROM sites_metadata WHERE (key = `+key+`) AND (value ~ `+pattern+`)`,
+				`deployments`, `site_id`)
 		}
 	}
 
 	if selectDeployments.Prepared != nil {
 		switch *selectDeployments.Prepared {
 		case true:
-			where.Add("prepared")
+			where.Add(`prepared`)
 		case false:
-			where.Add("NOT prepared")
+			where.Add(`NOT prepared`)
 		}
 	}
 
 	if selectDeployments.Approved != nil {
 		switch *selectDeployments.Approved {
 		case true:
-			where.Add("approved")
+			where.Add(`approved`)
 		case false:
-			where.Add("NOT approved")
+			where.Add(`NOT approved`)
 		}
 	}
 
@@ -184,8 +183,6 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, selectDeploy
 	})
 
 	go func() {
-		defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
-
 		for rows.Next() {
 			var deploymentId string
 			var parentDeploymentId, templateId, siteId *string
@@ -213,7 +210,77 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, selectDeploy
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) PurgeDeployments(context contextpkg.Context, selectDeployments backend.SelectDeployments) error {
-	return backend.NewNotImplementedError("PurgeDeployments")
+	sql := self.statements.DeleteDeployments
+	var args SqlArgs
+	var where SqlWhere
+
+	if (selectDeployments.ParentDeploymentID != nil) && (*selectDeployments.ParentDeploymentID != "") {
+		where.Add(`parent_deployment_id = ` + args.Add(selectDeployments.ParentDeploymentID))
+	}
+
+	if len(selectDeployments.MetadataPatterns) > 0 {
+		where.Add(`deployments.deployment_id = deployments_metadata.deployment_id`)
+		for key, pattern := range selectDeployments.MetadataPatterns {
+			key = args.Add(key)
+			pattern = args.Add(backend.PatternRE(pattern))
+			where.Add(`deployments_metadata.key = ` + key)
+			where.Add(`deployments_metadata.value ~ ` + pattern)
+		}
+	}
+
+	for _, pattern := range selectDeployments.TemplateIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
+		where.Add(`template_id ~ ` + pattern)
+	}
+
+	if len(selectDeployments.TemplateMetadataPatterns) > 0 {
+		where.Add(`deployments.template_id = templates_metadata.template_id`)
+		for key, pattern := range selectDeployments.TemplateMetadataPatterns {
+			key = args.Add(key)
+			pattern = args.Add(backend.PatternRE(pattern))
+			where.Add(`templates_metadata.key = ` + key)
+			where.Add(`templates_metadata.value ~ ` + pattern)
+		}
+	}
+
+	for _, pattern := range selectDeployments.SiteIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
+		where.Add(`deployments.site_id ~ ` + pattern)
+	}
+
+	if len(selectDeployments.SiteMetadataPatterns) > 0 {
+		where.Add(`deployments.site_id = sites_metadata.site_id`)
+		for key, pattern := range selectDeployments.TemplateMetadataPatterns {
+			key = args.Add(key)
+			pattern = args.Add(backend.PatternRE(pattern))
+			where.Add(`sites_metadata.key = ` + key)
+			where.Add(`sites_metadata.value ~ ` + pattern)
+		}
+	}
+
+	if selectDeployments.Prepared != nil {
+		switch *selectDeployments.Prepared {
+		case true:
+			where.Add(`prepared`)
+		case false:
+			where.Add(`NOT prepared`)
+		}
+	}
+
+	if selectDeployments.Approved != nil {
+		switch *selectDeployments.Approved {
+		case true:
+			where.Add(`approved`)
+		case false:
+			where.Add(`NOT approved`)
+		}
+	}
+
+	sql = where.Apply(sql)
+	self.log.Debugf("generated SQL:\n%s", sql)
+
+	_, err := self.db.ExecContext(context, sql, args.Args...)
+	return err
 }
 
 // ([backend.Backend] interface)

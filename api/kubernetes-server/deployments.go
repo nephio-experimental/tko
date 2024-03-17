@@ -11,7 +11,7 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
-	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +28,6 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 		TypeSingular:      "deployment",
 		TypePlural:        "deployments",
 		CanCreateOnUpdate: false,
-		ObjectTyper:       Scheme,
 
 		NewObjectFunc: func() runtime.Object {
 			return new(krm.Deployment)
@@ -106,7 +105,7 @@ func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, options *internalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmDeploymentList krm.DeploymentList
 
 			metadataPatterns, err := MetadataPatternsFromListOptions(options)

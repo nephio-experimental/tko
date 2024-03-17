@@ -93,13 +93,13 @@ func (self *SQLBackend) String() string {
 
 func (self *SQLBackend) rollback(tx *sql.Tx) {
 	if err := tx.Rollback(); err != nil {
-		self.log.Error(err.Error())
+		self.log.Error("tx.Rollback: " + err.Error())
 	}
 }
 
 func (self *SQLBackend) closeRows(rows *sql.Rows) {
 	if err := rows.Close(); err != nil {
-		self.log.Error(err.Error())
+		self.log.Error("rows.Close: " + err.Error())
 	}
 }
 

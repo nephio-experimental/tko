@@ -107,12 +107,10 @@ func insertSqlBefpre(sql string, place string, insert string) string {
 		return sql
 	} else if place == "" {
 		return sql + "\n" + insert
+	} else if p := strings.Index(sql, place); p == -1 {
+		return sql + "\n" + insert
 	} else {
-		if p := strings.Index(sql, place); p == -1 {
-			return sql + "\n" + insert
-		} else {
-			return sql[:p] + insert + "\n" + sql[p:]
-		}
+		return sql[:p] + insert + "\n" + sql[p:]
 	}
 }
 

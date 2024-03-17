@@ -1,6 +1,6 @@
 ARG ALPINE_VERSION=latest
 
-FROM alpine:$ALPINE_VERSION
+FROM docker.io/alpine:$ALPINE_VERSION
 
 COPY work/tko-api /opt/
 
@@ -9,4 +9,4 @@ apk add --no-cache libc6-compat tzdata && \
 adduser --disabled-password tko
 
 USER tko
-ENTRYPOINT [ "/opt/tko-api", "start", "-v" ]
+ENTRYPOINT [ "/opt/tko-api", "start" ]

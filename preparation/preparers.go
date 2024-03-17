@@ -23,7 +23,6 @@ func (self *Preparation) RegisterPreparer(gvk tkoutil.GVK, prepare PrepareFunc) 
 
 var prepareString = "prepare"
 
-// TODO: cache
 func (self *Preparation) GetPreparers(gvk tkoutil.GVK) (Preparers, error) {
 	if preparers, ok := self.preparers.Load(gvk); ok {
 		return preparers.(Preparers), nil

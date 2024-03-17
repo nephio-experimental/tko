@@ -16,11 +16,10 @@ def schedule():
     return
 
   cluster_name = kind.get_cluster_name(cluster)
-  if cluster_name is not None:
-    if cluster_name not in kind.get_current_cluster_names():
-      kind.write_cluster_manifest(cluster)
-      tko.log(f'creating Kind cluster: {cluster_name}')
-      kind.create_cluster()
+  if cluster_name not in kind.get_current_cluster_names():
+    kind.write_cluster_manifest(cluster)
+    tko.log(f'creating Kind cluster: {cluster_name}')
+    kind.create_cluster()
 
   kube_context = f'kind-{cluster_name}'
   for deployment in tko.get_deployments():

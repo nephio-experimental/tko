@@ -23,7 +23,6 @@ func init() {
 	rootCommand.PersistentFlags().CountVarP(&verbose, "verbose", "v", "add a log verbosity level (can be used twice)")
 	rootCommand.PersistentFlags().StringVarP(&colorize, "colorize", "z", "true", "colorize output (boolean or \"force\")")
 	rootCommand.PersistentFlags().BoolVarP(&journald, "journald", "j", false, "use journald logging")
-
 }
 
 var rootCommand = &cobra.Command{

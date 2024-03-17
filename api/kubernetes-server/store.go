@@ -19,7 +19,7 @@ import (
 	"github.com/tliron/kutil/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metabase "k8s.io/apimachinery/pkg/api/meta"
-	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,6 +38,7 @@ const (
 	Category           = "tko"
 	ParallelBufferSize = 1000
 	ParallelWorkers    = 10
+	RetryAfterSeconds  = 5
 )
 
 var APIVersion = krm.SchemeGroupVersion.Identifier()
@@ -52,7 +53,6 @@ type Store struct {
 	TypePlural        string
 	TypeShortNames    []string
 	CanCreateOnUpdate bool
-	ObjectTyper       runtime.ObjectTyper
 
 	NewObjectFunc     func() runtime.Object
 	NewListObjectFunc func() runtime.Object
@@ -64,7 +64,7 @@ type Store struct {
 	DeleteFunc func(context contextpkg.Context, store *Store, id string) error
 	PurgeFunc  func(context contextpkg.Context, store *Store) error
 	GetFunc    func(context contextpkg.Context, store *Store, id string) (runtime.Object, error)
-	ListFunc   func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error)
+	ListFunc   func(context contextpkg.Context, store *Store, options *internalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error)
 	TableFunc  func(context contextpkg.Context, store *Store, object runtime.Object, withHeaders bool, withObject bool) (*meta.Table, error)
 
 	groupResource schema.GroupResource
@@ -188,7 +188,7 @@ func (self *Store) NewList() runtime.Object {
 
 // ([rest.Lister] interface)
 // ([rest.StandardStorage] interface)
-func (self *Store) List(context contextpkg.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
+func (self *Store) List(context contextpkg.Context, options *internalversion.ListOptions) (runtime.Object, error) {
 	if options == nil {
 		self.Log.Info("List")
 	} else {
@@ -265,10 +265,8 @@ func (self *Store) List(context contextpkg.Context, options *metainternalversion
 		}
 
 		return list, nil
-	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, apierrors.NewBadRequest(err.Error())
 	} else {
-		return nil, apierrors.NewInternalError(err)
+		return nil, self.toKubernetesError(err, "List", "")
 	}
 }
 
@@ -296,7 +294,7 @@ func (self *Store) ConvertToTable(context contextpkg.Context, object runtime.Obj
 		}
 		return table, nil
 	} else {
-		return nil, apierrors.NewInternalError(err)
+		return nil, self.toKubernetesError(err, "ConvertToTable", "")
 	}
 }
 
@@ -317,12 +315,8 @@ func (self *Store) Get(context contextpkg.Context, name string, options *meta.Ge
 
 	if object, err := self.GetFunc(context, self, id); err == nil {
 		return object, nil
-	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, apierrors.NewBadRequest(err.Error())
-	} else if backendpkg.IsNotFoundError(err) {
-		return nil, apierrors.NewNotFound(self.groupResource, name)
 	} else {
-		return nil, apierrors.NewInternalError(err)
+		return nil, self.toKubernetesError(err, "Get", name)
 	}
 }
 
@@ -373,12 +367,8 @@ func (self *Store) Delete(context contextpkg.Context, name string, deleteValidat
 
 	if err := self.DeleteFunc(context, self, id); err == nil {
 		return nil, true, nil
-	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, false, apierrors.NewBadRequest(err.Error())
-	} else if backendpkg.IsNotFoundError(err) {
-		return nil, false, apierrors.NewNotFound(self.groupResource, name)
 	} else {
-		return nil, false, apierrors.NewInternalError(err)
+		return nil, false, self.toKubernetesError(err, "Delete", name)
 	}
 }
 
@@ -390,7 +380,7 @@ func (self *Store) DeleteReturnsDeletedObject() bool {
 
 // ([rest.CollectionDeleter] interface)
 // ([rest.StandardStorage] interface)
-func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
+func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation rest.ValidateObjectFunc, options *meta.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	// Note: This verb cannot be called via kubectl; test with other clients
 
 	if options == nil {
@@ -400,7 +390,7 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 	}
 
 	if listOptions == nil {
-		listOptions = new(metainternalversion.ListOptions)
+		listOptions = new(internalversion.ListOptions)
 	} else {
 		listOptions = listOptions.DeepCopy()
 	}
@@ -408,10 +398,8 @@ func (self *Store) DeleteCollection(context contextpkg.Context, deleteValidation
 	if self.PurgeFunc != nil {
 		if err := self.PurgeFunc(context, self); err == nil {
 			return nil, nil
-		} else if backendpkg.IsBadArgumentError(err) {
-			return nil, apierrors.NewBadRequest(err.Error())
 		} else {
-			return nil, apierrors.NewInternalError(err)
+			return nil, self.toKubernetesError(err, "DeleteCollection", "")
 		}
 	}
 
@@ -515,10 +503,8 @@ func (self *Store) Create(context contextpkg.Context, object runtime.Object, cre
 
 	if object, err = self.CreateFunc(context, self, object); err == nil {
 		return object, nil
-	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, apierrors.NewBadRequest(err.Error())
 	} else {
-		return nil, apierrors.NewInternalError(err)
+		return nil, self.toKubernetesError(err, "Create", "")
 	}
 }
 
@@ -590,22 +576,14 @@ func (self *Store) Update(context contextpkg.Context, name string, objectInfo re
 
 	if updatedOrNewObject, err = updateOrCreate(context, self, updatedOrNewObject); err == nil {
 		return updatedOrNewObject, currentObject == nil, nil
-	} else if backendpkg.IsBadArgumentError(err) {
-		return nil, false, apierrors.NewBadRequest(err.Error())
-	} else if backendpkg.IsNotFoundError(err) {
-		return nil, false, apierrors.NewNotFound(self.groupResource, name)
-	} else if backendpkg.IsNotDoneError(err) {
-		return nil, false, apierrors.NewConflict(self.groupResource, name, err)
-	} else if backendpkg.IsBusyError(err) {
-		return nil, false, apierrors.NewResourceExpired(err.Error())
 	} else {
-		return nil, false, apierrors.NewInternalError(err)
+		return nil, false, self.toKubernetesError(err, "Update", name)
 	}
 }
 
 // ([rest.Watcher] interface)
 // ([rest.StandardStorage] interface)
-func (self *Store) _Watch(context contextpkg.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+func (self *Store) _Watch(context contextpkg.Context, options *internalversion.ListOptions) (watch.Interface, error) {
 	if options == nil {
 		self.Log.Infof("Watch")
 	} else {
@@ -689,7 +667,7 @@ func (self *Store) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 // ([rest.UpdateResetFieldsStrategy] interface)
 func (self *Store) ObjectKinds(object runtime.Object) ([]schema.GroupVersionKind, bool, error) {
 	self.Log.Info("ObjectKinds")
-	return self.ObjectTyper.ObjectKinds(object)
+	return Scheme.ObjectKinds(object)
 }
 
 // ([runtime.ObjectTyper] interface)
@@ -788,4 +766,20 @@ func (self *Store) Validate(context contextpkg.Context, object runtime.Object) f
 func (self *Store) WarningsOnCreate(context contextpkg.Context, object runtime.Object) []string {
 	self.Log.Info("WarningsOnCreate")
 	return nil
+}
+
+// Utils
+
+func (self *Store) toKubernetesError(err error, operation string, name string) error {
+	if backendpkg.IsBadArgumentError(err) {
+		return apierrors.NewBadRequest(err.Error())
+	} else if backendpkg.IsNotFoundError(err) {
+		return apierrors.NewNotFound(self.groupResource, name)
+	} else if backendpkg.IsNotDoneError(err) {
+		return apierrors.NewConflict(self.groupResource, name, err)
+	} else if backendpkg.IsBusyError(err) || backendpkg.IsTimeoutError(err) {
+		return apierrors.NewServerTimeout(self.groupResource, operation, RetryAfterSeconds)
+	} else {
+		return apierrors.NewInternalError(err)
+	}
 }

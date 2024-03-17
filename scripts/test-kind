@@ -9,7 +9,7 @@ not_root
 
 TIMEOUT=180s
 
-function cleaning_volumes () {
+function clean_volumes () {
 	# If we don't do this, Docker-in-Docker (and thus Kind) will get confused with existing data
 	m 'cleaning volumes (via sudo)...'
 	sudo rm --recursive --force /tmp/tko-postgresql/* /tmp/tko-docker/*
@@ -18,7 +18,7 @@ function cleaning_volumes () {
 if [ "$1" == -c ]; then
 	m 'deleting cluster...'
 	kind delete cluster --name=tko || true
-	cleaning_volumes
+	clean_volumes
 fi
 
 # if [ ! -d /var/local-path-provisioner ]; then
@@ -30,10 +30,13 @@ fi
 if [ "$1" == -d ]; then
 	m 'deleting TKO...'
 	"$HERE/kubectl-kind" delete --kustomize="$ROOT/assets/kubernetes/" || true
+
 	m 'waiting for TKO deletion...'
+	kubectl wait --for=delete deployment/postgresql --timeout="$TIMEOUT"
+	kubectl wait --for=delete pod/tko-runner --timeout="$TIMEOUT"
+	clean_volumes
 	kubectl wait --for=delete namespace/tko --timeout="$TIMEOUT"
 	kubectl wait --for=delete apiservice/v1alpha1.tko.nephio.org --timeout="$TIMEOUT"
-	cleaning_volumes
 else
 	m 'creating cluster...'
 	kind create cluster --config="$ROOT/assets/kubernetes/kind/tko.yaml" || true
@@ -51,6 +54,13 @@ m 'waiting for TKO...'
 "$HERE/kubectl-kind" wait deployment/tko-meta-scheduler --namespace=tko --for=condition=available --timeout="$TIMEOUT"
 "$HERE/kubectl-kind" wait pod/tko-runner --namespace=tko --for=condition=ready --timeout="$TIMEOUT"
 "$HERE/kubectl-kind" wait apiservice/v1alpha1.tko.nephio.org --for=condition=available --timeout="$TIMEOUT"
+
+m 'deleting workload clusters...'
+# (TODO: find out why Kind sometimes reports them as existing despite having cleaned the tko-docker volume;
+# could it be related to the cgroup mounting on the host?)
+
+"$HERE/kind-runner" kind delete cluster --name=edge1
+"$HERE/kind-runner" kind delete cluster --name=edge2
 
 m 'creating KRM...'
 

@@ -11,11 +11,11 @@ var (
 
 type Window struct {
 	Offset   uint
-	MaxCount int // -1 for limitless
+	MaxCount int // <0 for limitless
 }
 
 func (self Window) End() (uint, bool) {
-	if self.MaxCount != -1 {
+	if self.MaxCount >= 0 {
 		return self.Offset + uint(self.MaxCount), true
 	} else {
 		// Endless!
@@ -27,7 +27,7 @@ func ApplyWindow[E any](list []E, window Window) []E {
 	length := uint(len(list))
 	if window.Offset > length {
 		return nil
-	} else if end, ok := window.End(); !ok || (end > length) {
+	} else if end, limited := window.End(); !limited || (end > length) {
 		return list[window.Offset:]
 	} else {
 		return list[window.Offset:end]

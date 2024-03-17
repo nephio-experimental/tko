@@ -84,6 +84,10 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DeleteTemplate:           `DELETE FROM templates WHERE template_id = $1`,
 		DeleteTemplateMetadata:   `DELETE FROM templates_metadata WHERE template_id = $1`,
 		DeleteTemplateDeployment: `DELETE FROM templates_deployments WHERE deployment_id = $1`,
+		DeleteTemplates: CleanSQL(`
+			DELETE FROM templates
+			USING templates_metadata
+		`),
 		SelectTemplates: CleanSQL(`
 			SELECT templates.template_id, updated, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM templates
@@ -169,6 +173,10 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		DeleteSite:           `DELETE FROM sites WHERE site_id = $1`,
 		DeleteSiteMetadata:   `DELETE FROM sites_metadata WHERE site_id = $1`,
 		DeleteSiteDeployment: `DELETE FROM sites_deployments WHERE deployment_id = $1`,
+		DeleteSites: CleanSQL(`
+			DELETE FROM sites
+			USING sites_metadata
+		`),
 		SelectSites: CleanSQL(`
 			SELECT sites.site_id, template_id, updated, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), JSON_AGG (DISTINCT deployment_id) FILTER (WHERE deployment_id IS NOT NULL)
 			FROM sites
@@ -276,6 +284,10 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 		`),
 		DeleteDeployment:         `DELETE FROM deployments WHERE deployment_id = $1`,
 		DeleteDeploymentMetadata: `DELETE FROM deployments_metadata WHERE deployment_id = $1`,
+		DeleteDeployments: CleanSQL(`
+			DELETE FROM deployments
+			USING deployments_metadata, templates_metadata, sites_metadata
+		`),
 		SelectDeployments: CleanSQL(`
 			SELECT deployments.deployment_id, parent_deployment_id, deployments.template_id, deployments.site_id, JSON_AGG (ARRAY [key, value]) FILTER (WHERE key IS NOT NULL), created, updated, prepared, approved
 			FROM deployments
@@ -337,10 +349,14 @@ func NewPostgresqlStatements(db *sql.DB, log commonlog.Logger) *Statements {
 			FROM plugins
 			LEFT JOIN plugins_triggers ON plugins.type = plugins_triggers.plugin_type AND plugins.name = plugins_triggers.plugin_name
 			WHERE type = $1 AND name = $2
-			GROUP BY plugins.type, plugins.name
+			GROUP BY type, name
 		`),
 		DeletePlugin:         `DELETE FROM plugins WHERE type = $1 AND name = $2`,
 		DeletePluginTriggers: `DELETE FROM plugins_triggers WHERE plugin_type = $1 AND plugin_name = $2`,
+		DeletePlugins: CleanSQL(`
+			DELETE FROM plugins
+			USING plugins_triggers
+		`),
 		SelectPlugins: CleanSQL(`
 			SELECT plugins.type, plugins.name, executor, arguments, properties, JSON_AGG (ARRAY ["group", version, kind]) FILTER (WHERE "group" IS NOT NULL)
 			FROM plugins

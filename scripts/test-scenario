@@ -17,6 +17,7 @@ if [ "$WHERE" == local ]; then
 	"$TKO" plugin register schedule kind "$ROOT/examples/plugins/schedule_kind.py" --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
 	"$TKO" plugin register schedule gdce "$ROOT/examples/plugins/schedule_gdce.py" --trigger=gdce.google.com,v1alpha1,EdgeCluster -v
 else
+	# Copy plugins to runner
 	"$HERE/kind-runner" mkdir --parents /home/tko/examples/plugins/
 	"$HERE/kubectl-kind" cp "$ROOT/examples/plugins" tko/tko-runner:/home/tko/examples/ --container=tko-runner
 

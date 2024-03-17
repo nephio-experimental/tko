@@ -26,6 +26,8 @@ spec:
         image: tko-preparer
         imagePullPolicy: Always
         env:
+        - name: TKO_verbose
+          value: "1"
         - name: TKO_grpc-address
           value: tko-api
         ports:

@@ -3,7 +3,7 @@ package server
 import (
 	backendpkg "github.com/nephio-experimental/tko/backend"
 	"github.com/nephio-experimental/tko/util"
-	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,7 +11,7 @@ import (
 	"k8s.io/apiserver/pkg/storage"
 )
 
-func IDFromListOptions(options *metainternalversion.ListOptions) (*string, error) {
+func IDFromListOptions(options *internalversion.ListOptions) (*string, error) {
 	if (options == nil) || (options.FieldSelector == nil) {
 		return nil, nil
 	}
@@ -29,7 +29,7 @@ func IDFromListOptions(options *metainternalversion.ListOptions) (*string, error
 	return nil, nil
 }
 
-func IDPatternsFromListOptions(options *metainternalversion.ListOptions) ([]string, error) {
+func IDPatternsFromListOptions(options *internalversion.ListOptions) ([]string, error) {
 	if id, err := IDFromListOptions(options); err == nil {
 		if id != nil {
 			return []string{*id}, nil
@@ -41,7 +41,7 @@ func IDPatternsFromListOptions(options *metainternalversion.ListOptions) ([]stri
 	}
 }
 
-func MetadataPatternsFromListOptions(options *metainternalversion.ListOptions) (map[string]string, error) {
+func MetadataPatternsFromListOptions(options *internalversion.ListOptions) (map[string]string, error) {
 	if (options == nil) || (options.LabelSelector == nil) {
 		return nil, nil
 	}
@@ -70,7 +70,7 @@ func MetadataPatternsFromListOptions(options *metainternalversion.ListOptions) (
 }
 
 // Unused
-func (self *Store) NewSelectionPredicate(options *metainternalversion.ListOptions) storage.SelectionPredicate {
+func (self *Store) NewSelectionPredicate(options *internalversion.ListOptions) storage.SelectionPredicate {
 	labelSelector := labels.Everything()
 	fieldSelector := fields.Everything()
 

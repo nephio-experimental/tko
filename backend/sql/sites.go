@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/nephio-experimental/tko/backend"
-	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
 
@@ -18,21 +17,24 @@ func (self *SQLBackend) SetSite(context contextpkg.Context, site *backend.Site) 
 			return err
 		}
 
-		if package_, err := self.encodePackage(site.Package); err == nil {
-			site.Updated = time.Now().UTC()
-			upsertSite := tx.StmtContext(context, self.statements.PreparedUpsertSite)
-			if _, err := upsertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), site.Updated, package_); err == nil {
-				if err := self.updateSiteMetadata(context, tx, site); err != nil {
-					self.rollback(tx)
-					return err
-				}
+		var package_ []byte
+		var err error
+		if package_, err = self.encodePackage(site.Package); err != nil {
+			self.rollback(tx)
+			return err
+		}
 
-				return tx.Commit()
-			} else {
+		site.Updated = time.Now().UTC()
+		upsertSite := tx.StmtContext(context, self.statements.PreparedUpsertSite)
+		if _, err := upsertSite.ExecContext(context, site.SiteID, nilIfEmptyString(site.TemplateID), site.Updated, package_); err == nil {
+			if err := self.updateSiteMetadata(context, tx, site); err != nil {
 				self.rollback(tx)
 				return err
 			}
+
+			return tx.Commit()
 		} else {
+			self.rollback(tx)
 			return err
 		}
 	} else {
@@ -46,7 +48,7 @@ func (self *SQLBackend) GetSite(context contextpkg.Context, siteId string) (*bac
 	if err != nil {
 		return nil, err
 	}
-	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
+	defer self.closeRows(rows)
 
 	if rows.Next() {
 		var templateId *string
@@ -91,20 +93,20 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, selectSites backen
 
 	for _, pattern := range selectSites.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("sites.site_id ~ " + pattern)
+		where.Add(`sites.site_id ~ ` + pattern)
 	}
 
 	for _, pattern := range selectSites.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("template_id ~ " + pattern)
+		where.Add(`template_id ~ ` + pattern)
 	}
 
-	if selectSites.MetadataPatterns != nil {
+	if len(selectSites.MetadataPatterns) > 0 {
 		for key, pattern := range selectSites.MetadataPatterns {
 			key = args.Add(key)
 			pattern = args.Add(backend.PatternRE(pattern))
-			with.Add("SELECT site_id FROM sites_metadata WHERE (key = "+key+") AND (value ~ "+pattern+")",
-				"sites", "site_id")
+			with.Add(`SELECT site_id FROM sites_metadata WHERE (key = `+key+`) AND (value ~ `+pattern+`)`,
+				`sites`, `site_id`)
 		}
 	}
 
@@ -148,7 +150,35 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, selectSites backen
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) PurgeSites(context contextpkg.Context, selectSites backend.SelectSites) error {
-	return backend.NewNotImplementedError("PurgeSites")
+	sql := self.statements.DeleteSites
+	var args SqlArgs
+	var where SqlWhere
+
+	for _, pattern := range selectSites.SiteIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
+		where.Add(`sites.site_id ~ ` + pattern)
+	}
+
+	for _, pattern := range selectSites.TemplateIDPatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
+		where.Add(`template_id ~ ` + pattern)
+	}
+
+	if len(selectSites.MetadataPatterns) > 0 {
+		where.Add(`sites.site_id = sites_metadata.site_id`)
+		for key, pattern := range selectSites.MetadataPatterns {
+			key = args.Add(key)
+			pattern = args.Add(backend.PatternRE(pattern))
+			where.Add(`key = ` + key)
+			where.Add(`value ~ ` + pattern)
+		}
+	}
+
+	sql = where.Apply(sql)
+	self.log.Debugf("generated SQL:\n%s", sql)
+
+	_, err := self.db.ExecContext(context, sql, args.Args...)
+	return err
 }
 
 // Utils

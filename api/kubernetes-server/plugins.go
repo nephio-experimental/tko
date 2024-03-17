@@ -10,7 +10,7 @@ import (
 	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
-	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,7 +27,6 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 		TypeSingular:      "plugin",
 		TypePlural:        "plugins",
 		CanCreateOnUpdate: true,
-		ObjectTyper:       Scheme,
 
 		NewObjectFunc: func() runtime.Object {
 			return new(krm.Plugin)
@@ -103,7 +102,7 @@ func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
 			}
 		},
 
-		ListFunc: func(context contextpkg.Context, store *Store, options *metainternalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
+		ListFunc: func(context contextpkg.Context, store *Store, options *internalversion.ListOptions, offset uint, maxCount uint) (runtime.Object, error) {
 			var krmPluginList krm.PluginList
 
 			id, err := IDFromListOptions(options)

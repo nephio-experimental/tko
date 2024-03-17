@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 
 	"github.com/nephio-experimental/tko/backend"
-	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
 
@@ -45,7 +44,7 @@ func (self *SQLBackend) GetPlugin(context contextpkg.Context, pluginId backend.P
 	if err != nil {
 		return nil, err
 	}
-	defer commonlog.CallAndLogError(rows.Close, "rows.Close", self.log)
+	defer self.closeRows(rows)
 
 	if rows.Next() {
 		var executor string
@@ -93,25 +92,25 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context, selectPlugins ba
 
 	if (selectPlugins.Type != nil) && (*selectPlugins.Type != "") {
 		type_ := args.Add(*selectPlugins.Type)
-		where.Add("plugins.type = " + type_)
+		where.Add(`plugins.type = ` + type_)
 	}
 
 	for _, pattern := range selectPlugins.NamePatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add("plugins.name ~ " + pattern)
+		where.Add(`plugins.name ~ ` + pattern)
 	}
 
 	if (selectPlugins.Executor != nil) && (*selectPlugins.Executor != "") {
 		executor := args.Add(*selectPlugins.Executor)
-		where.Add("plugins.executor = " + executor)
+		where.Add(`plugins.executor = ` + executor)
 	}
 
 	if selectPlugins.Trigger != nil {
 		group := args.Add(selectPlugins.Trigger.Group)
 		version := args.Add(selectPlugins.Trigger.Version)
 		kind := args.Add(selectPlugins.Trigger.Kind)
-		with.Add("SELECT plugin_type AS type, plugin_name AS name FROM plugins_triggers WHERE (\"group\" = "+group+") AND (version = "+version+") AND (kind = "+kind+")",
-			"plugins", "type", "name")
+		with.Add(`SELECT plugin_type AS type, plugin_name AS name FROM plugins_triggers WHERE ("group" = `+group+`) AND (version = `+version+`) AND (kind = `+kind+`)`,
+			`plugins`, `type`, `name`)
 	}
 
 	sql = with.Apply(sql)
@@ -152,7 +151,41 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context, selectPlugins ba
 
 // ([backend.Backend] interface)
 func (self *SQLBackend) PurgePlugins(context contextpkg.Context, selectPlugins backend.SelectPlugins) error {
-	return backend.NewNotImplementedError("PurgePlugins")
+	sql := self.statements.DeletePlugins
+	var where SqlWhere
+	var args SqlArgs
+
+	if (selectPlugins.Type != nil) && (*selectPlugins.Type != "") {
+		type_ := args.Add(*selectPlugins.Type)
+		where.Add(`plugins.type = ` + type_)
+	}
+
+	for _, pattern := range selectPlugins.NamePatterns {
+		pattern = args.Add(backend.IDPatternRE(pattern))
+		where.Add(`plugins.name ~ ` + pattern)
+	}
+
+	if (selectPlugins.Executor != nil) && (*selectPlugins.Executor != "") {
+		executor := args.Add(*selectPlugins.Executor)
+		where.Add(`plugins.executor = ` + executor)
+	}
+
+	if selectPlugins.Trigger != nil {
+		where.Add(`plugins.type = plugins_triggers.plugin_type`)
+		where.Add(`plugins.name = plugins_triggers.plugin_name`)
+		group := args.Add(selectPlugins.Trigger.Group)
+		version := args.Add(selectPlugins.Trigger.Version)
+		kind := args.Add(selectPlugins.Trigger.Kind)
+		where.Add(`"group" = ` + group)
+		where.Add(`version = ` + version)
+		where.Add(`kind = ` + kind)
+	}
+
+	sql = where.Apply(sql)
+	self.log.Debugf("generated SQL:\n%s", sql)
+
+	_, err := self.db.ExecContext(context, sql, args.Args...)
+	return err
 }
 
 // Utils

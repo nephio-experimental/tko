@@ -16,24 +16,24 @@ resources:
 images:
 # See: https://hub.docker.com/u/tliron
 - name: tko-api
-  newName: tliron/tko-api
+  newName: docker.io/tliron/tko-api
   newTag: latest
 - name: tko-preparer
-  newName: tliron/tko-preparer
+  newName: docker.io/tliron/tko-preparer
   newTag: latest
 - name: tko-meta-scheduler
-  newName: tliron/tko-meta-scheduler
+  newName: docker.io/tliron/tko-meta-scheduler
   newTag: latest
 - name: tko-runner
-  newName: tliron/tko-runner
+  newName: docker.io/tliron/tko-runner
   newTag: latest
 
 # See: https://hub.docker.com/_/postgres
 - name: postgresql
-  newName: postgres
+  newName: docker.io/postgres
   newTag: 16.2-alpine
 
 # See: https://hub.docker.com/_/docker
 - name: docker-dind
-  newName: docker
+  newName: docker.io/docker
   newTag: 26.0.0-rc2-dind

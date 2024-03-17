@@ -35,6 +35,7 @@ type Statements struct {
 	DeleteTemplate           string
 	DeleteTemplateMetadata   string
 	DeleteTemplateDeployment string
+	DeleteTemplates          string
 	SelectTemplates          string
 
 	// Sites
@@ -55,6 +56,7 @@ type Statements struct {
 	DeleteSite           string
 	DeleteSiteMetadata   string
 	DeleteSiteDeployment string
+	DeleteSites          string
 	SelectSites          string
 
 	// Deployments
@@ -82,6 +84,7 @@ type Statements struct {
 	ResetDeploymentModification      string
 	DeleteDeployment                 string
 	DeleteDeploymentMetadata         string
+	DeleteDeployments                string
 	SelectDeployments                string
 
 	// Plugins
@@ -102,6 +105,7 @@ type Statements struct {
 	SelectPlugin         string
 	DeletePlugin         string
 	DeletePluginTriggers string
+	DeletePlugins        string
 	SelectPlugins        string
 
 	// These statements will be automatically prepared and released

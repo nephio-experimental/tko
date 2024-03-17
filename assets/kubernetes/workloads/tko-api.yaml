@@ -26,6 +26,8 @@ spec:
         image: tko-api
         imagePullPolicy: Always
         env:
+        - name: TKO_verbose
+          value: "1"
         - name: TKO_kubernetes
           value: "true"
         - name: TKO_name
@@ -37,7 +39,7 @@ spec:
         - name: TKO_backend
           value: postgresql
         - name: TKO_backend-clean
-          value: 'true'
+          value: "true"
         - name: TKO_backend-connection
           value: postgresql://tko:tko@postgresql:5432/tko
         - name: TKO_backend-connection-timeout
