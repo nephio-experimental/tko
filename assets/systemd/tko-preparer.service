@@ -4,4 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=%h/go/bin/tko-preparer start --journald --grpc-ip-stack=$GRPC_IP_STACK -v
+ExecStart=%h/go/bin/tko-preparer start \
+--journald \
+--grpc-ip-stack=$GRPC_IP_STACK \
+-v

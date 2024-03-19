@@ -163,7 +163,13 @@ func (self SelectDeployments) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset uint, maxCount uint) (util.Results[DeploymentInfo], error) {
+func (self *Client) ListAllDeployments(selectDeployments SelectDeployments) util.Results[DeploymentInfo] {
+	return util.CombineResults(func(offset uint) (util.Results[DeploymentInfo], error) {
+		return self.ListDeployments(selectDeployments, offset, ChunkSize)
+	})
+}
+
+func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset uint, maxCount int) (util.Results[DeploymentInfo], error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
@@ -172,7 +178,7 @@ func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset 
 		if client, err := apiClient.ListDeployments(context, &api.ListDeployments{
 			Window: &api.Window{
 				Offset:   uint32(offset),
-				MaxCount: uint32(maxCount),
+				MaxCount: int32(maxCount),
 			},
 			Select: &api.SelectDeployments{
 				ParentDeploymentId:       selectDeployments.ParentDeploymentID,

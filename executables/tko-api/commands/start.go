@@ -66,7 +66,7 @@ var (
 func init() {
 	rootCommand.AddCommand(startCommand)
 
-	startCommand.Flags().StringVar(&instanceName, "name", "Local", "instance name")
+	startCommand.Flags().StringVar(&instanceName, "name", "", "instance name")
 	startCommand.Flags().StringVar(&instanceDescription, "description", "", "instance description")
 	startCommand.Flags().StringVarP(&backendName, "backend", "b", "memory", "backend implementation")
 	startCommand.Flags().StringVar(&backendConnection, "backend-connection", "postgresql://tko:tko@localhost:5432/tko", "backend connection")

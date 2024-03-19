@@ -16,6 +16,11 @@
     color: white;
 }
 
+#description {
+    font-size: 12px;
+    line-height: 14px;
+}
+
 .hstack div {
     margin-left: 6px;
     margin-right: 6px;
@@ -67,7 +72,7 @@
 }
 
 .value-true {
-    background-color: rgb(0, 110, 0);
+    background-color: rgb(0, 170, 0);
     padding: 2px;
 }
 

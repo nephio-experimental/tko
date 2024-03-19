@@ -46,6 +46,12 @@ func (self *MemoryBackend) CreateDeployment(context contextpkg.Context, deployme
 		}
 	}
 
+	now := time.Now().UTC()
+	deployment.DeploymentID = backend.NewID()
+	deployment.Created = now
+	deployment.Updated = now
+	self.deployments[deployment.DeploymentID] = &Deployment{Deployment: deployment}
+
 	// Merge and associate with template
 	if template != nil {
 		deployment.MergeTemplate(template)
@@ -58,12 +64,6 @@ func (self *MemoryBackend) CreateDeployment(context contextpkg.Context, deployme
 	if site != nil {
 		site.AddDeployment(deployment.DeploymentID)
 	}
-
-	now := time.Now().UTC()
-	deployment.DeploymentID = backend.NewID()
-	deployment.Created = now
-	deployment.Updated = now
-	self.deployments[deployment.DeploymentID] = &Deployment{Deployment: deployment}
 
 	return nil
 }

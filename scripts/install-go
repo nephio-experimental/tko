@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+# See: https://github.com/canha/golang-tools-install-script
+curl --location https://git.io/vQhTU | bash -s -- --remove
+curl --location https://git.io/vQhTU | bash -s -- --version "$GO_VERSION"
+
+echo 'export PATH=$HOME/go/bin:$PATH' >> "$HOME/.bashrc"
+
+export PATH=$HOME/.go/bin:$HOME/go/bin:$PATH

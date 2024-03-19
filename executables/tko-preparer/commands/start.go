@@ -44,7 +44,7 @@ func init() {
 	startCommand.Flags().StringVar(&logAddress, "log-address", "", "bind IP address for log server")
 	startCommand.Flags().UintVar(&logPort, "log-port", 50055, "bind TCP port for log server")
 	startCommand.Flags().Float64Var(&preparerTimeout, "preparer-timeout", 30.0, "preparer timeout in seconds")
-	startCommand.Flags().BoolVar(&autoApprove, "auto-approve", true, "whether to automatically approve prepared deployments")
+	startCommand.Flags().BoolVar(&autoApprove, "auto-approve", true, "whether to automatically approve prepared deployments by default")
 
 	cobrautil.SetFlagsFromEnvironment("TKO_", startCommand)
 }

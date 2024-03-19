@@ -14,23 +14,23 @@ import (
 //
 
 type Preparation struct {
-	Client      *clientpkg.Client
-	Timeout     time.Duration
-	AutoApprove bool
-	Log         commonlog.Logger
-	LogIPStack  util.IPStack
-	LogAddress  string
-	LogPort     int
+	Client             *clientpkg.Client
+	Timeout            time.Duration
+	DefaultAutoApprove bool
+	Log                commonlog.Logger
+	LogIPStack         util.IPStack
+	LogAddress         string
+	LogPort            int
 
 	registeredPreparers PreparersMap
 	preparers           sync.Map
 }
 
-func NewPreparation(client *clientpkg.Client, timeout time.Duration, autoApprove bool, log commonlog.Logger, logIpStack util.IPStack, logAddress string, logPort int) *Preparation {
+func NewPreparation(client *clientpkg.Client, timeout time.Duration, defaultAutoApprove bool, log commonlog.Logger, logIpStack util.IPStack, logAddress string, logPort int) *Preparation {
 	return &Preparation{
 		Client:              client,
 		Timeout:             timeout,
-		AutoApprove:         autoApprove,
+		DefaultAutoApprove:  defaultAutoApprove,
 		Log:                 log,
 		LogIPStack:          logIpStack,
 		LogAddress:          logAddress,

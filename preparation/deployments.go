@@ -13,19 +13,13 @@ var falseBool = false
 
 func (self *Preparation) PrepareDeployments() error {
 	//self.Log.Notice("preparing deployments")
-	if deploymentInfos, err := self.Client.ListDeployments(client.SelectDeployments{Prepared: &falseBool}, 0, 0); err == nil {
-		return util.IterateResults(deploymentInfos, func(deploymentInfo client.DeploymentInfo) error {
-			self.PrepareDeployment(deploymentInfo)
-			return nil
-		})
-	} else {
-		return err
-	}
+	deploymentInfos := self.Client.ListAllDeployments(client.SelectDeployments{Prepared: &falseBool})
+	return util.IterateResults(deploymentInfos, self.PrepareDeployment)
 }
 
-func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo) {
+func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo) error {
 	if deploymentInfo.Prepared {
-		return
+		return nil
 	}
 
 	log := commonlog.NewKeyValueLogger(self.Log,
@@ -35,14 +29,14 @@ func (self *Preparation) PrepareDeployment(deploymentInfo client.DeploymentInfo)
 		"template", deploymentInfo.TemplateID)
 	if deployment, ok, err := self.Client.GetDeployment(deploymentInfo.DeploymentID); err == nil {
 		if ok {
-			if _, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Package, log); err != nil {
-				log.Error(err.Error())
-			}
+			_, err := self.prepareDeployment(deploymentInfo.DeploymentID, deployment.Package, log)
+			return err
 		} else {
 			log.Info("deployment disappeared")
+			return nil
 		}
 	} else {
-		log.Error(err.Error())
+		return err
 	}
 }
 
@@ -110,7 +104,7 @@ func (self *Preparation) finalizeDeploymentPreparation(deploymentId string, log 
 					modified = true
 				}
 
-				approve := self.AutoApprove
+				approve := self.DefaultAutoApprove
 				if approveAnnotation, ok := tkoutil.GetApproveAnnotation(deployment); ok {
 					switch approveAnnotation {
 					case tkoutil.ApproveAnnotationAuto:

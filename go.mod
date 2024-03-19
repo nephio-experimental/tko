@@ -3,18 +3,18 @@ module github.com/nephio-experimental/tko
 go 1.22
 
 require (
-	cloud.google.com/go/spanner v1.59.0
+	cloud.google.com/go/spanner v1.60.0
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/rivo/tview v0.0.0-20240307173318-e804876934a1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
-	github.com/tliron/commonlog v0.2.15
+	github.com/tliron/commonlog v0.2.16
 	github.com/tliron/exturl v0.4.3
 	github.com/tliron/go-ard v0.2.16
 	github.com/tliron/go-transcribe v0.3.4
-	github.com/tliron/kutil v0.3.21
+	github.com/tliron/kutil v0.3.24
 	github.com/tliron/puccini v0.22.4
 	github.com/yannh/kubeconform v0.6.4
 	google.golang.org/grpc v1.62.1
@@ -102,11 +102,11 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-hclog v1.6.2 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
-	github.com/hashicorp/go-msgpack v0.5.3 // indirect
+	github.com/hashicorp/go-msgpack/v2 v2.1.1 // indirect
 	github.com/hashicorp/go-multierror v1.0.0 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
-	github.com/hashicorp/memberlist v0.5.0 // indirect
+	github.com/hashicorp/memberlist v0.5.1 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
-	github.com/reugn/go-quartz v0.11.1 // indirect
+	github.com/reugn/go-quartz v0.11.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect

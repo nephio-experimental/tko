@@ -4,20 +4,12 @@ import json, tko
 chart_gvk = tko.GVK(group='workload.nephio.org', version='v1alpha1', kind='HelmChart')
 
 
-def execute(args, kube_context=None):
-  env = {'HELM_NAMESPACE': 'default'}
-  if kube_context is not None:
-    env['HELM_KUBECONTEXT'] = kube_context
-
-  return tko.execute(('/usr/bin/helm',) + tuple(args), env=env)
-
-
 def iter_charts(package):
   return package.iter_all(chart_gvk)
 
 
 def get_current_deployments(kube_context=None):
-  return execute(('list', '--all-namespaces', '--deployed', '--short'), kube_context=kube_context).rstrip('\n').split('\n')
+  return execute('list', '--all-namespaces', '--deployed', '--short', kube_context=kube_context).rstrip('\n').split('\n')
 
 
 def install(chart, package, kube_context=None):
@@ -45,4 +37,12 @@ def install(chart, package, kube_context=None):
 
   args += (name, chart)
 
-  execute(args, kube_context=kube_context)
+  execute(*args, kube_context=kube_context)
+
+
+def execute(*args, kube_context=None):
+  env = {'HELM_NAMESPACE': 'default'}
+  if kube_context is not None:
+    env['HELM_KUBECONTEXT'] = kube_context
+
+  return tko.execute('/usr/bin/helm', *args, env=env)

@@ -3,6 +3,7 @@ set -e
 
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
+. "$HERE/_trap"
 
 only_root
 
@@ -12,16 +13,17 @@ if [ "$1" == -y ]; then
 fi
 
 dnf install \
-zip \
+bash-completion kitty-terminfo zip \
 golang protobuf-compiler \
 python3-virtualenv \
 postgresql-server postgresql-contrib $DNF_ARGS
 
-# Note: if Fedora's version of golang is not recent enough, try this:
-# https://github.com/canha/golang-tools-install-script
+# Note: if Fedora's version of golang is not recent enough, use scripts/install-go
 
 systemctl enable postgresql
 postgresql-setup --initdb --unit postgresql || true
+
+# Enable md5 authentication for PostgreSQL
 
 sed --in-place --expression \
 "s|host    replication     all             127.0.0.1/32            ident|host    replication     all             127.0.0.1/32            md5|" \
@@ -41,4 +43,6 @@ dnf install docker-ce docker-ce-cli containerd.io $DNF_ARGS
 
 systemctl enable --now docker
 
-usermod --append --groups docker "$SUDO_USER"
+# gpasswd will add the group to the current session, unlike usermod
+# (unfortunately this does not affect the user's systemd daemon)
+gpasswd --add "$SUDO_USER" docker

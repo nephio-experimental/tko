@@ -10,7 +10,8 @@ import (
 )
 
 func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Request) {
-	if deploymentInfoResults, err := self.Backend.ListDeployments(request.Context(), backend.SelectDeployments{}, backend.Window{}); err == nil {
+	// TODO: paging
+	if deploymentInfoResults, err := self.Backend.ListDeployments(request.Context(), backend.SelectDeployments{}, backend.Window{MaxCount: -1}); err == nil {
 		var deployments []ard.StringMap
 		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
 			deployments = append(deployments, ard.StringMap{

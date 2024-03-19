@@ -56,13 +56,11 @@ m 'waiting for TKO...'
 "$HERE/kubectl-kind" wait apiservice/v1alpha1.tko.nephio.org --for=condition=available --timeout="$TIMEOUT"
 
 m 'deleting workload clusters...'
-# (TODO: find out why Kind sometimes reports them as existing despite having cleaned the tko-docker volume;
-# could it be related to the cgroup mounting on the host?)
 
-"$HERE/kind-runner" kind delete cluster --name=edge1
-"$HERE/kind-runner" kind delete cluster --name=edge2
+"$HERE/kind-runner" kind delete cluster --name=edge1 || true
+"$HERE/kind-runner" kind delete cluster --name=edge2 || true
 
-m 'creating KRM...'
+m 'applying KRM...'
 
 "$HERE/kubectl-kind" apply --filename="$ROOT/examples/kubernetes/templates.yaml"
 "$HERE/kubectl-kind" apply --filename="$ROOT/examples/kubernetes/sites.yaml"

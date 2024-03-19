@@ -149,7 +149,13 @@ func (self SelectPlugins) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCount uint) (util.Results[Plugin], error) {
+func (self *Client) ListAllPlugins(selectPlugins SelectPlugins) util.Results[Plugin] {
+	return util.CombineResults(func(offset uint) (util.Results[Plugin], error) {
+		return self.ListPlugins(selectPlugins, offset, ChunkSize)
+	})
+}
+
+func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCount int) (util.Results[Plugin], error) {
 	if selectPlugins.Type != nil {
 		if !plugins.IsValidPluginType(*selectPlugins.Type, true) {
 			return nil, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *selectPlugins.Type)
@@ -164,7 +170,7 @@ func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCou
 		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
 			Window: &api.Window{
 				Offset:   uint32(offset),
-				MaxCount: uint32(maxCount),
+				MaxCount: int32(maxCount),
 			},
 			Select: &api.SelectPlugins{
 				Type:         selectPlugins.Type,

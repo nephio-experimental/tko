@@ -18,10 +18,9 @@ def schedule():
   cluster_name = kind.get_cluster_name(cluster)
   if cluster_name not in kind.get_current_cluster_names():
     kind.write_cluster_manifest(cluster)
-    tko.log(f'creating Kind cluster: {cluster_name}')
-    kind.create_cluster()
+    kind.create_cluster(cluster_name)
 
-  kube_context = f'kind-{cluster_name}'
+  kube_context = kind.get_kube_context(cluster_name)
   for deployment in tko.get_deployments():
     cluster_package, namespaced_package = tko.meta_schedule(deployment)
     kubectl.apply(cluster_package, kube_context=kube_context)

@@ -1,9 +1,7 @@
 package dashboard
 
 import (
-	"slices"
 	"strconv"
-	"strings"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/rivo/tview"
@@ -12,23 +10,21 @@ import (
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateTemplates(table *tview.Table) {
-	if templateInfos, err := self.client.ListTemplates(client.SelectTemplates{}, 0, 0); err == nil {
-		if templateInfos_, err := util.GatherResults(templateInfos); err == nil {
-			slices.SortFunc(templateInfos_, func(a client.TemplateInfo, b client.TemplateInfo) int {
-				return strings.Compare(a.TemplateID, b.TemplateID)
-			})
+	// TODO: paging
+	if templateInfoResults, err := self.client.ListTemplates(client.SelectTemplates{}, 0, -1); err == nil {
+		table.Clear()
 
-			table.Clear()
+		SetTableHeader(table, "ID", "Deployments", "Updated")
 
-			SetTableHeader(table, "ID", "Deployments", "Updated")
+		row := 1
+		util.IterateResults(templateInfoResults, func(templateInfo client.TemplateInfo) error {
+			table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
+			table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
+			table.SetCellSimple(row, 2, self.timestamp(templateInfo.Updated))
 
-			for row, templateInfo := range templateInfos_ {
-				row++
-				table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
-				table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
-				table.SetCellSimple(row, 2, self.timestamp(templateInfo.Updated))
-			}
-		}
+			row++
+			return nil
+		})
 	}
 }
 

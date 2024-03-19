@@ -5,6 +5,8 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 . "$HERE/_trap"
 
+not_root
+
 ORG=github.com/nephio-experimental
 REPO=$ORG/tko
 API_PKG=$REPO/api

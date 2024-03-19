@@ -46,7 +46,7 @@ func ListPlugins(offset uint, maxCount uint, type_ string, namePatterns []string
 		NamePatterns: namePatterns,
 		Executor:     &executor,
 		Trigger:      trigger,
-	}, offset, maxCount)
+	}, offset, int(maxCount))
 	FailOnGRPCError(err)
 	pluginInfos_, err := util.GatherResults(pluginInfos)
 	util.FailOnError(err)

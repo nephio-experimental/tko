@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+"$HERE/stop-service" tko-meta-scheduler
+"$HERE/stop-service" tko-preparer
+"$HERE/stop-service" tko-api

@@ -1,9 +1,7 @@
 package dashboard
 
 import (
-	"slices"
 	"strconv"
-	"strings"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
 	"github.com/rivo/tview"
@@ -12,28 +10,26 @@ import (
 
 // ([UpdateTableFunc] signature)
 func (self *Application) UpdateSites(table *tview.Table) {
-	if siteInfos, err := self.client.ListSites(client.SelectSites{}, 0, 0); err == nil {
-		if siteInfos_, err := util.GatherResults(siteInfos); err == nil {
-			slices.SortFunc(siteInfos_, func(a client.SiteInfo, b client.SiteInfo) int {
-				return strings.Compare(a.SiteID, b.SiteID)
-			})
+	// TODO: paging
+	if siteInfoResults, err := self.client.ListSites(client.SelectSites{}, 0, -1); err == nil {
+		table.Clear()
 
-			table.Clear()
+		SetTableHeader(table, "ID", "Template", "Deployments", "Updated")
 
-			SetTableHeader(table, "ID", "Template", "Deployments", "Updated")
-
-			for row, siteInfo := range siteInfos_ {
-				row++
-				table.SetCell(row, 0, tview.NewTableCell(siteInfo.SiteID).SetReference(&SiteDetails{siteInfo.SiteID, self.client}))
-				if siteInfo.TemplateID != "" {
-					table.SetCell(row, 1, tview.NewTableCell(siteInfo.TemplateID).SetReference(&TemplateDetails{siteInfo.TemplateID, self.client}))
-				} else {
-					table.SetCellSimple(row, 1, "")
-				}
-				table.SetCellSimple(row, 2, strconv.Itoa(len(siteInfo.DeploymentIDs)))
-				table.SetCellSimple(row, 3, self.timestamp(siteInfo.Updated))
+		row := 1
+		util.IterateResults(siteInfoResults, func(siteInfo client.SiteInfo) error {
+			table.SetCell(row, 0, tview.NewTableCell(siteInfo.SiteID).SetReference(&SiteDetails{siteInfo.SiteID, self.client}))
+			if siteInfo.TemplateID != "" {
+				table.SetCell(row, 1, tview.NewTableCell(siteInfo.TemplateID).SetReference(&TemplateDetails{siteInfo.TemplateID, self.client}))
+			} else {
+				table.SetCellSimple(row, 1, "")
 			}
-		}
+			table.SetCellSimple(row, 2, strconv.Itoa(len(siteInfo.DeploymentIDs)))
+			table.SetCellSimple(row, 3, self.timestamp(siteInfo.Updated))
+
+			row++
+			return nil
+		})
 	}
 }
 

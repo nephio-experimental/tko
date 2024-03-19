@@ -70,7 +70,7 @@ func ListDeployments(offset uint, maxCount uint, parentDemploymentId string, tem
 		MetadataPatterns:         metadataPatterns,
 		Prepared:                 prepared,
 		Approved:                 approved,
-	}, offset, maxCount)
+	}, offset, int(maxCount))
 	FailOnGRPCError(err)
 	deploymentInfos_, err := util.GatherResults(deploymentInfos)
 	util.FailOnError(err)

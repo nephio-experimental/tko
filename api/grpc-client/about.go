@@ -15,7 +15,6 @@ type About struct {
 }
 
 type AboutGRPC struct {
-	IPStack              string   `json:"ipStack" yaml:"ipStack"`
 	AddressPorts         []string `json:"addressPorts" yaml:"addressPorts"`
 	DefaultPackageFormat string   `json:"defaultPackageFormat" yaml:"defaultPackageFormat"`
 }
@@ -33,7 +32,6 @@ func (self *Client) About() (About, error) {
 				TKOVersion:          response.TkoVersion,
 				Backend:             response.Backend,
 				GRPC: AboutGRPC{
-					IPStack:              response.IpStack,
 					AddressPorts:         response.AddressPorts,
 					DefaultPackageFormat: response.DefaultPackageFormat,
 				},

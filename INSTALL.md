@@ -1,36 +1,48 @@
 TKO Installation Guide
 ======================
 
-Vagrant Virtual Machine
------------------------
+Option 1: Vagrant Virtual Machine
+---------------------------------
 
 We have a [Vagrantfile](https://www.vagrantup.com/) to create a dev and test environment
-on top of a Fedora virtual machine. You'll need the `vagrant-reload` plugin. To run:
+on top of a Fedora virtual machine (tested with both libvirt and VirtualBox providers).
 
-    cd tko
-    vagrant plugin install vagrant-reload
-    vagrant up
+To start it, run this in your local git clone directory:
 
-It will take a few minutes to install all dependencies. When done, it will reboot the
-virtual machine and run the tests (see [testing](#testing) below).
+    vagrant up && vagrant reload
 
-The internal web server port is mapped to your host at port 60051, so you can access
+It will take a few minutes to install all dependencies. The reload is necessary for Docker
+permissions to work.
+
+To run the test:
+
+    scripts/vagrant scripts/test
+
+The `tko-api`'s web server port is mapped to your host at port 60051, so you can access
 the web dashboard at [http://localhost:60051/](http://localhost:60051/).
 
-You can run `vagrant ssh` and then `cd /vagrant` to gain access to the dev environment.
-We also provide a script to run commands on the virtual machine from the host. Examples:
+To gain shell access to the dev environment run `vagrant ssh` and then `cd /vagrant`. Or,
+to just run commands in the virtual machine use `scripts/vagrant`. Examples:
 
     scripts/vagrant tko template list
     scripts/vagrant tko dashboard
     scripts/vagrant kubectl get pods --all-namespaces --context=kind-edge1
     scripts/vagrant scripts/test
 
-If you have `tko` installed on the host, you can also run the client there with this
-script:
+If you have `tko` installed on the host, you can also run the client there against the
+virtual machine's `tko-api`'s gRPC port with this script:
 
     scripts/tko-vagrant dashboard
 
-Continue to [user guide](USAGE.md), taking into account the modifications above.
+To follow logs from the host:
+
+    scripts/vagrant scripts/log-service tko-api --follow
+    scripts/vagrant scripts/log-service tko-preparer --follow
+    scripts/vagrant scripts/log-service tko-meta-scheduler --follow
+
+Also note that you can install the Kubernetes cluster (option 2 below) inside the Vagrant
+virtual machine by running `scripts/test-kind`, combining both installation options. The
+Kind's `tko-api`'s web server port is mapped to your host at port 60061.
 
 During development, if you want the virtual machine to continuously sync file changes
 from the host (it's one-way, only from the host to the virtual machine at directory
@@ -42,33 +54,37 @@ To delete the virtual machine:
 
     vagrant destroy
 
-Kubernetes Cluster
-------------------
+Continue to the [user guide](USAGE.md), taking into account the scripts above.
+
+Option 2: Local Kubernetes Cluster
+----------------------------------
 
 TKO can run in a Kubernetes cluster with a rich KRM aggregated API (in *addition* to the gRPC
 API). We provide a quick setup on top of [Kind](https://kind.sigs.k8s.io/) using TKO container
-images published on [Docker Hub](https://hub.docker.com/u/tliron), together with a PostgreSQL
-instance.
+images published on [Docker Hub](https://hub.docker.com/u/tliron). The setup includes a special
+"runner" pod for executing plugins and deploying workload clusters, as well as PostgreSQL for
+the TKO backend.
 
-To create the Kind cluster:
+To create the Kind cluster locally:
 
     scripts/test-kind
 
-(Because our test scenario runs Kind-in-Kind you might need to increase the inotify limits on
-your host. See
+Note that you might get errors with pods related to too many open files. This is likely due to
+your host's inotify limits being too low. See
 [this](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files)).
 
-(By the way, you can also run `test-kind` inside the Vagrant virtual machine detailed above.)
+Also note that you can run `test-kind` inside the Vagrant virtual machine detailed above,
+combining both installation options.
 
-The internal web server port is mapped to your host at port 30051, so you can access
+The `tko-api`'s web server port is mapped to your host at port 30051, so you can access
 the web dashboard at [http://localhost:30051/](http://localhost:30051/).
 
-If you have `tko` installed on the host, you can also run the client there with this
-script:
+If you have `tko` installed on the host, you can also run the client there against the
+cluster's `tko-api`'s gRPC port with this script:
 
     scripts/tko-kind dashboard
 
-`kubectl` access is provided with this script (it simply uses Kind's kubeconfig
+`kubectl` access is provided with this script (it simply uses Kind's kube-config
 context):
 
     scripts/kubectl-kind get tko
@@ -76,27 +92,30 @@ context):
 
 See the [KRM API guide](KRM.md) for more information.
 
-Plugins will be run in a pod named `tko-runner`, and this also where the meta-scheduler's
+Plugins will be run in a pod named `tko-runner` and this also where the meta-scheduler's
 Kind plugin will create clusters (Kind-in-Kind, using Docker-in-Docker, a.k.a. "dind").
 We provide a script for accessing that environment:
 
     scripts/kind-runner kind get clusters
     scripts/kind-runner kubectl get pods --all-namespaces --context=kind-edge1
 
-To follow logs:
+(Note that *this* use of `kubectl` is for the Kind-in-Kind workload clusters. For the
+TKO "management" cluster use `scripts/kubectl-kind`.)
 
-    scripts/log-service-kind tko-api -f
-    scripts/log-service-kind tko-preparer -f
-    scripts/log-service-kind tko-meta-scheduler -f
+To follow logs from the host:
 
-Continue to [user guide](USAGE.md), taking into account the modifications above.
+    scripts/log-service-kind tko-api --follow
+    scripts/log-service-kind tko-preparer --follow
+    scripts/log-service-kind tko-meta-scheduler --follow
 
 To delete the Kind cluster:
 
     kind delete cluster --name=tko
 
-Native Installation
--------------------
+Continue to the [user guide](USAGE.md), taking into account the scripts above.
+
+Option 3: Native Installation
+-----------------------------
 
 ### OS Requirements
 
@@ -107,6 +126,8 @@ For Fedora-family hosts:
 For Google gLinux hosts:
 
     sudo scripts/install-system-dependencies-glinux
+
+You might have to reboot for Docker permissions to work.
 
 ### Other Requirements
 
@@ -135,7 +156,7 @@ These are the requirements if you prefer to install them manually:
 
 Make sure Go-built binaries are in your path by adding this to your `~/.bashrc` file:
 
-    export PATH="$HOME/go/bin:$PATH"
+    export PATH=$HOME/go/bin:$PATH
 
 Also run that command locally to make it work in the current terminal.
 
@@ -152,8 +173,6 @@ testing.)
 
 Start the systemd services:
 
-    scripts/start-service tko-api
-    scripts/start-service tko-preparer
-    scripts/start-service tko-meta-scheduler
+    scripts/start-services
 
-Continue to [user guide](USAGE.md).
+Continue to the [user guide](USAGE.md).

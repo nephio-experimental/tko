@@ -108,7 +108,7 @@ func (self *SQLBackend) ListDeployments(context contextpkg.Context, selectDeploy
 	var args SqlArgs
 
 	args.AddValue(window.Offset)
-	args.AddValue(window.MaxCount)
+	args.AddValue(window.Limit())
 
 	if (selectDeployments.ParentDeploymentID != nil) && (*selectDeployments.ParentDeploymentID != "") {
 		where.Add(`parent_deployment_id = ` + args.Add(selectDeployments.ParentDeploymentID))

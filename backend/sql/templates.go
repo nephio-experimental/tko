@@ -66,7 +66,7 @@ func (self *SQLBackend) ListTemplates(context contextpkg.Context, selectTemplate
 	var where SqlWhere
 
 	args.AddValue(window.Offset)
-	args.AddValue(window.MaxCount)
+	args.AddValue(window.Limit())
 
 	for _, pattern := range selectTemplates.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))

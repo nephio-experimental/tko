@@ -119,7 +119,13 @@ func (self SelectTemplates) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, maxCount uint) (util.Results[TemplateInfo], error) {
+func (self *Client) ListAllTemplates(selectTemplates SelectTemplates) util.Results[TemplateInfo] {
+	return util.CombineResults(func(offset uint) (util.Results[TemplateInfo], error) {
+		return self.ListTemplates(selectTemplates, offset, ChunkSize)
+	})
+}
+
+func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, maxCount int) (util.Results[TemplateInfo], error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
@@ -128,7 +134,7 @@ func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, 
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
 			Window: &api.Window{
 				Offset:   uint32(offset),
-				MaxCount: uint32(maxCount),
+				MaxCount: int32(maxCount),
 			},
 			Select: &api.SelectTemplates{
 				TemplateIdPatterns: selectTemplates.TemplateIDPatterns,

@@ -33,7 +33,12 @@ See the [test script](scripts/test) for more examples of CLI usage.
 
 ### Debugging
 
-To follow the service logs (you can do this in separate terminal tabs):
+We have a script to follow logs in individual tabs, supporting a few popular terminal
+emulators (GNOME Terminal, Kitty, and Tilix):
+
+    scripts/follow-logs
+
+Or follow individual logs manually:
 
     scripts/log-service tko-api --follow
     scripts/log-service tko-preparer --follow

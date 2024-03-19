@@ -9,6 +9,11 @@ HERE=/vagrant/scripts
 
 not_root
 
+m 'increasing inotify limits...' $CYAN
+# See: https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+echo 'fs.inotify.max_user_watches = 524288' | sudo tee --append /etc/sysctl.conf
+echo 'fs.inotify.max_user_instances = 512' | sudo tee --append /etc/sysctl.conf
+
 m 'install-system-dependencies-fedora...' $CYAN
 sudo "$HERE/install-system-dependencies-fedora" -y
 
@@ -22,11 +27,15 @@ m 'install-python-env...' $CYAN
 "$HERE/install-python-env"
 
 m 'install-systemd-services...' $CYAN
-BACKEND=postgresql BACKEND_CLEAN=true "$HERE/install-systemd-services"
+NAME=Vagrant BACKEND=postgresql BACKEND_CLEAN=true "$HERE/install-systemd-services"
 
-m 'install-golang...' $CYAN
-# See: https://github.com/canha/golang-tools-install-script
-curl --location https://git.io/vQhTU | bash -s -- --remove
-curl --location https://git.io/vQhTU | bash -s -- --version 1.22.1
+m 'install-go...' $CYAN
+"$HERE/install-go"
 
-echo 'export PATH=$HOME/go/bin:$PATH' >> "$HOME/.bashrc"
+m 'build...' $CYAN
+export PATH=$HOME/.go/bin:$PATH
+"$HERE/build"
+
+m 'install-bash-completion...' $CYAN
+export PATH=$HOME/go/bin:$PATH
+"$HERE/install-bash-completion"

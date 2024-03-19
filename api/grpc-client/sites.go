@@ -127,7 +127,13 @@ func (self SelectSites) String() string {
 	return strings.Join(s, " ")
 }
 
-func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount uint) (util.Results[SiteInfo], error) {
+func (self *Client) ListAllSites(selectSites SelectSites) util.Results[SiteInfo] {
+	return util.CombineResults(func(offset uint) (util.Results[SiteInfo], error) {
+		return self.ListSites(selectSites, offset, ChunkSize)
+	})
+}
+
+func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount int) (util.Results[SiteInfo], error) {
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
@@ -136,7 +142,7 @@ func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount uin
 		if client, err := apiClient.ListSites(context, &api.ListSites{
 			Window: &api.Window{
 				Offset:   uint32(offset),
-				MaxCount: uint32(maxCount),
+				MaxCount: int32(maxCount),
 			},
 			Select: &api.SelectSites{
 				SiteIdPatterns:     selectSites.SiteIDPatterns,

@@ -6,6 +6,8 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
+LOG=${LOG:-$HERE/log-service}
+
 TERMINAL=$(ps -p $(ps -p $(ps -p $$ -o ppid=) -o ppid=) -o args=)
 case "$TERMINAL" in
     *gnome-terminal*)
@@ -28,15 +30,15 @@ function follow () {
             ;;
         kitty)
 			if [ "$KITTY_FIRST" == true ]; then
-				KITTY_TAB=$(kitten @ launch --keep-focus --type=tab --tab-title="TKO Logs" --title="$1" "$HERE/log-service" "$1" --follow)
+				KITTY_TAB=$(kitten @ launch --keep-focus --type=tab --tab-title="TKO Logs" --title="$1" "$LOG" "$1" --follow)
 				kitty @ goto-layout --match=id:"$KITTY_TAB" vertical
 				KITTY_FIRST=false
 			else
-				kitten @ launch --keep-focus --type=window --match=id:"$KITTY_TAB" --title="$1" "$HERE/log-service" "$1" --follow > /dev/null
+				kitten @ launch --keep-focus --type=window --match=id:"$KITTY_TAB" --title="$1" "$LOG" "$1" --follow > /dev/null
 			fi
 			;;
         tilix)
-            tilix --action=session-add-down --title="$1" --command="\"$HERE/log-service\" \"$1\" --follow"
+            tilix --action=session-add-down --title="$1" --command="\"$LOG\" \"$1\" --follow"
             ;;
     esac
 }

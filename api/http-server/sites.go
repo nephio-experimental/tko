@@ -11,7 +11,8 @@ import (
 )
 
 func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request) {
-	if siteInfoResults, err := self.Backend.ListSites(request.Context(), backend.SelectSites{}, backend.Window{}); err == nil {
+	// TODO: paging
+	if siteInfoResults, err := self.Backend.ListSites(request.Context(), backend.SelectSites{}, backend.Window{MaxCount: -1}); err == nil {
 		var sites []ard.StringMap
 		if err := util.IterateResults(siteInfoResults, func(siteInfo backend.SiteInfo) error {
 			slices.Sort(siteInfo.DeploymentIDs)

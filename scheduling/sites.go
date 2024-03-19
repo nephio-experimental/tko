@@ -11,17 +11,11 @@ import (
 
 func (self *Scheduling) ScheduleSites() error {
 	//self.Log.Notice("scheduling sites")
-	if siteInfos, err := self.Client.ListSites(client.SelectSites{}, 0, 0); err == nil {
-		return util.IterateResults(siteInfos, func(siteInfo client.SiteInfo) error {
-			self.ScheduleSite(siteInfo)
-			return nil
-		})
-	} else {
-		return err
-	}
+	siteInfos := self.Client.ListAllSites(client.SelectSites{})
+	return util.IterateResults(siteInfos, self.ScheduleSite)
 }
 
-func (self *Scheduling) ScheduleSite(siteInfo client.SiteInfo) {
+func (self *Scheduling) ScheduleSite(siteInfo client.SiteInfo) error {
 	log := commonlog.NewKeyValueLogger(self.Log,
 		"site", siteInfo.SiteID)
 	log.Notice("scheduling site")
@@ -32,8 +26,9 @@ func (self *Scheduling) ScheduleSite(siteInfo client.SiteInfo) {
 		} else {
 			log.Info("site disappeared")
 		}
+		return nil
 	} else {
-		log.Error(err.Error())
+		return err
 	}
 }
 

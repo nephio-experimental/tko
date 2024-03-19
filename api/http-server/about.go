@@ -14,7 +14,6 @@ func (self *Server) About(writer http.ResponseWriter, request *http.Request) {
 		"tkoVersion":          version.GitVersion,
 		"backend":             self.Backend.String(),
 		"http": map[string]any{
-			"ipStack":      string(self.IPStack),
 			"addressPorts": self.clientAddressPorts,
 		},
 	})

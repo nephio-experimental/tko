@@ -43,9 +43,8 @@ message AboutResponse {
     string instanceDescription = 2;
     string tkoVersion = 3;
     string backend = 4;
-    string ipStack = 5;
-    repeated string addressPorts = 6;
-    string defaultPackageFormat = 7;
+    repeated string addressPorts = 5;
+    string defaultPackageFormat = 6;
 }
 
 message RegisterResponse {
@@ -60,7 +59,7 @@ message DeleteResponse {
 
 message Window {
 	uint32 offset = 1;
-	uint32 maxCount = 2;
+	int32 maxCount = 2;
 }
 
 // Templates

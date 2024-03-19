@@ -88,7 +88,7 @@ func (self *SQLBackend) ListPlugins(context contextpkg.Context, selectPlugins ba
 	var args SqlArgs
 
 	args.AddValue(window.Offset)
-	args.AddValue(window.MaxCount)
+	args.AddValue(window.Limit())
 
 	if (selectPlugins.Type != nil) && (*selectPlugins.Type != "") {
 		type_ := args.Add(*selectPlugins.Type)

@@ -25,10 +25,6 @@ func ValidateWindow(window *backendpkg.Window) error {
 		return backendpkg.NewBadArgumentErrorf("maxCount is too large: %d > %d", window.MaxCount, backendpkg.MaxMaxCount)
 	}
 
-	if window.MaxCount == 0 {
-		window.MaxCount = int(backendpkg.DefaultMaxCount)
-	}
-
 	return nil
 }
 

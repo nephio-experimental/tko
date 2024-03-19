@@ -45,15 +45,14 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 	// TODO: it would be more efficient to add an ApproveDeployments API to the backend
 
 	if deploymentId != "" {
-		deploymentInfos = util.NewResultsSlice([]clientpkg.DeploymentInfo{{DeploymentID: deploymentId}})
+		deploymentInfos = util.NewResult(clientpkg.DeploymentInfo{DeploymentID: deploymentId})
 	} else {
 		var parentDemploymentId_ *string
 		if parentDemploymentId != "" {
 			parentDemploymentId_ = &parentDemploymentId
 		}
 
-		var err error
-		deploymentInfos, err = client.ListDeployments(clientpkg.SelectDeployments{
+		deploymentInfos = client.ListAllDeployments(clientpkg.SelectDeployments{
 			ParentDeploymentID:       parentDemploymentId_,
 			TemplateIDPatterns:       templateIdPatterns,
 			TemplateMetadataPatterns: templateMetadataPatterns,
@@ -62,8 +61,7 @@ func ApproveDeployment(deploymentId string, parentDemploymentId string, template
 			MetadataPatterns:         metadataPatterns,
 			Prepared:                 &trueBool,  // must be prepared
 			Approved:                 &falseBool, // avoid approving if already approved
-		}, 0, 0)
-		FailOnGRPCError(err)
+		})
 	}
 
 	approver := util.NewParallelExecutor(validating.ParallelBufferSize, func(deploymentId string) error {

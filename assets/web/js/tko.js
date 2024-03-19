@@ -1,6 +1,10 @@
 
 $(document).ready(function () {
 
+  syncTitle();
+
+  syncJson('about', 'api/about');
+
   syncTable('deployments', 'api/deployment/list', [
     ['id', 'api/deployment?id=', 'deployments'],
     ['template', 'api/template?id=', 'templates'],
@@ -37,8 +41,6 @@ $(document).ready(function () {
     ['triggers']
   ]);
 
-  syncJson('about', 'api/about');
-
   closeButton('deployments');
   closeButton('sites');
   closeButton('templates');
@@ -51,6 +53,28 @@ const INTERVAL = 2000;
 
 var intervals = {};
 
+function syncTitle() {
+  const description = $('#description');
+
+  function tick() {
+    $.get({
+      url: 'api/about',
+      dataType: 'json',
+      success: function (content) {
+        let text = '';
+        if (content.instanceName)
+          text = escapeContent(content.instanceName);
+        if (content.instanceDescription)
+          text += '<br/>' + escapeContent(content.instanceDescription);
+        description.html(text);
+      }
+    });
+  }
+
+  tick();
+  intervals['description'] = setInterval(tick, INTERVAL);
+}
+
 function syncJson(tab, url) {
   const tabControl = $('#'+tab+'-tab');
 
@@ -61,7 +85,7 @@ function syncJson(tab, url) {
   tabControl.on('hide.bs.tab', function () {
     hideTab(tab);
   });
-};
+}
 
 function syncTable(tab, url, columns) {
   const tabControl = $('#'+tab+'-tab');
@@ -212,7 +236,7 @@ function newLink(value, urlPrefix, tab) {
       dataType: 'text',
       success: function(content) {
         // Show details tab
-        content = hljs.highlight(yaml, {language: 'yaml'}).value;
+        content = hljs.highlight(content, {language: 'yaml'}).value;
         $('#'+tab+'-title').html(value);
         $('#'+tab+'-yaml').html(content);
         $('#'+tab+'-list').hide();

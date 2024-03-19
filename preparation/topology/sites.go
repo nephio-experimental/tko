@@ -21,16 +21,15 @@ func GetSiteIDs(preparationContext *preparation.Context, name string) ([]string,
 				metadataPatterns[key] = util.ToString(value)
 			}
 
-			if siteInfos, err := preparationContext.Preparation.Client.ListSites(clientpkg.SelectSites{MetadataPatterns: metadataPatterns}, 0, 0); err == nil {
-				var siteIds []string
-				if err := util.IterateResults(siteInfos, func(siteInfo clientpkg.SiteInfo) error {
-					siteIds = append(siteIds, siteInfo.SiteID)
-					return nil
-				}); err != nil {
-					preparationContext.Log.Error(err.Error())
-				}
-				return siteIds, true
+			siteInfos := preparationContext.Preparation.Client.ListAllSites(clientpkg.SelectSites{MetadataPatterns: metadataPatterns})
+			var siteIds []string
+			if err := util.IterateResults(siteInfos, func(siteInfo clientpkg.SiteInfo) error {
+				siteIds = append(siteIds, siteInfo.SiteID)
+				return nil
+			}); err != nil {
+				preparationContext.Log.Error(err.Error())
 			}
+			return siteIds, true
 		}
 	}
 

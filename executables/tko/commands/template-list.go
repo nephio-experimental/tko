@@ -29,7 +29,7 @@ func ListTemplates(offset uint, maxCount uint, templateIdPatterns []string, temp
 	templateInfos, err := NewClient().ListTemplates(client.SelectTemplates{
 		TemplateIDPatterns: templateIdPatterns,
 		MetadataPatterns:   templateMetadataPatterns,
-	}, offset, maxCount)
+	}, offset, int(maxCount))
 	FailOnGRPCError(err)
 	templateInfos_, err := util.GatherResults(templateInfos)
 	util.FailOnError(err)

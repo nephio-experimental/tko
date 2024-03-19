@@ -89,7 +89,7 @@ func (self *SQLBackend) ListSites(context contextpkg.Context, selectSites backen
 	var where SqlWhere
 
 	args.AddValue(window.Offset)
-	args.AddValue(window.MaxCount)
+	args.AddValue(window.Limit())
 
 	for _, pattern := range selectSites.SiteIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))

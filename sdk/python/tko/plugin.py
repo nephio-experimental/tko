@@ -47,10 +47,10 @@ def get_grpc_host():
     return f'{address}:{port}' # ipv4
 
 
-def execute(args, env=None, input=None):
-  if not isinstance(args, collections.abc.Sequence):
-    raise Exception('args is not a sequence')
-  log(f'executing: {" ".join(args)}')
+def execute(*args, env=None, input=None):
+  env_ = ''.join(f'{k}={v} ' for k, v in env.items()) if env else ''
+  args_ = " ".join(args)
+  log(f'executing: {env_}{args_}')
   if env is not None:
       if not isinstance(env, collections.abc.Mapping):
         raise Exception('env is not a mapping')

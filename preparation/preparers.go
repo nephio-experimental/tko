@@ -34,21 +34,19 @@ func (self *Preparation) GetPreparers(gvk tkoutil.GVK) (Preparers, error) {
 		preparers = append(preparers, preparers_...)
 	}
 
-	if plugins, err := self.Client.ListPlugins(client.SelectPlugins{
+	plugins := self.Client.ListAllPlugins(client.SelectPlugins{
 		Type:    &prepareString,
 		Trigger: &gvk,
-	}, 0, 0); err == nil {
-		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
-			if prepare, err := NewPluginPreparer(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
-				preparers = append(preparers, prepare)
-				return nil
-			} else {
-				return err
-			}
-		}); err != nil {
-			return nil, err
+	})
+
+	if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
+		if prepare, err := NewPluginPreparer(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
+			preparers = append(preparers, prepare)
+			return nil
+		} else {
+			return err
 		}
-	} else {
+	}); err != nil {
 		return nil, err
 	}
 

@@ -9,15 +9,12 @@ not_root
 
 m 'stopping controllers...'
 
-"$HERE/stop-service" tko-meta-scheduler
-"$HERE/stop-service" tko-preparer
-"$HERE/stop-service" tko-api
+"$HERE/stop-services"
 
-if [ "$1" == -c ]; then
-	m 'deleting workload clusters...'
-    kind delete cluster --name=edge1
-    kind delete cluster --name=edge2
-fi
+m 'deleting workload clusters...'
+
+kind delete cluster --name=edge1 || true
+kind delete cluster --name=edge2 || true
 
 m 'building...'
 
@@ -25,14 +22,12 @@ m 'building...'
 
 m 'starting controllers...'
 
-"$HERE/start-service" tko-api
-"$HERE/start-service" tko-preparer
-"$HERE/start-service" tko-meta-scheduler
+"$HERE/start-services"
 
 set +e
 while true; do
 	m 'waiting for tko-api...'
-	if tko template list --quiet; then
+	if tko about --quiet; then
 		break
 	fi
 	sleep 1

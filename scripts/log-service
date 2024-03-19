@@ -8,4 +8,7 @@ not_root
 
 NAME=$1
 
-journalctl --user-unit="$NAME.service" "${@:2}"
+# See: https://man7.org/linux/man-pages/man1/journalctl.1.html#OUTPUT_OPTIONS
+OUTPUT=${OUTPUT:-cat}
+
+journalctl --user-unit="$NAME.service" --output="$OUTPUT" "${@:2}"

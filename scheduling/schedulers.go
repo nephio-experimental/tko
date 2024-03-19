@@ -33,21 +33,19 @@ func (self *Scheduling) GetSchedulers(gvk tkoutil.GVK) (Schedulers, error) {
 		schedulers = append(schedulers, schedulers_...)
 	}
 
-	if plugins, err := self.Client.ListPlugins(client.SelectPlugins{
+	plugins := self.Client.ListAllPlugins(client.SelectPlugins{
 		Type:    &scheduleString,
 		Trigger: &gvk,
-	}, 0, 0); err == nil {
-		if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
-			if schedule, err := NewPluginScheduler(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
-				schedulers = append(schedulers, schedule)
-				return nil
-			} else {
-				return err
-			}
-		}); err != nil {
-			return nil, err
+	})
+
+	if err := util.IterateResults(plugins, func(plugin client.Plugin) error {
+		if schedule, err := NewPluginScheduler(plugin, self.LogIPStack, self.LogAddress, self.LogPort); err == nil {
+			schedulers = append(schedulers, schedule)
+			return nil
+		} else {
+			return err
 		}
-	} else {
+	}); err != nil {
 		return nil, err
 	}
 
