@@ -26,13 +26,14 @@ type Server struct {
 	Port                int
 	Timezone            *time.Location
 	Log                 commonlog.Logger
+	Debug               bool
 
 	httpServers        []*http.Server
 	clientAddressPorts []string
 	mux                *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, timezone *time.Location, log commonlog.Logger) (*Server, error) {
+func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, timezone *time.Location, log commonlog.Logger, debug bool) (*Server, error) {
 	if timezone == nil {
 		timezone = time.Local
 	}
@@ -45,6 +46,7 @@ func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPSt
 		Port:     port,
 		Timezone: timezone,
 		Log:      log,
+		Debug:    debug,
 		mux:      http.NewServeMux(),
 	}
 

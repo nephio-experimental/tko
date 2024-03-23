@@ -134,16 +134,19 @@ func (self *Client) ListAllSites(selectSites SelectSites) util.Results[SiteInfo]
 }
 
 func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount int) (util.Results[SiteInfo], error) {
+	var window *api.Window
+	var err error
+	if window, err = newWindow(offset, maxCount); err != nil {
+		return nil, err
+	}
+
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listSites",
 			"selectSites", selectSites)
 		if client, err := apiClient.ListSites(context, &api.ListSites{
-			Window: &api.Window{
-				Offset:   uint32(offset),
-				MaxCount: int32(maxCount),
-			},
+			Window: window,
 			Select: &api.SelectSites{
 				SiteIdPatterns:     selectSites.SiteIDPatterns,
 				TemplateIdPatterns: selectSites.TemplateIDPatterns,

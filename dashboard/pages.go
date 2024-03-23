@@ -15,6 +15,7 @@ type Details interface {
 
 func (self *Application) AddTextPage(name string, title string, key rune, updateText UpdateTextFunc) {
 	text := tview.NewTextView().
+		SetDynamicColors(true).
 		SetDoneFunc(func(key tcell.Key) {
 			self.application.SetFocus(self.menu)
 		})
@@ -52,6 +53,7 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 		if details, ok := table.GetCell(row, column).GetReference().(Details); ok {
 			page, _ := self.pages.GetFrontPage()
 			text := tview.NewTextView().
+				SetDynamicColors(true).
 				SetText(details.GetText()).
 				SetDoneFunc(func(key tcell.Key) {
 					self.pages.RemovePage("details")

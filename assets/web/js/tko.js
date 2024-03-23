@@ -151,20 +151,20 @@ function hideTab(tab) {
 }
 
 function updateTable(tbody, rows, columns) {
-  // Removed rows
   const ids = rows.map(row => row.id);
-  tbody.children('tr').each(function () {
-    const tr = $(this);
+
+  // Removed rows
+  eachTableRow(tbody, function (tr) {
     if (!ids.includes(tr.data('id')))
       tr.remove();
+    return true;
   });
 
   for (const row of rows) {
     let newRow = true;
 
     // Existing rows
-    tbody.children('tr').each(function () {
-      const tr = $(this);
+    eachTableRow(tbody, function (tr) {
       if (tr.data('id') == row.id) {
         newRow = false;
         // Replace row if necessary
@@ -172,20 +172,21 @@ function updateTable(tbody, rows, columns) {
           tr.replaceWith(createTr(row, columns));
         return false;
       }
+      return true;
     });
 
     // New rows
     if (newRow) {
       const newTr = createTr(row, columns);
 
-      tbody.children('tr').each(function () {
-        const tr = $(this);
+      eachTableRow(tbody, function (tr) {
         // Insert before higher order row
         if (tr.data('id') > row.id) {
           newRow = false;
           tr.insertBefore(newTr);
           return false;
         }
+        return true;
       });
 
       // Or append at bottom
@@ -195,8 +196,14 @@ function updateTable(tbody, rows, columns) {
   }
 }
 
+function eachTableRow(tbody, f) {
+  tbody.children('tr').each(function () {
+    return f($(this));
+  });
+}
+
 function createTr(row, columns) {
-  const tr = $('<tr></tr');
+  const tr = $('<tr></tr>');
   tr.data('id', row.id);
   tr.data('row', row);
 

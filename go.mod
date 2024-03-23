@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/spanner v1.60.0
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/gdamore/tcell/v2 v2.7.4
+	github.com/goccy/go-yaml v1.11.3
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/rivo/tview v0.0.0-20240307173318-e804876934a1
 	github.com/segmentio/ksuid v1.0.4
@@ -24,7 +25,7 @@ require (
 	k8s.io/apimachinery v0.29.3
 	k8s.io/apiserver v0.29.3
 	k8s.io/client-go v0.29.3
-	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
+	k8s.io/kube-openapi v0.0.0-20240322212309-b815d8309940
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
 
@@ -81,7 +82,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
-	github.com/goccy/go-yaml v1.11.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect

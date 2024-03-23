@@ -6,13 +6,12 @@ import (
 
 	"github.com/nephio-experimental/tko/backend"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/go-transcribe"
 	"github.com/tliron/kutil/util"
 )
 
 func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request) {
 	// TODO: paging
-	if siteInfoResults, err := self.Backend.ListSites(request.Context(), backend.SelectSites{}, backend.Window{MaxCount: -1}); err == nil {
+	if siteInfoResults, err := self.Backend.ListSites(request.Context(), backend.SelectSites{}, getWindow(request)); err == nil {
 		var sites []ard.StringMap
 		if err := util.IterateResults(siteInfoResults, func(siteInfo backend.SiteInfo) error {
 			slices.Sort(siteInfo.DeploymentIDs)
@@ -25,22 +24,21 @@ func (self *Server) ListSites(writer http.ResponseWriter, request *http.Request)
 			})
 			return nil
 		}); err != nil {
-			writer.WriteHeader(500)
+			self.error(writer, err)
 			return
 		}
 
-		sortById(sites)
-		transcribe.NewTranscriber().SetWriter(writer).WriteJSON(sites)
+		self.writeJson(writer, sites)
 	} else {
-		writer.WriteHeader(500)
+		self.error(writer, err)
 	}
 }
 
 func (self *Server) GetSite(writer http.ResponseWriter, request *http.Request) {
 	id := request.URL.Query().Get("id")
 	if site, err := self.Backend.GetSite(request.Context(), id); err == nil {
-		writePackage(writer, site.Package)
+		self.writePackage(writer, site.Package)
 	} else {
-		writer.WriteHeader(500)
+		self.error(writer, err)
 	}
 }

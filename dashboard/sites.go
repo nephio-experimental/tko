@@ -51,11 +51,7 @@ func (self *SiteDetails) GetTitle() string {
 func (self *SiteDetails) GetText() string {
 	if site, ok, err := self.client.GetSite(self.siteId); err == nil {
 		if ok {
-			if s, err := transcriber.Stringify(ToSliceAny(site.Package)); err == nil {
-				return s
-			} else {
-				return err.Error()
-			}
+			return PackageToYAML(site.Package)
 		} else {
 			return ""
 		}

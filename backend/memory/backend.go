@@ -8,6 +8,8 @@ import (
 	"github.com/tliron/commonlog"
 )
 
+const Name = "memory"
+
 var _ backend.Backend = new(MemoryBackend)
 
 //

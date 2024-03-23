@@ -38,7 +38,7 @@ func (self *Executor) Execute(context contextpkg.Context, stdin io.Reader, comma
 	if self.Remote == nil {
 		return ExecuteLocal(context, stdin, command...)
 	} else {
-		if kubernetesRest, err := NewKubernetesREST(); err == nil {
+		if kubernetesRest, err := GetKubernetesREST(); err == nil {
 			return kubernetesRest.Execute(context, self.Remote.KubernetesNamespace, self.Remote.KubernetesPod, self.Remote.KubernetesContainer, stdin, command...)
 		} else {
 			return nil, err

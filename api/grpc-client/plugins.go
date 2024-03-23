@@ -156,6 +156,12 @@ func (self *Client) ListAllPlugins(selectPlugins SelectPlugins) util.Results[Plu
 }
 
 func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCount int) (util.Results[Plugin], error) {
+	var window *api.Window
+	var err error
+	if window, err = newWindow(offset, maxCount); err != nil {
+		return nil, err
+	}
+
 	if selectPlugins.Type != nil {
 		if !plugins.IsValidPluginType(*selectPlugins.Type, true) {
 			return nil, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, *selectPlugins.Type)
@@ -168,10 +174,7 @@ func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCou
 		self.log.Info("listPlugins",
 			"selectPlugins", selectPlugins)
 		if client, err := apiClient.ListPlugins(context, &api.ListPlugins{
-			Window: &api.Window{
-				Offset:   uint32(offset),
-				MaxCount: int32(maxCount),
-			},
+			Window: window,
 			Select: &api.SelectPlugins{
 				Type:         selectPlugins.Type,
 				NamePatterns: selectPlugins.NamePatterns,

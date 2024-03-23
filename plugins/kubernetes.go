@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -23,6 +24,9 @@ type KubernetesREST struct {
 	Config    *restpkg.Config
 }
 
+var kubernetesRest *KubernetesREST
+var kubernetesRestLock sync.Mutex
+
 func NewKubernetesREST() (*KubernetesREST, error) {
 	if config, err := restpkg.InClusterConfig(); err == nil {
 		if client, err := kubernetes.NewForConfig(config); err == nil {
@@ -36,6 +40,20 @@ func NewKubernetesREST() (*KubernetesREST, error) {
 	} else {
 		return nil, err
 	}
+}
+
+func GetKubernetesREST() (*KubernetesREST, error) {
+	kubernetesRestLock.Lock()
+	defer kubernetesRestLock.Unlock()
+
+	if kubernetesRest == nil {
+		var err error
+		if kubernetesRest, err = NewKubernetesREST(); err != nil {
+			return nil, err
+		}
+	}
+
+	return kubernetesRest, nil
 }
 
 func (self *KubernetesREST) Execute(context contextpkg.Context, namespace string, podName string, containerName string, stdin io.Reader, command ...string) ([]byte, error) {

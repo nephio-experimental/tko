@@ -3,12 +3,11 @@ package server
 import (
 	"net/http"
 
-	"github.com/tliron/go-transcribe"
 	"github.com/tliron/kutil/version"
 )
 
 func (self *Server) About(writer http.ResponseWriter, request *http.Request) {
-	transcribe.NewTranscriber().SetWriter(writer).WriteJSON(map[string]any{
+	self.writeJson(writer, map[string]any{
 		"instanceName":        self.InstanceName,
 		"instanceDescription": self.InstanceDescription,
 		"tkoVersion":          version.GitVersion,

@@ -48,6 +48,7 @@ var (
 	webAddress       string
 	webPort          uint
 	webTimezone      string
+	webDebug         bool
 
 	kubernetes     bool
 	kubernetesPort uint
@@ -84,6 +85,7 @@ func init() {
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind IP address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind TCP port for web server")
 	startCommand.Flags().StringVar(&webTimezone, "web-timezone", "", "web server timezone, e.g. \"UTC\" (empty string for local)")
+	startCommand.Flags().BoolVar(&webDebug, "web-debug", true, "web server debug mode")
 	startCommand.Flags().BoolVar(&kubernetes, "kubernetes", false, "start Kubernetes aggregated API server")
 	startCommand.Flags().UintVar(&kubernetesPort, "kubernetes-port", 50052, "bind TCP port for Kubernetes aggregated API server")
 	startCommand.Flags().StringVar(&logIpStackString, "log-ip-stack", "dual", "IP stack for log server (\"dual\", \"ipv6\", or \"ipv4\")")
@@ -115,17 +117,17 @@ func Serve() {
 	// Backend
 	var backend backendpkg.Backend
 	switch backendName {
-	case "memory":
+	case memory.Name:
 		log.Notice("creating memory backend")
 		backend = memory.NewMemoryBackend(maxModificationDuration, commonlog.GetLogger("backend.memory"))
 
-	case "postgresql":
+	case sql.PostgreSQLName:
 		log.Noticef("creating postgresql backend: %s", backendConnection)
 		sqlBackend := sql.NewSQLBackend("pgx", backendConnection, "cbor", maxModificationDuration, commonlog.GetLogger("backend.sql"))
 		sqlBackend.DropTablesFirst = backendClean
 		backend = sqlBackend
 
-	case "spanner":
+	case spanner.Name:
 		backend = spanner.NewSpannerBackend("/span/tmp/"+os.Getenv("USER")+":database-tliron-codelab", commonlog.GetLogger("backend.spanner"))
 
 	default:
@@ -169,7 +171,7 @@ func Serve() {
 	}
 
 	if web {
-		httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), webTimezone_, commonlog.GetLogger("http"))
+		httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), webTimezone_, commonlog.GetLogger("http"), webDebug)
 		util.FailOnError(err)
 		httpServer.InstanceName = instanceName
 		httpServer.InstanceDescription = instanceDescription

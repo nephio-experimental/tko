@@ -170,16 +170,19 @@ func (self *Client) ListAllDeployments(selectDeployments SelectDeployments) util
 }
 
 func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset uint, maxCount int) (util.Results[DeploymentInfo], error) {
+	var window *api.Window
+	var err error
+	if window, err = newWindow(offset, maxCount); err != nil {
+		return nil, err
+	}
+
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listDeployments",
 			"selectDeployments", selectDeployments)
 		if client, err := apiClient.ListDeployments(context, &api.ListDeployments{
-			Window: &api.Window{
-				Offset:   uint32(offset),
-				MaxCount: int32(maxCount),
-			},
+			Window: window,
 			Select: &api.SelectDeployments{
 				ParentDeploymentId:       selectDeployments.ParentDeploymentID,
 				TemplateIdPatterns:       selectDeployments.TemplateIDPatterns,

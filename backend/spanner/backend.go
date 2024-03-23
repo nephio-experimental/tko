@@ -9,6 +9,8 @@ import (
 	"github.com/tliron/commonlog"
 )
 
+const Name = "spanner"
+
 var _ backend.Backend = new(SpannerBackend)
 
 //

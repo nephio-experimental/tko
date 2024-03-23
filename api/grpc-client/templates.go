@@ -126,16 +126,19 @@ func (self *Client) ListAllTemplates(selectTemplates SelectTemplates) util.Resul
 }
 
 func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, maxCount int) (util.Results[TemplateInfo], error) {
+	var window *api.Window
+	var err error
+	if window, err = newWindow(offset, maxCount); err != nil {
+		return nil, err
+	}
+
 	if apiClient, err := self.APIClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listTemplates",
 			"selectTemplates", selectTemplates)
 		if client, err := apiClient.ListTemplates(context, &api.ListTemplates{
-			Window: &api.Window{
-				Offset:   uint32(offset),
-				MaxCount: int32(maxCount),
-			},
+			Window: window,
 			Select: &api.SelectTemplates{
 				TemplateIdPatterns: selectTemplates.TemplateIDPatterns,
 				MetadataPatterns:   selectTemplates.MetadataPatterns,

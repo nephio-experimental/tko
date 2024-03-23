@@ -10,6 +10,8 @@ import (
 	"github.com/tliron/commonlog"
 )
 
+const PostgreSQLName = "postgresql"
+
 var _ backend.Backend = new(SQLBackend)
 
 //

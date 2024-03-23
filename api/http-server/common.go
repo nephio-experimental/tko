@@ -1,32 +1,67 @@
 package server
 
 import (
-	"io"
-	"slices"
-	"strings"
+	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/nephio-experimental/tko/util"
-	"github.com/tliron/go-ard"
+	"github.com/nephio-experimental/tko/backend"
+	tkoutil "github.com/nephio-experimental/tko/util"
 	"github.com/tliron/go-transcribe"
+	"github.com/tliron/kutil/util"
 )
 
 const TimeFormat = "2006/01/02 15:04:05"
 
-func sortById(info []ard.StringMap) {
-	slices.SortFunc(info, func(a ard.StringMap, b ard.StringMap) int {
-		return strings.Compare(a["id"].(string), b["id"].(string))
-	})
+func (self *Server) timestamp(timestamp time.Time) string {
+	return timestamp.In(self.Timezone).Format(TimeFormat)
 }
 
-func writePackage(writer io.Writer, package_ util.Package) {
+func (self *Server) error(writer http.ResponseWriter, err error) {
+	writer.WriteHeader(500)
+	if self.Debug {
+		writer.Write(util.StringToBytes(err.Error()))
+	}
+}
+
+func (self *Server) writeJson(writer http.ResponseWriter, content any) {
+	writer.Header().Add("Content-Type", "application/json")
+	if err := transcribe.NewTranscriber().SetWriter(writer).WriteJSON(content); err != nil {
+		self.error(writer, err)
+	}
+}
+
+func (self *Server) writeYaml(writer http.ResponseWriter, content any) {
+	writer.Header().Add("Content-Type", "application/yaml")
+	if err := transcribe.NewTranscriber().SetWriter(writer).SetIndentSpaces(2).WriteYAML(content); err != nil {
+		self.error(writer, err)
+	}
+}
+
+func (self *Server) writePackage(writer http.ResponseWriter, package_ tkoutil.Package) {
 	content := make([]any, len(package_))
 	for index, resource := range package_ {
 		content[index] = resource
 	}
-	transcribe.NewTranscriber().SetWriter(writer).SetIndentSpaces(2).WriteYAML(content)
+	self.writeYaml(writer, content)
 }
 
-func (self *Server) timestamp(timestamp time.Time) string {
-	return timestamp.In(self.Timezone).Format(TimeFormat)
+func getWindow(request *http.Request) backend.Window {
+	window := backend.Window{MaxCount: -1}
+
+	query := request.URL.Query()
+
+	if offset := query.Get("offset"); offset != "" {
+		if offset_, err := strconv.ParseUint(offset, 10, 64); err == nil {
+			window.Offset = uint(offset_)
+		}
+	}
+
+	if count := query.Get("count"); count != "" {
+		if count_, err := strconv.ParseInt(count, 10, 64); err == nil {
+			window.MaxCount = int(count_)
+		}
+	}
+
+	return window
 }
