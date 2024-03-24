@@ -16,10 +16,10 @@ func (self *Server) ListTemplates(writer http.ResponseWriter, request *http.Requ
 		if err := util.IterateResults(templateInfoResults, func(templateInfo backend.TemplateInfo) error {
 			slices.Sort(templateInfo.DeploymentIDs)
 			templates = append(templates, ard.StringMap{
-				"id":          templateInfo.TemplateID,
-				"deployments": templateInfo.DeploymentIDs,
-				"metadata":    templateInfo.Metadata,
-				"updated":     self.timestamp(templateInfo.Updated),
+				"id":               templateInfo.TemplateID,
+				"deployments":      templateInfo.DeploymentIDs,
+				"metadata":         templateInfo.Metadata,
+				"updatedTimestamp": self.timestamp(templateInfo.Updated),
 			})
 			return nil
 		}); err != nil {

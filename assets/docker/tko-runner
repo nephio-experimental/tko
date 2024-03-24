@@ -2,10 +2,7 @@ ARG ALPINE_VERSION=latest
 
 FROM docker.io/alpine:$ALPINE_VERSION
 
-COPY scripts/_env /opt/
-COPY scripts/_functions /opt/
-COPY scripts/install-system-dependencies /opt/
-COPY scripts/install-python-env /opt/
+COPY scripts/_env scripts/_functions scripts/install-system-dependencies scripts/install-python-env /opt/
 
 RUN \
 apk add --no-cache libc6-compat bash coreutils iputils curl git python3 docker && \

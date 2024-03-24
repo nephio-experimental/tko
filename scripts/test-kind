@@ -10,9 +10,10 @@ not_root
 TIMEOUT=180s
 
 function clean_volumes () {
-	# If we don't do this, Docker-in-Docker (and thus Kind) will get confused with existing data
+	# If we don't clean /tmp/tko-docker, Docker-in-Docker (and thus Kind) will get confused with existing data
 	m 'cleaning volumes (via sudo)...'
-	sudo rm --recursive --force /tmp/tko-postgresql/* /tmp/tko-docker/*
+	sudo rm --recursive --force /tmp/tko-postgresql /tmp/tko-docker
+	sudo mkdir --parents /tmp/tko-postgresql /tmp/tko-docker
 }
 
 if [ "$1" == -c ]; then
@@ -32,11 +33,11 @@ if [ "$1" == -d ]; then
 	"$HERE/kubectl-kind" delete --kustomize="$ROOT/assets/kubernetes/" || true
 
 	m 'waiting for TKO deletion...'
-	kubectl wait --for=delete deployment/postgresql --timeout="$TIMEOUT"
-	kubectl wait --for=delete pod/tko-runner --timeout="$TIMEOUT"
+	kubectl wait deployment/postgresql --timeout="$TIMEOUT" --for=delete
+	kubectl wait pod/tko-runner --timeout="$TIMEOUT" --for=delete
 	clean_volumes
-	kubectl wait --for=delete namespace/tko --timeout="$TIMEOUT"
-	kubectl wait --for=delete apiservice/v1alpha1.tko.nephio.org --timeout="$TIMEOUT"
+	kubectl wait namespace/tko --timeout="$TIMEOUT" --for=delete
+	kubectl wait apiservice/v1alpha1.tko.nephio.org --timeout="$TIMEOUT" --for=delete
 else
 	m 'creating cluster...'
 	kind create cluster --config="$ROOT/assets/kubernetes/kind/tko.yaml" || true
@@ -48,12 +49,12 @@ m 'deploying TKO...'
 
 m 'waiting for TKO...'
 
-"$HERE/kubectl-kind" wait deployment/postgresql --namespace=tko --for=condition=available --timeout="$TIMEOUT"
-"$HERE/kubectl-kind" wait deployment/tko-api --namespace=tko --for=condition=available --timeout="$TIMEOUT"
-"$HERE/kubectl-kind" wait deployment/tko-preparer --namespace=tko --for=condition=available --timeout="$TIMEOUT"
-"$HERE/kubectl-kind" wait deployment/tko-meta-scheduler --namespace=tko --for=condition=available --timeout="$TIMEOUT"
-"$HERE/kubectl-kind" wait pod/tko-runner --namespace=tko --for=condition=ready --timeout="$TIMEOUT"
-"$HERE/kubectl-kind" wait apiservice/v1alpha1.tko.nephio.org --for=condition=available --timeout="$TIMEOUT"
+"$HERE/kubectl-kind" wait deployment/postgresql --timeout="$TIMEOUT" --for=condition=available --namespace=tko
+"$HERE/kubectl-kind" wait deployment/tko-api --timeout="$TIMEOUT" --for=condition=available --namespace=tko
+"$HERE/kubectl-kind" wait deployment/tko-preparer --timeout="$TIMEOUT" --for=condition=available --namespace=tko
+"$HERE/kubectl-kind" wait deployment/tko-meta-scheduler --timeout="$TIMEOUT" --for=condition=available --namespace=tko
+"$HERE/kubectl-kind" wait pod/tko-runner --timeout="$TIMEOUT" --for=condition=ready --namespace=tko
+"$HERE/kubectl-kind" wait apiservice/v1alpha1.tko.nephio.org --timeout="$TIMEOUT" --for=condition=available
 
 m 'deleting workload clusters...'
 

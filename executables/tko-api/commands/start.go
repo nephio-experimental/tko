@@ -47,7 +47,6 @@ var (
 	webIpStack       util.IPStack
 	webAddress       string
 	webPort          uint
-	webTimezone      string
 	webDebug         bool
 
 	kubernetes     bool
@@ -84,7 +83,6 @@ func init() {
 	startCommand.Flags().StringVar(&webIpStackString, "web-ip-stack", "dual", "bind IP stack for web server (\"dual\", \"ipv6\", or \"ipv4\")")
 	startCommand.Flags().StringVar(&webAddress, "web-address", "", "bind IP address for web server")
 	startCommand.Flags().UintVar(&webPort, "web-port", 50051, "bind TCP port for web server")
-	startCommand.Flags().StringVar(&webTimezone, "web-timezone", "", "web server timezone, e.g. \"UTC\" (empty string for local)")
 	startCommand.Flags().BoolVar(&webDebug, "web-debug", true, "web server debug mode")
 	startCommand.Flags().BoolVar(&kubernetes, "kubernetes", false, "start Kubernetes aggregated API server")
 	startCommand.Flags().UintVar(&kubernetesPort, "kubernetes-port", 50052, "bind TCP port for Kubernetes aggregated API server")
@@ -134,13 +132,6 @@ func Serve() {
 		util.Failf("unsupported backend: %s", backendName)
 	}
 
-	var webTimezone_ *time.Location
-	if webTimezone != "" {
-		var err error
-		webTimezone_, err = time.LoadLocation(webTimezone)
-		util.FailOnError(err)
-	}
-
 	// Client
 	client := grpcclient.NewClient(grpcIpStack, grpcAddress, int(grpcPort), grpcFormat, tkoutil.SecondsToDuration(grpcTimeout), commonlog.GetLogger("client"))
 
@@ -171,7 +162,7 @@ func Serve() {
 	}
 
 	if web {
-		httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), webTimezone_, commonlog.GetLogger("http"), webDebug)
+		httpServer, err := httpserver.NewServer(backend, tkoutil.SecondsToDuration(webTimeout), webIpStack, webAddress, int(webPort), commonlog.GetLogger("http"), webDebug)
 		util.FailOnError(err)
 		httpServer.InstanceName = instanceName
 		httpServer.InstanceDescription = instanceDescription

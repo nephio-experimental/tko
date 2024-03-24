@@ -19,7 +19,7 @@ if [ "$WHERE" == local ]; then
 else
 	# Copy plugins to runner
 	"$HERE/kind-runner" mkdir --parents /home/tko/examples/plugins/
-	"$HERE/kubectl-kind" cp "$ROOT/examples/plugins" tko/tko-runner:/home/tko/examples/ --container=tko-runner
+	"$HERE/kubectl-kind" cp --container=tko-runner "$ROOT/examples/plugins" tko/tko-runner:/home/tko/examples/
 
 	"$TKO" plugin register validate free5gc/smf /home/tko/examples/plugins/validate_free5gc_smf.py --property=_kubernetes.pod=tko-runner --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
 	"$TKO" plugin register prepare namespace gcr.io/kpt-fn/set-namespace:v0.4.1 --executor=kpt --property=_kubernetes.pod=tko-runner --property=namespace=spec.namespace --trigger=workload.plugin.nephio.org,v1alpha1,Namespace -v
@@ -66,7 +66,8 @@ zip --recurse-paths /tmp/tko-oran-du.csar .
 popd > /dev/null
 
 if [ "$WHERE" == remote ]; then
-	POD=$(kubectl get pod --selector=app.kubernetes.io/name=tko-preparer --namespace=tko --output=jsonpath="{.items[0].metadata.name}")
+	# Copy CSAR to TKO Preparer
+	POD=$(kubectl get pod --namespace=tko --selector=app.kubernetes.io/name=tko-preparer --output=jsonpath="{.items[0].metadata.name}")
 	"$HERE/kubectl-kind" cp /tmp/tko-oran-du.csar tko/$POD:/tmp/
 fi
 

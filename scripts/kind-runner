@@ -6,4 +6,4 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-"$HERE/kubectl-kind" --context=kind-tko exec -it pod/tko-runner --namespace=tko --container=tko-runner -- "$@"
+"$HERE/kubectl-kind" exec --context=kind-tko --namespace=tko --container=tko-runner --stdin --tty pod/tko-runner -- "$@"

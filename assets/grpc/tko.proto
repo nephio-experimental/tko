@@ -245,7 +245,6 @@ message CancelDeploymentModificationResponse {
 
 // Plugins
 
-
 message PluginID {
     string type = 1;
     string name = 2;

@@ -14,15 +14,15 @@ func (self *Server) ListDeployments(writer http.ResponseWriter, request *http.Re
 		var deployments []ard.StringMap
 		if err := util.IterateResults(deploymentInfoResults, func(deploymentInfo backend.DeploymentInfo) error {
 			deployments = append(deployments, ard.StringMap{
-				"id":       deploymentInfo.DeploymentID,
-				"template": deploymentInfo.TemplateID,
-				"parent":   deploymentInfo.ParentDeploymentID,
-				"site":     deploymentInfo.SiteID,
-				"metadata": deploymentInfo.Metadata,
-				"created":  self.timestamp(deploymentInfo.Created),
-				"updated":  self.timestamp(deploymentInfo.Updated),
-				"prepared": deploymentInfo.Prepared,
-				"approved": deploymentInfo.Approved,
+				"id":               deploymentInfo.DeploymentID,
+				"template":         deploymentInfo.TemplateID,
+				"parent":           deploymentInfo.ParentDeploymentID,
+				"site":             deploymentInfo.SiteID,
+				"metadata":         deploymentInfo.Metadata,
+				"createdTimestamp": self.timestamp(deploymentInfo.Created),
+				"updatedTimestamp": self.timestamp(deploymentInfo.Updated),
+				"prepared":         deploymentInfo.Prepared,
+				"approved":         deploymentInfo.Approved,
 			})
 			return nil
 		}); err != nil {

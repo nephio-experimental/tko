@@ -11,10 +11,8 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-const TimeFormat = "2006/01/02 15:04:05"
-
-func (self *Server) timestamp(timestamp time.Time) string {
-	return timestamp.In(self.Timezone).Format(TimeFormat)
+func (self *Server) timestamp(timestamp time.Time) int64 {
+	return timestamp.UnixMilli()
 }
 
 func (self *Server) error(writer http.ResponseWriter, err error) {

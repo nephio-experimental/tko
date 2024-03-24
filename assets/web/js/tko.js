@@ -13,8 +13,8 @@ $(document).ready(function () {
     ['metadata'],
     ['prepared'],
     ['approved'],
-    ['created'],
-    ['updated']
+    ['createdTimestamp'],
+    ['updatedTimestamp']
   ]);
 
   syncTable('sites', 'api/site/list', [
@@ -22,14 +22,14 @@ $(document).ready(function () {
     ['template', 'api/template?id=', 'templates'],
     ['metadata'],
     ['deployments', 'api/deployment?id=', 'deployments'],
-    ['updated']
+    ['updatedTimestamp']
   ]);
 
   syncTable('templates', 'api/template/list', [
     ['id', 'api/template?id=', 'templates'],
     ['metadata'],
     ['deployments', 'api/deployment?id=', 'deployments'],
-    ['updated']
+    ['updatedTimestamp']
   ]);
 
   syncTable('plugins', 'api/plugin/list', [
@@ -52,6 +52,10 @@ $(document).ready(function () {
 const INTERVAL = 2000;
 
 var intervals = {};
+
+var locale = Intl.DateTimeFormat().resolvedOptions().locale;
+
+var dateTimeFormat = new Intl.DateTimeFormat(locale, {dateStyle: 'short', timeStyle: 'short'});
 
 function syncTitle() {
   const description = $('#description');
@@ -226,6 +230,8 @@ function createTr(row, columns) {
       } else
         // Single link
         td.append(newLink(value, urlPrefix, tab));
+    else if (name.endsWith('Timestamp'))
+      td.append(escapeContent(dateTimeFormat.format(new Date(value))));
     else
       // Plain content
       td.append(renderContent(value));

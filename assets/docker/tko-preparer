@@ -4,8 +4,9 @@ FROM docker.io/alpine:$ALPINE_VERSION
 
 COPY work/tko-preparer /opt/
 
+# Go executables need libc6-compat
 RUN \
-apk add --no-cache libc6-compat tzdata && \
+apk add --no-cache libc6-compat && \
 adduser --disabled-password tko
 
 USER tko

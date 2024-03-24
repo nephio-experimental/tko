@@ -34,8 +34,6 @@ spec:
           value: Local Kubernetes
         - name: TKO_description
           value: Kind cluster
-        - name: TKO_web-timezone
-          value: America/Chicago
         - name: TKO_backend
           value: postgresql
         - name: TKO_backend-clean
@@ -43,7 +41,7 @@ spec:
         - name: TKO_backend-connection
           value: postgresql://tko:tko@postgresql:5432/tko
         - name: TKO_backend-connection-timeout
-          value: "300.0" # 5 minutes; PostgreSQL can be slow to start up
+          value: "300" # 5 minutes; PostgreSQL can be slow to start up
         ports:
         - name: grpc
           containerPort: 50050

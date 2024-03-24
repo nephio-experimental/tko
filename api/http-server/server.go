@@ -24,7 +24,6 @@ type Server struct {
 	IPStack             util.IPStack
 	Address             string
 	Port                int
-	Timezone            *time.Location
 	Log                 commonlog.Logger
 	Debug               bool
 
@@ -33,21 +32,16 @@ type Server struct {
 	mux                *http.ServeMux
 }
 
-func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, timezone *time.Location, log commonlog.Logger, debug bool) (*Server, error) {
-	if timezone == nil {
-		timezone = time.Local
-	}
-
+func NewServer(backend backend.Backend, timeout time.Duration, ipStack util.IPStack, address string, port int, log commonlog.Logger, debug bool) (*Server, error) {
 	self := Server{
-		Backend:  backend,
-		Timeout:  timeout,
-		IPStack:  ipStack,
-		Address:  address,
-		Port:     port,
-		Timezone: timezone,
-		Log:      log,
-		Debug:    debug,
-		mux:      http.NewServeMux(),
+		Backend: backend,
+		Timeout: timeout,
+		IPStack: ipStack,
+		Address: address,
+		Port:    port,
+		Log:     log,
+		Debug:   debug,
+		mux:     http.NewServeMux(),
 	}
 
 	self.mux.Handle("/", http.FileServer(http.FS(web.FS)))
