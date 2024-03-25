@@ -230,7 +230,7 @@ func (self *SQLBackend) PurgeDeployments(context contextpkg.Context, selectDeplo
 
 	for _, pattern := range selectDeployments.TemplateIDPatterns {
 		pattern = args.Add(backend.IDPatternRE(pattern))
-		where.Add(`template_id ~ ` + pattern)
+		where.Add(`deployments.template_id ~ ` + pattern)
 	}
 
 	if len(selectDeployments.TemplateMetadataPatterns) > 0 {

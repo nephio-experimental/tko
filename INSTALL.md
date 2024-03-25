@@ -14,7 +14,7 @@ To start it, run this in your local git clone directory:
 It will take a few minutes to install all dependencies. The reload is necessary for Docker
 permissions to work.
 
-To run the test:
+To run the test scenario:
 
     scripts/vagrant scripts/test
 
@@ -65,7 +65,7 @@ images published on [Docker Hub](https://hub.docker.com/u/tliron). The setup inc
 "runner" pod for executing plugins and deploying workload clusters, as well as PostgreSQL for
 the TKO backend.
 
-To create the Kind cluster locally:
+To create the Kind cluster locally and run the test scenario:
 
     scripts/test-kind
 
@@ -174,5 +174,20 @@ testing.)
 Start the systemd services:
 
     scripts/start-services
+
+To run the test scenario:
+
+    scripts/test
+
+We have a script to follow logs in individual tabs, supporting a few popular terminal
+emulators (GNOME Terminal, Kitty, and Tilix):
+
+    scripts/follow-logs
+
+Or follow individual logs manually:
+
+    scripts/log-service tko-api --follow
+    scripts/log-service tko-preparer --follow
+    scripts/log-service tko-meta-scheduler --follow
 
 Continue to the [user guide](USAGE.md).

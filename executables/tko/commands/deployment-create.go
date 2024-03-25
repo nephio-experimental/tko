@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	mergeUrl string
 	siteId   string
 	prepared bool
 	approved bool
@@ -19,7 +18,7 @@ func init() {
 	deploymentCommand.AddCommand(deploymentCreateCommand)
 
 	deploymentCreateCommand.Flags().StringToStringVarP(&deploymentMetadata, "mergeable metadata", "m", nil, "metadata")
-	deploymentCreateCommand.Flags().StringVar(&mergeUrl, "merge", "", "URL for mergeable package YAML manifests (can be a local directory or file)")
+	deploymentCreateCommand.Flags().StringVar(&url, "url", "", "URL for mergeable package YAML manifests (can be a local directory or file)")
 	deploymentCreateCommand.Flags().BoolVarP(&stdin, "stdin", "i", false, "use mergeable package YAML manifests from stdin")
 	deploymentCreateCommand.Flags().StringVar(&parentDeploymentId, "parent", "", "parent deployment ID")
 	deploymentCreateCommand.Flags().StringVarP(&siteId, "site", "s", "", "deployment site ID")
@@ -41,9 +40,9 @@ var deploymentCreateCommand = &cobra.Command{
 
 func CreateDeployment(context contextpkg.Context, parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, url string, stdin bool) {
 	var mergePackage tkoutil.Package
-	if stdin || (mergeUrl != "") {
+	if stdin || (url != "") {
 		var err error
-		mergePackage, err = readPackage(context, mergeUrl, stdin)
+		mergePackage, err = readPackage(context, url, stdin)
 		util.FailOnError(err)
 	}
 

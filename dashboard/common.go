@@ -29,8 +29,10 @@ func GetListMinSize(list *tview.List) (int, int) {
 }
 
 func SetTableHeader(table *tview.Table, headers ...string) {
-	for column, header := range headers {
-		table.SetCell(0, column, NewHeaderTableCell(header))
+	if table.GetRowCount() == 0 {
+		for column, header := range headers {
+			table.SetCell(0, column, NewHeaderTableCell(header))
+		}
 	}
 }
 
@@ -40,11 +42,22 @@ func NewHeaderTableCell(text string) *tview.TableCell {
 		SetStyle(tcell.StyleDefault.Foreground(tcell.ColorBlue).Bold(true))
 }
 
-func BoolTableCell(v bool) *tview.TableCell {
+func NewBoolTableCell(v bool) *tview.TableCell {
 	if v {
 		return tview.NewTableCell("true").SetTextColor(tcell.ColorGreen).SetBackgroundColor(tcell.ColorBlack)
 	} else {
 		return tview.NewTableCell("false")
+	}
+}
+
+func CleanTableRows(table *tview.Table, exists func(row int) bool) {
+	row := 1
+	for row < table.GetRowCount() {
+		if exists(row) {
+			row++
+		} else {
+			table.RemoveRow(row)
+		}
 	}
 }
 

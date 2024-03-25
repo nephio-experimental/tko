@@ -49,7 +49,7 @@ func (self *Application) AddTextPage(name string, title string, key rune, update
 func (self *Application) AddTablePage(name string, title string, key rune, updateTable UpdateTableFunc) {
 	table := tview.NewTable()
 
-	openDetails := func(row int, column int) {
+	openDetails := func(row int, column int) bool {
 		if details, ok := table.GetCell(row, column).GetReference().(Details); ok {
 			page, _ := self.pages.GetFrontPage()
 			text := tview.NewTextView().
@@ -68,6 +68,9 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 				SetTitle(details.GetTitle())
 			self.pages.AddAndSwitchToPage("details", view, true)
 			self.application.SetFocus(text)
+			return true
+		} else {
+			return false
 		}
 	}
 
@@ -98,8 +101,9 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 					}
 				}
 
-				openDetails(row, column)
-				self.application.ForceDraw()
+				if openDetails(row, column) {
+					self.application.ForceDraw()
+				}
 				return action, nil
 			}
 			return action, event

@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"slices"
 	"strconv"
 
 	client "github.com/nephio-experimental/tko/api/grpc-client"
@@ -12,20 +13,40 @@ import (
 func (self *Application) UpdateTemplates(table *tview.Table) {
 	// TODO: paging
 	if templateInfoResults, err := self.client.ListTemplates(client.SelectTemplates{}, 0, -1); err == nil {
-		table.Clear()
-
 		SetTableHeader(table, "ID", "Deployments", "Updated")
 
-		row := 1
+		var templateIds []string
 		util.IterateResults(templateInfoResults, func(templateInfo client.TemplateInfo) error {
-			table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
-			table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
-			table.SetCellSimple(row, 2, self.timestamp(templateInfo.Updated))
-
-			row++
+			templateIds = append(templateIds, templateInfo.TemplateID)
+			row := FindTemplateRow(table, templateInfo.TemplateID)
+			self.SetTemplateRow(table, row, &templateInfo)
 			return nil
 		})
+
+		CleanTableRows(table, func(row int) bool {
+			return slices.Contains(templateIds, GetTemplateRow(table, row))
+		})
 	}
+}
+
+func (self *Application) SetTemplateRow(table *tview.Table, row int, templateInfo *client.TemplateInfo) {
+	table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
+	table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
+	table.SetCellSimple(row, 2, self.timestamp(templateInfo.Updated))
+}
+
+func GetTemplateRow(table *tview.Table, row int) string {
+	return table.GetCell(row, 0).GetReference().(*TemplateDetails).templateId
+}
+
+func FindTemplateRow(table *tview.Table, templateId string) int {
+	rowCount := table.GetRowCount()
+	for row := 1; row < rowCount; row++ {
+		if templateId == GetTemplateRow(table, row) {
+			return row
+		}
+	}
+	return rowCount
 }
 
 //
