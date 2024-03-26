@@ -12,20 +12,20 @@ import (
 var transcriber = transcribe.NewTranscriber().SetIndentSpaces(2)
 
 func GetListMinSize(list *tview.List) (int, int) {
-	w := 0
-	l := list.GetItemCount()
-	for i := 0; i < l; i++ {
+	maxWidth := 0
+	count := list.GetItemCount()
+	for i := 0; i < count; i++ {
 		text1, text2 := list.GetItemText(i)
-		w_ := len(text1)
-		if w_ > w {
-			w = w_
+		width := len(text1)
+		if width > maxWidth {
+			maxWidth = width
 		}
-		w_ = len(text2)
-		if w_ > w {
-			w = w_
+		width = len(text2)
+		if width > maxWidth {
+			maxWidth = width
 		}
 	}
-	return w + 4, l
+	return maxWidth + 4, count
 }
 
 func SetTableHeader(table *tview.Table, headers ...string) {
@@ -42,8 +42,8 @@ func NewHeaderTableCell(text string) *tview.TableCell {
 		SetStyle(tcell.StyleDefault.Foreground(tcell.ColorBlue).Bold(true))
 }
 
-func NewBoolTableCell(v bool) *tview.TableCell {
-	if v {
+func NewBoolTableCell(bool_ bool) *tview.TableCell {
+	if bool_ {
 		return tview.NewTableCell("true").SetTextColor(tcell.ColorGreen).SetBackgroundColor(tcell.ColorBlack)
 	} else {
 		return tview.NewTableCell("false")
@@ -61,20 +61,20 @@ func CleanTableRows(table *tview.Table, exists func(row int) bool) {
 	}
 }
 
-func PackageToYAML(package_ tkoutil.Package) string {
+func PackageToYAML(package_ tkoutil.Package) (string, error) {
 	return ToYAML(ToSliceAny(package_))
 }
 
-func ToYAML(content any) string {
+func ToYAML(content any) (string, error) {
 	if s, err := transcriber.Stringify(content); err == nil {
 		tokens := yamllexer.Tokenize(s)
 		for _, token := range tokens {
 			// TODO: this might not be good enough to escape combinations of subsequenet "[" and "]" tokens
 			token.Value = tview.Escape(token.Value)
 		}
-		return YAMLColorPrinter.PrintTokens(tokens)
+		return YAMLColorPrinter.PrintTokens(tokens), nil
 	} else {
-		return err.Error()
+		return "", err
 	}
 }
 

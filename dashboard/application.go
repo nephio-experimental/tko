@@ -8,8 +8,6 @@ import (
 	"github.com/rivo/tview"
 )
 
-type GetYAMLFunc func(id any) (string, string, error)
-
 const TimeFormat = "2006/01/02 15:04:05"
 
 //
@@ -25,6 +23,7 @@ type Application struct {
 	application *tview.Application
 	menu        *tview.List
 	pages       *tview.Pages
+	pageFocus   map[string]tview.Primitive
 	ticker      *Ticker
 }
 
@@ -40,6 +39,7 @@ func NewApplication(client *clientpkg.Client, frequency time.Duration, timezone 
 		application: tview.NewApplication(),
 		menu:        tview.NewList(),
 		pages:       tview.NewPages(),
+		pageFocus:   make(map[string]tview.Primitive),
 	}
 
 	self.application.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

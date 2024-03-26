@@ -5,12 +5,19 @@ import (
 	"github.com/rivo/tview"
 )
 
-type UpdateTextFunc func(textView *tview.TextView)
-type UpdateTableFunc func(table *tview.Table)
+type UpdateTextFunc func(textView *tview.TextView) error
+type UpdateTableFunc func(table *tview.Table) error
 
 type Details interface {
 	GetTitle() string
-	GetText() string
+	GetText() (string, error)
+}
+
+func (self *Application) SwitchToPage(page string) {
+	self.pages.SwitchToPage(page)
+	if focus, ok := self.pageFocus[page]; ok {
+		self.application.SetFocus(focus)
+	}
 }
 
 func (self *Application) AddTextPage(name string, title string, key rune, updateText UpdateTextFunc) {
@@ -44,6 +51,8 @@ func (self *Application) AddTextPage(name string, title string, key rune, update
 			self.ticker.Start()
 		}
 	})
+
+	self.pageFocus[name] = text
 }
 
 func (self *Application) AddTablePage(name string, title string, key rune, updateTable UpdateTableFunc) {
@@ -51,23 +60,26 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 
 	openDetails := func(row int, column int) bool {
 		if details, ok := table.GetCell(row, column).GetReference().(Details); ok {
-			page, _ := self.pages.GetFrontPage()
-			text := tview.NewTextView().
-				SetDynamicColors(true).
-				SetText(details.GetText()).
-				SetDoneFunc(func(key tcell.Key) {
-					self.pages.RemovePage("details")
-					self.pages.SwitchToPage(page)
-					self.application.SetFocus(table)
-				})
-			view := tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(text, 0, 1, true)
-			view.
-				SetBorder(true).
-				SetTitle(details.GetTitle())
-			self.pages.AddAndSwitchToPage("details", view, true)
-			self.application.SetFocus(text)
+			if text, err := details.GetText(); err == nil {
+				page, _ := self.pages.GetFrontPage()
+				textView := tview.NewTextView().
+					SetDynamicColors(true).
+					SetText(text).
+					SetDoneFunc(func(key tcell.Key) {
+						self.pages.RemovePage("details")
+						self.SwitchToPage(page)
+					})
+				view := tview.NewFlex().
+					SetDirection(tview.FlexRow).
+					AddItem(textView, 0, 1, true)
+				view.
+					SetBorder(true).
+					SetTitle(details.GetTitle())
+				self.pages.AddAndSwitchToPage("details", view, true)
+				self.application.SetFocus(textView)
+			} else {
+				self.Error(err)
+			}
 			return true
 		} else {
 			return false
@@ -124,8 +136,7 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 
 	self.pages.AddPage(name, view, true, false)
 	self.menu.AddItem(title, "", key, func() {
-		self.pages.SwitchToPage(name)
-		self.application.SetFocus(table)
+		self.SwitchToPage(name)
 		if updateTable != nil {
 			self.ticker = NewTicker(self.application, self.frequency, func() {
 				updateTable(table)
@@ -133,4 +144,21 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 			self.ticker.Start()
 		}
 	})
+
+	self.pageFocus[name] = table
+}
+
+func (self *Application) Error(err error) {
+	page, _ := self.pages.GetFrontPage()
+
+	modal := tview.NewModal().
+		SetText(err.Error()).
+		AddButtons([]string{"OK"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			self.pages.RemovePage("error")
+			self.SwitchToPage(page)
+		})
+
+	self.pages.AddAndSwitchToPage("error", modal, true)
+	self.application.SetFocus(modal)
 }

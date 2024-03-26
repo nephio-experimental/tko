@@ -5,8 +5,15 @@ import (
 )
 
 // ([UpdateTableFunc] signature)
-func (self *Application) UpdateAbout(textView *tview.TextView) {
+func (self *Application) UpdateAbout(textView *tview.TextView) error {
 	if about, err := self.client.About(); err == nil {
-		textView.SetText(ToYAML(about))
+		if text, err := ToYAML(about); err == nil {
+			textView.SetText(text)
+			return nil
+		} else {
+			return err
+		}
+	} else {
+		return err
 	}
 }

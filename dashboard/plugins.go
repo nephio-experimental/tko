@@ -9,7 +9,7 @@ import (
 )
 
 // ([UpdateTableFunc] signature)
-func (self *Application) UpdatePlugins(table *tview.Table) {
+func (self *Application) UpdatePlugins(table *tview.Table) error {
 	// TODO: paging
 	if pluginResults, err := self.client.ListPlugins(client.SelectPlugins{}, 0, -1); err == nil {
 		SetTableHeader(table, "Type", "Name", "Executor", "Triggers")
@@ -25,6 +25,10 @@ func (self *Application) UpdatePlugins(table *tview.Table) {
 		CleanTableRows(table, func(row int) bool {
 			return ContainsPlugin(pluginIds, GetPluginRow(table, row))
 		})
+
+		return nil
+	} else {
+		return err
 	}
 }
 
@@ -34,7 +38,7 @@ func (self *Application) SetPluginRow(table *tview.Table, row int, plugin *clien
 		triggers[index] = trigger.ShortString()
 	}
 
-	pluginDetails := &PluginDetails{plugin.PluginID, self.client}
+	pluginDetails := &PluginDetails{plugin.PluginID, self}
 	table.SetCell(row, 0, tview.NewTableCell(plugin.PluginID.Type).SetReference(pluginDetails))
 	table.SetCell(row, 1, tview.NewTableCell(plugin.PluginID.Name).SetReference(pluginDetails))
 	table.SetCell(row, 2, tview.NewTableCell(plugin.Executor).SetReference(pluginDetails))
@@ -70,8 +74,8 @@ func FindPluginRow(table *tview.Table, pluginId client.PluginID) int {
 //
 
 type PluginDetails struct {
-	pluginId client.PluginID
-	client   *client.Client
+	pluginId    client.PluginID
+	application *Application
 }
 
 // ([Details] interface)
@@ -80,14 +84,14 @@ func (self *PluginDetails) GetTitle() string {
 }
 
 // ([Details] interface)
-func (self *PluginDetails) GetText() string {
-	if plugin, ok, err := self.client.GetPlugin(self.pluginId); err == nil {
+func (self *PluginDetails) GetText() (string, error) {
+	if plugin, ok, err := self.application.client.GetPlugin(self.pluginId); err == nil {
 		if ok {
 			return ToYAML(plugin)
 		} else {
-			return ""
+			return "", nil
 		}
 	} else {
-		return err.Error()
+		return "", err
 	}
 }

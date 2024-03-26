@@ -10,7 +10,7 @@ import (
 )
 
 // ([UpdateTableFunc] signature)
-func (self *Application) UpdateSites(table *tview.Table) {
+func (self *Application) UpdateSites(table *tview.Table) error {
 	// TODO: paging
 	if siteInfoResults, err := self.client.ListSites(client.SelectSites{}, 0, -1); err == nil {
 		table.Clear()
@@ -28,13 +28,17 @@ func (self *Application) UpdateSites(table *tview.Table) {
 		CleanTableRows(table, func(row int) bool {
 			return slices.Contains(siteIds, GetSiteRow(table, row))
 		})
+
+		return nil
+	} else {
+		return err
 	}
 }
 
 func (self *Application) SetSiteRow(table *tview.Table, row int, siteInfo *client.SiteInfo) {
-	table.SetCell(row, 0, tview.NewTableCell(siteInfo.SiteID).SetReference(&SiteDetails{siteInfo.SiteID, self.client}))
+	table.SetCell(row, 0, tview.NewTableCell(siteInfo.SiteID).SetReference(&SiteDetails{siteInfo.SiteID, self}))
 	if siteInfo.TemplateID != "" {
-		table.SetCell(row, 1, tview.NewTableCell(siteInfo.TemplateID).SetReference(&TemplateDetails{siteInfo.TemplateID, self.client}))
+		table.SetCell(row, 1, tview.NewTableCell(siteInfo.TemplateID).SetReference(&TemplateDetails{siteInfo.TemplateID, self}))
 	} else {
 		table.SetCellSimple(row, 1, "")
 	}
@@ -61,8 +65,8 @@ func FindSiteRow(table *tview.Table, siteId string) int {
 //
 
 type SiteDetails struct {
-	siteId string
-	client *client.Client
+	siteId      string
+	application *Application
 }
 
 // ([Details] interface)
@@ -71,14 +75,14 @@ func (self *SiteDetails) GetTitle() string {
 }
 
 // ([Details] interface)
-func (self *SiteDetails) GetText() string {
-	if site, ok, err := self.client.GetSite(self.siteId); err == nil {
+func (self *SiteDetails) GetText() (string, error) {
+	if site, ok, err := self.application.client.GetSite(self.siteId); err == nil {
 		if ok {
 			return PackageToYAML(site.Package)
 		} else {
-			return ""
+			return "", nil
 		}
 	} else {
-		return err.Error()
+		return "", err
 	}
 }

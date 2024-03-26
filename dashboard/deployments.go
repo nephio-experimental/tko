@@ -9,7 +9,7 @@ import (
 )
 
 // ([UpdateTableFunc] signature)
-func (self *Application) UpdateDeployments(table *tview.Table) {
+func (self *Application) UpdateDeployments(table *tview.Table) error {
 	// TODO: paging
 	if deploymentnfoResults, err := self.client.ListDeployments(client.SelectDeployments{}, 0, -1); err == nil {
 		SetTableHeader(table, "ID", "Template", "Parent", "Site", "Prepared", "Approved", "Created", "Updated")
@@ -25,23 +25,27 @@ func (self *Application) UpdateDeployments(table *tview.Table) {
 		CleanTableRows(table, func(row int) bool {
 			return slices.Contains(deploymentIds, GetDeploymentRow(table, row))
 		})
+
+		return nil
+	} else {
+		return err
 	}
 }
 
 func (self *Application) SetDeploymentRow(table *tview.Table, row int, deploymentInfo *client.DeploymentInfo) {
-	table.SetCell(row, 0, tview.NewTableCell(deploymentInfo.DeploymentID).SetReference(&DeploymentDetails{deploymentInfo.DeploymentID, self.client}))
+	table.SetCell(row, 0, tview.NewTableCell(deploymentInfo.DeploymentID).SetReference(&DeploymentDetails{deploymentInfo.DeploymentID, self}))
 	if deploymentInfo.TemplateID != "" {
-		table.SetCell(row, 1, tview.NewTableCell(deploymentInfo.TemplateID).SetReference(&TemplateDetails{deploymentInfo.TemplateID, self.client}))
+		table.SetCell(row, 1, tview.NewTableCell(deploymentInfo.TemplateID).SetReference(&TemplateDetails{deploymentInfo.TemplateID, self}))
 	} else {
 		table.SetCellSimple(row, 1, "")
 	}
 	if deploymentInfo.ParentDeploymentID != "" {
-		table.SetCell(row, 2, tview.NewTableCell(deploymentInfo.ParentDeploymentID).SetReference(&DeploymentDetails{deploymentInfo.ParentDeploymentID, self.client}))
+		table.SetCell(row, 2, tview.NewTableCell(deploymentInfo.ParentDeploymentID).SetReference(&DeploymentDetails{deploymentInfo.ParentDeploymentID, self}))
 	} else {
 		table.SetCellSimple(row, 2, "")
 	}
 	if deploymentInfo.SiteID != "" {
-		table.SetCell(row, 3, tview.NewTableCell(deploymentInfo.SiteID).SetReference(&SiteDetails{deploymentInfo.SiteID, self.client}))
+		table.SetCell(row, 3, tview.NewTableCell(deploymentInfo.SiteID).SetReference(&SiteDetails{deploymentInfo.SiteID, self}))
 	} else {
 		table.SetCellSimple(row, 3, "")
 	}
@@ -71,7 +75,7 @@ func FindDeploymentRow(table *tview.Table, deploymentId string) int {
 
 type DeploymentDetails struct {
 	deploymentId string
-	client       *client.Client
+	application  *Application
 }
 
 // ([Details] interface)
@@ -80,14 +84,14 @@ func (self *DeploymentDetails) GetTitle() string {
 }
 
 // ([Details] interface)
-func (self *DeploymentDetails) GetText() string {
-	if deployment, ok, err := self.client.GetDeployment(self.deploymentId); err == nil {
+func (self *DeploymentDetails) GetText() (string, error) {
+	if deployment, ok, err := self.application.client.GetDeployment(self.deploymentId); err == nil {
 		if ok {
 			return PackageToYAML(deployment.Package)
 		} else {
-			return ""
+			return "", nil
 		}
 	} else {
-		return err.Error()
+		return "", err
 	}
 }

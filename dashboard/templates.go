@@ -10,7 +10,7 @@ import (
 )
 
 // ([UpdateTableFunc] signature)
-func (self *Application) UpdateTemplates(table *tview.Table) {
+func (self *Application) UpdateTemplates(table *tview.Table) error {
 	// TODO: paging
 	if templateInfoResults, err := self.client.ListTemplates(client.SelectTemplates{}, 0, -1); err == nil {
 		SetTableHeader(table, "ID", "Deployments", "Updated")
@@ -26,11 +26,15 @@ func (self *Application) UpdateTemplates(table *tview.Table) {
 		CleanTableRows(table, func(row int) bool {
 			return slices.Contains(templateIds, GetTemplateRow(table, row))
 		})
+
+		return nil
+	} else {
+		return err
 	}
 }
 
 func (self *Application) SetTemplateRow(table *tview.Table, row int, templateInfo *client.TemplateInfo) {
-	table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self.client}))
+	table.SetCell(row, 0, tview.NewTableCell(templateInfo.TemplateID).SetReference(&TemplateDetails{templateInfo.TemplateID, self}))
 	table.SetCellSimple(row, 1, strconv.Itoa(len(templateInfo.DeploymentIDs)))
 	table.SetCellSimple(row, 2, self.timestamp(templateInfo.Updated))
 }
@@ -54,8 +58,8 @@ func FindTemplateRow(table *tview.Table, templateId string) int {
 //
 
 type TemplateDetails struct {
-	templateId string
-	client     *client.Client
+	templateId  string
+	application *Application
 }
 
 // ([Details] interface)
@@ -64,14 +68,14 @@ func (self *TemplateDetails) GetTitle() string {
 }
 
 // ([Details] interface)
-func (self *TemplateDetails) GetText() string {
-	if template, ok, err := self.client.GetTemplate(self.templateId); err == nil {
+func (self *TemplateDetails) GetText() (string, error) {
+	if template, ok, err := self.application.client.GetTemplate(self.templateId); err == nil {
 		if ok {
 			return PackageToYAML(template.Package)
 		} else {
-			return ""
+			return "", nil
 		}
 	} else {
-		return err.Error()
+		return "", err
 	}
 }
