@@ -66,9 +66,10 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 					SetDynamicColors(true).
 					SetText(text).
 					SetDoneFunc(func(key tcell.Key) {
-						self.pages.RemovePage("details")
 						self.SwitchToPage(page)
+						self.pages.RemovePage("details")
 					})
+				self.RightClickToESC(textView.Box)
 				view := tview.NewFlex().
 					SetDirection(tview.FlexRow).
 					AddItem(textView, 0, 1, true)
@@ -97,7 +98,12 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 		})
 	table.
 		SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
-			if action == tview.MouseLeftDoubleClick {
+			switch action {
+			//case tview.MouseRightDoubleClick:
+			//self.Error(errors.New("Test Error"))
+			//return action, nil
+
+			case tview.MouseLeftDoubleClick:
 				row, column := table.GetOffset()
 				x, y := event.Position()
 				row += y - 1 // -1 to skip the header
@@ -117,8 +123,10 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 					self.application.ForceDraw()
 				}
 				return action, nil
+
+			default:
+				return action, event
 			}
-			return action, event
 		})
 
 	view := tview.NewFlex().
@@ -155,10 +163,24 @@ func (self *Application) Error(err error) {
 		SetText(err.Error()).
 		AddButtons([]string{"OK"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			self.pages.RemovePage("error")
 			self.SwitchToPage(page)
+			self.pages.RemovePage("error")
 		})
+	self.RightClickToESC(modal.Box)
 
 	self.pages.AddAndSwitchToPage("error", modal, true)
 	self.application.SetFocus(modal)
+}
+
+func (self *Application) RightClickToESC(box *tview.Box) {
+	box.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+		switch action {
+		case tview.MouseRightClick:
+			self.application.QueueEvent(tcell.NewEventKey(tcell.KeyESC, 0, tcell.ModNone))
+			return action, nil
+
+		default:
+			return action, event
+		}
+	})
 }

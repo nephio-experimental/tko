@@ -118,7 +118,7 @@ function showJsonTab(tab, url) {
       url: url,
       dataType: 'json',
       success: function (content) {
-        content = hljs.highlight(JSON.stringify(content, null, '  '), {language: 'json'}).value;
+        content = highlight(JSON.stringify(content, null, '  '), 'json');
         json.html(content);
       }
     }).fail(function () {
@@ -167,19 +167,21 @@ function updateTable(tbody, rows, columns) {
   for (const row of rows) {
     let newRow = true;
 
-    // Existing rows
+    // Existing row
     eachTableRow(tbody, function (tr) {
       if (tr.data('id') == row.id) {
         newRow = false;
         // Replace row if necessary
-        if (!deepEqual(tr.data('row'), row))
-          tr.replaceWith(createTr(row, columns));
+        if (!deepEqual(tr.data('row'), row)) {
+          const newTr = createTr(row, columns);
+          tr.replaceWith(newTr);
+        }
         return false;
       }
       return true;
     });
 
-    // New rows
+    // New row
     if (newRow) {
       const newTr = createTr(row, columns);
 
@@ -187,7 +189,7 @@ function updateTable(tbody, rows, columns) {
         // Insert before higher order row
         if (tr.data('id') > row.id) {
           newRow = false;
-          tr.insertBefore(newTr);
+          tr.before(newTr);
           return false;
         }
         return true;
@@ -208,6 +210,7 @@ function eachTableRow(tbody, f) {
 
 function createTr(row, columns) {
   const tr = $('<tr></tr>');
+
   tr.data('id', row.id);
   tr.data('row', row);
 
@@ -249,7 +252,7 @@ function newLink(value, urlPrefix, tab) {
       dataType: 'text',
       success: function(content) {
         // Show details tab
-        content = hljs.highlight(content, {language: 'yaml'}).value;
+        content = highlight(content, 'yaml');
         $('#'+tab+'-title').html(value);
         $('#'+tab+'-yaml').html(content);
         $('#'+tab+'-list').hide();
@@ -284,6 +287,10 @@ function escapeContent(html) {
 // Unused for now
 function escapeAttribute(html) {
   return escapeContent(html).replace(/"/g, '&quot;');
+}
+
+function highlight(value, language) {
+  return hljs.highlight(value, {language: language}).value
 }
 
 function deepEqual(v1, v2) {

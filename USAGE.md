@@ -43,14 +43,14 @@ Use the CLI access that works for you for the rest of this guide.
 
     tko dashboard
 
-This dashboard is both keyboard and mouse friendly. Use arrow keys, tab, and escape key to
-navigate. To quit press Q at the menu or click the Quit button. Also: pressing escape at the
-menu or CTRL-C at any time.
+This dashboard is both keyboard and mouse friendly. Use arrow keys, page-up/page-down/home/end,
+tab, and escape key to navigate. To quit press Q at the menu or click the Quit button. Also:
+pressing escape at the menu or CTRL-C at any time.
 
 The dashboard provides live views of all deployments, sites, templates, and plugins. You can
 press enter or double click on individual cells to view more details, such as the full KRM
-package. Here you can scroll with the keyboard or the mouse wheel. The escape key will exit the
-details view.
+package. Here you can scroll with the keyboard or the mouse wheel. The escape key or right mouse
+click will exit the details view.
 
 ### Web dashboard
 
@@ -76,13 +76,13 @@ For example, to list all deployments:
 Results are sorted by ID. Note that for deployments TKO uses "k-sortable" UUIDs, meaning
 that the natural sort order of the IDs corresponds to their order of creation.
 
-For very large amounts of results, TKO supports paging:
+For handling large amounts of results, TKO supports paging:
 
     tko deployment --offset=10 --max-count=10
 
 All list commands have powerful filters to narrow results. You can combine filters.
-Note that all queries happen at the backend and are scalable to millions of entities. A
-few examples:
+See `--help` for available filters. Note that all queries happen at the backend and are
+scalable to millions of entities. A few examples:
 
     tko deployment list --approved=false
     tko deployment list --site-id=lab/1
@@ -94,7 +94,7 @@ wildcard stops at `/` and `:` boundaries, while the the `**` wildcard has no bou
     tko deployment list --site-id=lab/*
     tko deployment list --template-id=nf/**:v1.0.0
 
-To get all data for individual entities use `get` commands with exact IDs:
+To get the package for individual entities use `get` commands with exact IDs:
 
     tko template get topology/oran/cu:v1.0.0
 
@@ -102,12 +102,12 @@ Note that plugin IDs comprise both the type *and* the name:
 
     tko plugin get schedule kind
 
-Use `delete` commands to delete individual entities:
+Use `delete` commands to delete individual entities by their exact IDs:
 
     tko template delete topology/oran/cu:v1.0.0
 
-You can combine listing and deleting via the `purge` commands (handled optimally by
-the backend):
+You can combine listing and deleting via the `purge` commands (again handled optimally
+by the backend):
 
     tko deployment purge --site-id=lab/*
 
@@ -118,13 +118,13 @@ Templates, sites, and plugins use `register` commands.
 For templates, at the bare minimum you must provide an ID and a source for the KRM package, which
 must be one or more YAML manifests. The source is a URL, which can be anything compatible with
 [exturl](https://github.com/tliron/exturl/). It can a local file or directory (read recursively),
-an archive file, an HTTP URL, and combinations.
+an archive (tarball or zip), an HTTP URL, a git URL, and combinations.
 
 Local directory example:
 
     tko template register demo/hello-world:v1.0.1 --url=examples/hello-world/
 
-Over HTTP:
+HTTP example:
 
     tko template register demo/hello-world:v1.0.1 --url=https://raw.githubusercontent.com/nephio-experimental/tko/main/examples/hello-world/workload.yaml
 
@@ -132,10 +132,13 @@ You can also provide the KRM package via stdin:
 
     cat examples/hello-world/workload.yaml | tko template register demo/hello-world:v1.0.1 --stdin
 
-If a previous entity with the ID already exists, it will be rewritten.
+If a previous entity with the ID already exists then it will be rewritten, though note that
+existing relationships (template to deployments, deployments to site, etc.) will be maintained.
+In production use cases it's more likely to register a new entity with a different ID, for example
+by appending version information to the ID as we did in our examples.
 
-The package may already contain metadata via KRM. However, during registration it is
-possible to add additional metadata or override package metadata:
+The package may already contain metadata via KRM (see [packages reference](PACKAGES.md#metadatanephioorg)).
+However, during registration it is possible to add additional metadata or override package metadata:
 
     tko template register demo/hello-world:v1.0.1 --metadata=hello=world --url=examples/hello-world/
 
@@ -145,8 +148,10 @@ a site with no package data. A few examples:
 
     # Empty
     tko site register lab/2
+
     # Based on template
     tko site register india/bangalore/south-102 site/gdce:v1.0.0
+
     # Based on package
     tko site register lab/3 --url=examples/lab-site/
 
@@ -176,11 +181,12 @@ You can provide a KRM package via a URL to merge into the template:
 
     tko deployment create demo/hello-world:v1.0.0 --url=examples/hello-world/
 
-Via `create` you can also assign a site ID and a parent deployment ID.
+You can also assign a site ID and/or a parent deployment ID:
 
     tko deployment create demo/hello-world:v1.0.0 --site=lab/1
 
-The `approve` command is used to approve prepared deployments and works like `list` (and `purge`):
+The `approve` command is used to approve prepared and unpparoved deployments and supports most of the
+same filters as `list` (and `purge`):
 
     tko deployment approve --template-id=nf/**:v1.0.0
 
@@ -189,10 +195,14 @@ and getting a token, and then either ending or cancelling the modification withi
 time window. Example:
 
     # Create and get the deployment ID
-    ID=$(tko deployment create topology/oran/cu:v1.0.0)
+    ID=$(tko deployment create demo/hello-world:v1.0.0)
+
     # Extract the package into work directory and get a modification token
-    M=$(tko deployment mod start "$ID" --url=work/)
-    # Make a change (just an example)
-    kpt fn eval --image=gcr.io/kpt-fn/set-namespace:v0.4.1 work/ -- namespace=network-function
-    # End the modification
-    tko deployment mod end "$M" --url=work/
+    mkdir --parents /tmp/mywork
+    M=$(tko deployment mod start "$ID" --url=/tmp/mywork/)
+
+    # Make a change to the package (just an example!)
+    kpt fn eval --image=gcr.io/kpt-fn/set-namespace:v0.4.1 /tmp/mywork/ -- namespace=mynamespace
+
+    # End the modification and send the changed package data
+    tko deployment mod end "$M" --url=/tmp/mywork/
