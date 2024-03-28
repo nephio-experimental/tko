@@ -1,13 +1,48 @@
 TKO User Guide
 ==============
 
-In this guide we'll assume that you followed the [installation guide](INSTALL.md) and have
+In this guide we'll assume that you've followed the [installation guide](INSTALL.md) and have
 the test scenario running.
+
+### Examining the test scenario results
+
+The test scenario uses [a Kind scheduling plugin](examples/plugins/schedule_kind.py) to
+provision Kubernetes clusters and schedule deployment packages on them, including Helm charts.
+
+The scenario should result in two newly provisioned clusters, "edge1" and "edge2". If you're
+running the TKO meta-scheduler natively then the clusters will be provisioned locally. Examples
+for accessing them:
+
+    kubectl get pods --all-namespaces --context=kind-edge1
+    kubectl get pods --all-namespaces --context=kind-edge2
+
+Note `kind-` as the prefix for the configuration context name.
+
+If you've installed in a local Vagrant virtual machine the above would work if you're
+in `vagrant ssh`. Or, you can run individual commands on the virtual machine
+*from the host* like so:
+
+    scripts/vagrant kubectl get pods --all-namespaces --context=kind-edge1
+
+Finally, if you've installed on a local Kubernetes Kind cluster then the clusters will
+be provisioned in the `tko-runner` pod, which is where the Kind scheduling plugin runs.
+(This is Kind-in-Kind, using Docker-in-Docker.) To access `kubectl` there:
+
+    scripts/kind-runner kubectl get pods --all-namespaces --context=kind-edge1
+
+Initially you should see `upf` pods on the "edge1" cluster, but no workloads on the "edge2"
+cluster. This is because the `smf` deployments were deliberately set to not auto-approve. You
+can approve them like so (more information about using the CLI below):
+
+    tko deployment approve
+
+After a few seconds you should see `smf` pods appear on both "edge1" and "edger2" clusters.
 
 ### Accessing the CLI
 
-The `tko` command is a straightforward entry point into TKO. It provides CLI access to all
-the gRPC APIs. Let's start by making sure you can use `tko` to access the API server.
+The `tko` command is a straightforward client entry point into TKO. It provides CLI access to
+all the backend APIs over gRPC. Let's start by making sure you can use `tko` to access the API
+server.
 
 If you've installed natively then this should just work:
 
@@ -30,12 +65,12 @@ script for it:
     scripts/tko-vagrant about
 
 Finally, if you've installed on a local Kubernetes Kind cluster then make sure you have
-`tko` built on the host (via `scripts/build`) you can access the API server's exposed
-port:
+`tko` built on the host (via `scripts/build`) and then you can access the API server's
+exposed port:
 
     scripts/tko-kind about
 
-Use the CLI access that works for you for the rest of this guide.
+Use the CLI access that works for your installation for the rest of this guide.
 
 ### TUI dashboard
 
@@ -43,27 +78,28 @@ Use the CLI access that works for you for the rest of this guide.
 
     tko dashboard
 
-This dashboard is both keyboard and mouse friendly. Use arrow keys, page-up/page-down/home/end,
-tab, and escape key to navigate. To quit press Q at the menu or click the Quit button. Also:
-pressing escape at the menu or CTRL-C at any time.
+This dashboard is both keyboard and mouse friendly (for terminals that support mouse input).
+Use tab, escape (or right mouse click), arrow keys (or mouse scroll wheel), and
+page-up/page-down/home/end to navigate. To quit press Q or escape at the menu or click the Quit
+button. You can also quit by pressing CTRL-C at any time.
 
 The dashboard provides live views of all deployments, sites, templates, and plugins. You can
-press enter or double click on individual cells to view more details, such as the full KRM
-package. Here you can scroll with the keyboard or the mouse wheel. The escape key or right mouse
-click will exit the details view.
+press enter or double click on individual table cells to view more details, such as the full KRM
+package. Exit the detail view via escape or right mouse click.
 
 ### Web dashboard
 
-The same dashboard is available over the web:
+A similar dashboard is available over the web. Note that though the TUI uses gRPC, the web GUI
+uses HTTP. This is because gRPC client support in web browsers is currently too limited.
 
 * For a native install, browse to: [http://localhost:50051](http://localhost:50051)
 * For a Vagrant install: [http://localhost:60051](http://localhost:60051)
-* For a Kubernetes Kind cluser install: [http://localhost:30051](http://localhost:30051)
+* For a Kubernetes Kind cluster install: [http://localhost:30051](http://localhost:30051)
 
-### Working with entities
+### Examining entities
 
-You can list, get, create, and delete all entities using the CLI. There's help for all
-commands:
+You can list and get all entities using the `tko` CLI. There's help for all commands, for
+example:
 
     tko deployment list --help
 
@@ -73,14 +109,24 @@ For example, to list all deployments:
 
     tko deployment list
 
-Results are sorted by ID. Note that for deployments TKO uses "k-sortable" UUIDs, meaning
-that the natural sort order of the IDs corresponds to their order of creation.
+Results are sorted by ID. Note that for deployments TKO uses "K-sortable" UUIDs, meaning
+that the natural string sort order of the IDs corresponds to their order of creation.
 
-For handling large amounts of results, TKO supports paging:
+`tko` defaults to YAML representations, but many other formats are supported via
+the `--format` argument: "yaml", "json", "xjson", "xml", "cbor", "messagepack", and "go".
+Examples:
 
-    tko deployment --offset=10 --max-count=10
+    tko deployment list --format=json
+    tko deployment list --format=go
 
-All list commands have powerful filters to narrow results. You can combine filters.
+(Note that the "cbor" and "messagepack" formats are binary and may not be represented
+properly in terminals.)
+
+For handling large amounts of results, `tko` supports paging:
+
+    tko deployment list --offset=10 --max-count=10
+
+All list commands have powerful filters to narrow results, and you can combine filters.
 See `--help` for available filters. Note that all queries happen at the backend and are
 scalable to millions of entities. A few examples:
 
@@ -98,22 +144,11 @@ To get the package for individual entities use `get` commands with exact IDs:
 
     tko template get topology/oran/cu:v1.0.0
 
-Note that plugin IDs comprise both the type *and* the name:
+Note that plugin IDs comprise both the type *and* the name for `plugin get`:
 
     tko plugin get schedule kind
 
-Use `delete` commands to delete individual entities by their exact IDs:
-
-    tko template delete topology/oran/cu:v1.0.0
-
-You can combine listing and deleting via the `purge` commands (again handled optimally
-by the backend):
-
-    tko deployment purge --site-id=lab/*
-
-### Creating entities
-
-Templates, sites, and plugins use `register` commands.
+### Registering entities
 
 For templates, at the bare minimum you must provide an ID and a source for the KRM package, which
 must be one or more YAML manifests. The source is a URL, which can be anything compatible with
@@ -159,11 +194,25 @@ Registering plugins doesn't involve a package, but instead relies on arguments a
 depending on the executor (the default executor is `command`). Triggers are provided as
 comma-separated KRM GVKs. Two examples:
 
+    # "command" executor (the default)
     tko plugin register validate free5gc/smf examples/plugins/validate_free5gc_smf.py --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF
+
+    # "kpt" executor
     tko plugin register prepare namespace gcr.io/kpt-fn/set-namespace:v0.4.1 --executor=kpt --property=namespace=spec.namespace --trigger=workload.plugin,nephio.org,v1alpha1,Namespace
 
 (Note that the executable file for the `command` executor must be accessible by the controllers.
 In the Kubernetes cluster all plugins are executed in a special `tko-runner` pod.)
+
+### Deleting entities
+
+Use `delete` commands to delete individual entities by their exact IDs:
+
+    tko template delete topology/oran/cu:v1.0.0
+
+You can combine listing and deleting via the `purge` commands (again handled optimally
+by the backend):
+
+    tko deployment purge --site-id=lab/*
 
 ### Working with deployments
 
@@ -192,7 +241,7 @@ same filters as `list` (and `purge`):
 
 We also provide CLI commands for modifying deployments. This involves starting a modification
 and getting a token, and then either ending or cancelling the modification within a limited
-time window. Example:
+time window. During that window other clients cannot modify the deployment. Example:
 
     # Create and get the deployment ID
     ID=$(tko deployment create demo/hello-world:v1.0.0)
@@ -206,3 +255,31 @@ time window. Example:
 
     # End the modification and send the changed package data
     tko deployment mod end "$M" --url=/tmp/mywork/
+
+### Using the KRM API
+
+If you've installed TKO in a Kubernetes cluster then you can use its aggregated KRM API as an
+alternative to gRPC. Essentially, most of what you can do with the `tko` CLI can be done via
+`kubectl` (or any other Kubernetes client) instead.
+
+See the [KRM guide](KRM.md) for more information. Here we'll provide just a few quick usage
+examples.
+
+An equivalent of `tko template get`:
+
+    scripts/kubectl-kind get template/$(tko kube to demo/hello-world:v1.0.0) --output=yaml
+
+Note the use of `tko kube` to convert IDs, explained in the KRM guide.
+
+If you want to extract just the package you can use [yq](https://github.com/mikefarah/yq):
+
+    scripts/kubectl-kind get template/$(tko kube to demo/hello-world:v1.0.0) --output=yaml | yq .spec.package.resources
+
+Another way to do this is to get the package in JSON and then convert it to YAML (with yq):
+
+    scripts/kubectl-kind get template/$(tko kube to demo/hello-world:v1.0.0) --output=jsonpath={.spec.package.resources} | yq --prettyPrint
+
+Here's an equivalent of `tko template list` with wildcards:
+
+    scripts/kubectl-kind get template --field-selector=metadata.name=$(tko kube to nf/**)
+

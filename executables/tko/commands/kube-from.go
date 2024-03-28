@@ -6,10 +6,10 @@ import (
 )
 
 func init() {
-	nameCommand.AddCommand(nameFromCommand)
+	kubeCommand.AddCommand(kubeFromCommand)
 }
 
-var nameFromCommand = &cobra.Command{
+var kubeFromCommand = &cobra.Command{
 	Use:   "from [ID]",
 	Short: "Convert from Kubernetes name",
 	Args:  cobra.ExactArgs(1),

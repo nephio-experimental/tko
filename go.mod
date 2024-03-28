@@ -11,10 +11,10 @@ require (
 	github.com/rivo/tview v0.0.0-20240307173318-e804876934a1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
-	github.com/tliron/commonlog v0.2.16
-	github.com/tliron/exturl v0.4.3
-	github.com/tliron/go-ard v0.2.16
-	github.com/tliron/go-transcribe v0.3.4
+	github.com/tliron/commonlog v0.2.17
+	github.com/tliron/exturl v0.4.4
+	github.com/tliron/go-ard v0.2.17
+	github.com/tliron/go-transcribe v0.3.5
 	github.com/tliron/kutil v0.3.24
 	github.com/tliron/puccini v0.22.4
 	github.com/yannh/kubeconform v0.6.4
@@ -89,7 +89,7 @@ require (
 	github.com/google/cel-go v0.17.7 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/go-containerregistry v0.16.1 // indirect
+	github.com/google/go-containerregistry v0.19.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
@@ -120,7 +120,7 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
-	github.com/kortschak/utter v1.5.0 // indirect
+	github.com/kortschak/utter v1.6.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

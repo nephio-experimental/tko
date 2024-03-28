@@ -11,17 +11,18 @@ A PoC demonstrating scalability opportunities for Nephio with a focus on decoupl
 subsystems, specifically the data backend and API access, as well as integration with external
 site inventories and blueprint catalogs.
 
-This PoC is a complete rewrite of the Nephio core. It comprises three controllers that can run
-independently or be embedded into a control plane, including first-class support for Kubernetes
-management clusters.
+This PoC is a complete rewrite of the Nephio core. It comprises three controllers (API server,
+Preparer, and Meta-Scheduler) that can run independently or be embedded into a control plane,
+including first-class support for Kubernetes management clusters.
 
-Included are backends for [PostgreSQL](https://www.postgresql.org/) and
-[Spanner](https://cloud.google.com/spanner). Both provide scalability, resiliency, and
-atomic updates via transactions. (Note: Spanner backend is work-in-progress.)
+Included is an RDBMS backend, specifically via the [PostgreSQL](https://www.postgresql.org/)
+dialect of SQL. An RDBMS provides scalability, reliability, resiliency, and atomic updates via
+transactions. They are widely available as managed cloud services, e.g. Google's planetary-scale
+[Spanner](https://cloud.google.com/spanner).
 
-A git backend is also possible (a.k.a. "GitOps"), but though such an implementation may be
-suitable for storing templates, but is probably not a good idea for storing sites and
-deployments, which are expected to number in the millions in real-world telco environments.
+A git backend is also possible (a.k.a. "GitOps"). Note that such an implementation may be
+suitable for storing templates, is probably not a good idea for storing sites and deployments,
+which are expected to number in the millions in real-world telco environments.
 
 The TKO API is exposed in three flavors:
 
@@ -32,10 +33,7 @@ The TKO API is exposed in three flavors:
 2) KRM via a Kubernetes aggregated API. When running in a Kubernetes management cluster, it may
    be preferrable for controllers to use KRM instead of gRPC, though the latter is still readily
    available inside Kubernetes. Note that this KRM API is *not* implemented as CRs and is *not*
-   stored in Kubernetes's etcd. Rather, it's a direct KRM facade over the TKO backend. Also note
-   that the meta-scheduler may create other KRM in the management cluster, e.g. to interact with
-   a Kubernetes-native infrastructure manager, which may be implemented as CRs, leading to
-   scalability concerns.
+   stored in Kubernetes's etcd database. Rather, it's a KRM facade over the TKO backend.
 3) A simple JSON-over-HTTP API for web browser applications, such as GUIs.
 
 Ways in which TKO differs from Nephio:

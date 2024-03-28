@@ -5,10 +5,10 @@ import (
 )
 
 func init() {
-	rootCommand.AddCommand(nameCommand)
+	rootCommand.AddCommand(kubeCommand)
 }
 
-var nameCommand = &cobra.Command{
-	Use:   "name",
+var kubeCommand = &cobra.Command{
+	Use:   "kube",
 	Short: "Convert Kubernetes names",
 }
