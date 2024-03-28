@@ -12,13 +12,16 @@ TKO's types are non-namespaced. They are associated with the cluster as a whole.
 
 They are all in the `tko` category, so it's possible to access them collectively:
 
-    kubectl get tko
+    scripts/kubectl-kind get tko
+
+(We'll be using `scripts/kubectl-kind` in this guide. It's simply a shortcut to using the local
+`kind-tko` configuration context.)
 
 Individual types can be accessed by their names. Add `.tko` (or `.tko.nephio.org`) to avoid
 ambiguity with other types. For example, to refer to TKO deployments rather than Kubernetes's
 built-in deployments:
 
-    kubectl get deployment.tko
+    scripts/kubectl-kind get deployment.tko
 
 See the [examples](examples/kubernetes/).
 
@@ -39,26 +42,26 @@ becomes this name:
 
     demo-002fhello-002dworld-003av1.0.0
 
-The `tko` command can do this conversion for you:
+The `tko kube` command can do this conversion for you:
 
-    tko name to demo/hello-world:v1.0.0
+    tko kube to demo/hello-world:v1.0.0
     > demo-002fhello-002dworld-003av1.0.0
-    tko name from demo-002fhello-002dworld-003av1.0.0
+    tko kube from demo-002fhello-002dworld-003av1.0.0
     > demo/hello-world:v1.0.0
 
 Plugin IDs consist of the plugin type plus `|` plus the name, so when using a shell make sure to
 wrap it in quotes so that your shell won't interpret the `|`:
 
-    tko name to 'validate|free5gc/smf'
+    tko kube to 'validate|free5gc/smf'
     > validate-007cfree5gc-002fsmf
 
-You can use `tko name` inside a Bash expression, like so:
+You can use `tko kube` inside a Bash expression, like so:
 
-    kubectl get plugin $(tko name to 'validate|free5gc/smf')
+    kubectl get plugin $(tko kube to 'validate|free5gc/smf')
 
 Note that you can select by the `metadata.name` field, which also accepts wildcards:
 
-    kubectl get template --field-selector=metadata.name=$(tko name to nf/**)
+    scripts/kubectl-kind get template --field-selector=metadata.name=$(tko kube to nf/**)
 
 Finally, note that deployment names have special semantics. When you create a new deployment, e.g.
 with `kubectl create`, the KRM name is discarded, because the backend will generate a new random ID
@@ -73,9 +76,9 @@ TKO will use to verify that other changes haven't been made before yours. These 
 proper KRM update semantics. Thus, the update workflow is to first retrieve (this will get you the
 latest `resourceVersion`), then edit, then apply:
 
-    kubectl get deployment.tko/2d4fkjPFRYDKnvNGgKpuZs7kwGQ --output=yaml > d.yaml
+    scripts/kubectl-kind get deployment.tko/2d4fkjPFRYDKnvNGgKpuZs7kwGQ --output=yaml > d.yaml
     (edit d.yaml)
-    kubectl apply --filename=d.yaml
+    scripts/kubectl-kind apply --filename=d.yaml
 
 Or, do it all in one step using `kubectl edit`.
 
@@ -85,7 +88,7 @@ Metadata
 Metadata for templates, sites, and deployments are all represented as KRM labels.
 
 However, note that KRM labels (both keys and values) have similar restrictions to names, thus they
-must also be translated back and forth using `tko name`.
+must also be translated back and forth using `tko kube`.
 
 Example:
 
@@ -103,11 +106,11 @@ metadata:
 
 You can use label selectors to filter your results:
 
-    kubectl get template --selector=Site.cloud=$(tko name to GDC-E)
+    scripts/kubectl-kind get template --selector=Site.cloud=$(tko kube to GDC-E)
 
 Also note that the filter accepts wildcards:
 
-    kubectl get template --selector=Site.cloud=$(tko name to G*)
+    scripts/kubectl-kind get template --selector=Site.cloud=$(tko kube to G*)
 
 Packages
 --------
