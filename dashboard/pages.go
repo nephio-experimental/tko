@@ -13,11 +13,15 @@ type Details interface {
 	GetText() (string, error)
 }
 
-func (self *Application) SwitchToPage(page string) {
+func (self *Application) SwitchToPage(page string, removePage string) {
 	self.pages.SwitchToPage(page)
 	if focus, ok := self.pageFocus[page]; ok {
 		self.application.SetFocus(focus)
 	}
+	if removePage != "" {
+		self.pages.RemovePage(removePage)
+	}
+	self.application.ForceDraw()
 }
 
 func (self *Application) AddTextPage(name string, title string, key rune, updateText UpdateTextFunc) {
@@ -66,8 +70,7 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 					SetDynamicColors(true).
 					SetText(text).
 					SetDoneFunc(func(key tcell.Key) {
-						self.SwitchToPage(page)
-						self.pages.RemovePage("details")
+						self.SwitchToPage(page, "details")
 					})
 				self.RightClickToESC(textView.Box)
 				view := tview.NewFlex().
@@ -104,21 +107,8 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 			//return action, nil
 
 			case tview.MouseLeftDoubleClick:
-				row, column := table.GetOffset()
 				x, y := event.Position()
-				row += y - 1 // -1 to skip the header
-
-				// Which column are we on?
-				columns := table.GetColumnCount()
-				for c := 0; c < columns; c++ {
-					cell := table.GetCell(row, c)
-					cx, _, width := cell.GetLastPosition()
-					if (x >= cx) && (x <= cx+width) {
-						column = c
-						break
-					}
-				}
-
+				row, column := table.CellAt(x, y)
 				if openDetails(row, column) {
 					self.application.ForceDraw()
 				}
@@ -144,7 +134,7 @@ func (self *Application) AddTablePage(name string, title string, key rune, updat
 
 	self.pages.AddPage(name, view, true, false)
 	self.menu.AddItem(title, "", key, func() {
-		self.SwitchToPage(name)
+		self.SwitchToPage(name, "")
 		if updateTable != nil {
 			self.ticker = NewTicker(self.application, self.frequency, func() {
 				updateTable(table)
@@ -163,8 +153,7 @@ func (self *Application) Error(err error) {
 		SetText(err.Error()).
 		AddButtons([]string{"OK"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			self.SwitchToPage(page)
-			self.pages.RemovePage("error")
+			self.SwitchToPage(page, "error")
 		})
 	self.RightClickToESC(modal.Box)
 

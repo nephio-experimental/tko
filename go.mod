@@ -8,7 +8,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/goccy/go-yaml v1.11.3
 	github.com/jackc/pgx/v5 v5.5.5
-	github.com/rivo/tview v0.0.0-20240307173318-e804876934a1
+	github.com/rivo/tview v0.0.0-20240404104800-13affe305750
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
 	github.com/tliron/commonlog v0.2.17
@@ -18,14 +18,14 @@ require (
 	github.com/tliron/kutil v0.3.24
 	github.com/tliron/puccini v0.22.4
 	github.com/yannh/kubeconform v0.6.4
-	google.golang.org/grpc v1.62.1
+	google.golang.org/grpc v1.63.0
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3
 	k8s.io/apiserver v0.29.3
 	k8s.io/client-go v0.29.3
-	k8s.io/kube-openapi v0.0.0-20240322212309-b815d8309940
+	k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
 
@@ -50,7 +50,6 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
-	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
@@ -192,7 +191,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
+	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240311132316-a219d84964c2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

@@ -15,13 +15,13 @@ This PoC is a complete rewrite of the Nephio core. It comprises three controller
 Preparer, and Meta-Scheduler) that can run independently or be embedded into a control plane,
 including first-class support for Kubernetes management clusters.
 
-Included is an RDBMS backend, specifically via the [PostgreSQL](https://www.postgresql.org/)
-dialect of SQL. An RDBMS provides scalability, reliability, resiliency, and atomic updates via
+Included is an RDBMS backend, specifically for the [PostgreSQL](https://www.postgresql.org/)
+dialect of SQL. RDBMSes provides scalability, reliability, resiliency, and atomic updates via
 transactions. They are widely available as managed cloud services, e.g. Google's planetary-scale
-[Spanner](https://cloud.google.com/spanner).
+[Spanner](https://cloud.google.com/spanner) (which speaks the PostgreSQL dialect).
 
 A git backend is also possible (a.k.a. "GitOps"). Note that such an implementation may be
-suitable for storing templates, is probably not a good idea for storing sites and deployments,
+suitable for storing templates, but it's probably not a good backend for sites and deployments,
 which are expected to number in the millions in real-world telco environments.
 
 The TKO API is exposed in three flavors:
