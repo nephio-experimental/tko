@@ -1,5 +1,5 @@
 Vagrant.configure("2") do |config|
-    config.vm.box = "fedora/39-cloud-base"
+    config.vm.box = "fedora/40-cloud-base"
 
     config.vm.define "tko"
     config.vm.hostname = "tko"

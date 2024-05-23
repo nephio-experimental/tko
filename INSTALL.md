@@ -11,8 +11,8 @@ To start it, run this in your local git clone directory:
 
     vagrant up && vagrant reload
 
-It will take a few minutes to install all dependencies. The reload is necessary for Docker
-permissions to work.
+It will take a few minutes to install all dependencies. *The reload is necessary for Docker
+permissions to work.*
 
 To run the test scenario:
 
