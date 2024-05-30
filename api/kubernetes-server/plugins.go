@@ -14,7 +14,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func NewPluginStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -209,7 +208,7 @@ func PluginToKRM(plugin *backendpkg.Plugin) (*krm.Plugin, error) {
 	krmPlugin.APIVersion = APIVersion
 	krmPlugin.Kind = "Plugin"
 	krmPlugin.Name = name
-	krmPlugin.UID = types.UID("tko|plugin|" + pluginIdString)
+	krmPlugin.UID = ToUID("plugin", pluginIdString)
 
 	pluginId := plugin.PluginID
 	krmPlugin.Spec.Type = &pluginId.Type

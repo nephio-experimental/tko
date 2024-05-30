@@ -1,13 +1,18 @@
 package server
 
 import (
+	"strings"
+
+	"github.com/google/uuid"
 	backendpkg "github.com/nephio-experimental/tko/backend"
-	"github.com/nephio-experimental/tko/util"
+	tkoutil "github.com/nephio-experimental/tko/util"
+	"github.com/tliron/kutil/util"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage"
 )
 
@@ -18,7 +23,7 @@ func IDFromListOptions(options *internalversion.ListOptions) (*string, error) {
 
 	for _, requirement := range options.FieldSelector.Requirements() {
 		if (requirement.Field == "metadata.name") && isEquals(requirement.Operator) {
-			if value, err := util.FromKubernetesName(requirement.Value); err == nil {
+			if value, err := tkoutil.FromKubernetesName(requirement.Value); err == nil {
 				return &value, nil
 			} else {
 				return nil, backendpkg.NewBadArgumentError(err.Error())
@@ -53,8 +58,8 @@ func MetadataPatternsFromListOptions(options *internalversion.ListOptions) (map[
 				if values := requirement.Values(); (values != nil) && (values.Len() > 0) {
 					// TODO: handle more than one value?
 					value := values.UnsortedList()[0]
-					if value_, err := util.FromKubernetesName(value); err == nil {
-						if key, err := util.FromKubernetesName(requirement.Key()); err == nil {
+					if value_, err := tkoutil.FromKubernetesName(value); err == nil {
+						if key, err := tkoutil.FromKubernetesName(requirement.Key()); err == nil {
 							metadataPatterns[key] = value_
 						} else {
 							return nil, backendpkg.NewBadArgumentError(err.Error())
@@ -67,6 +72,13 @@ func MetadataPatternsFromListOptions(options *internalversion.ListOptions) (map[
 		}
 	}
 	return metadataPatterns, nil
+}
+
+var uidSpace = uuid.MustParse("b6daa158-90b7-46f7-8206-2cfce077d5d8")
+
+func ToUID(segments ...string) types.UID {
+	buffer := util.StringToBytes(strings.Join(segments, "|"))
+	return types.UID(uuid.NewSHA1(uidSpace, buffer).String())
 }
 
 // Unused

@@ -14,7 +14,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func NewTemplateStore(backend backendpkg.Backend, log commonlog.Logger) *Store {
@@ -180,7 +179,7 @@ func TemplateInfoToKRM(templateInfo *backendpkg.TemplateInfo) (*krm.Template, er
 	krmTemplate.APIVersion = APIVersion
 	krmTemplate.Kind = "Template"
 	krmTemplate.Name = name
-	krmTemplate.UID = types.UID("tko|template|" + templateInfo.TemplateID)
+	krmTemplate.UID = ToUID("template", templateInfo.TemplateID)
 	krmTemplate.ResourceVersion = ToResourceVersion(templateInfo.Updated)
 	krmTemplate.Labels, _ = tkoutil.ToKubernetesNames(templateInfo.Metadata)
 

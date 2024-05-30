@@ -15,7 +15,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func NewDeploymentStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -229,7 +228,7 @@ func DeploymentInfoToKRM(deploymentInfo *backendpkg.DeploymentInfo) (*krm.Deploy
 	krmDeployment.APIVersion = APIVersion
 	krmDeployment.Kind = "Deployment"
 	krmDeployment.Name = name
-	krmDeployment.UID = types.UID("tko|deployment|" + deploymentInfo.DeploymentID)
+	krmDeployment.UID = ToUID("deployment", deploymentInfo.DeploymentID)
 	krmDeployment.CreationTimestamp = meta.NewTime(deploymentInfo.Created)
 	krmDeployment.ResourceVersion = ToResourceVersion(deploymentInfo.Updated)
 	krmDeployment.Labels, _ = tkoutil.ToKubernetesNames(deploymentInfo.Metadata)

@@ -1,16 +1,15 @@
 module github.com/nephio-experimental/tko
 
-go 1.22.0
-
-toolchain go1.22.2
+go 1.22.2
 
 require (
-	cloud.google.com/go/spanner v1.62.0
+	cloud.google.com/go/spanner v1.63.0
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/goccy/go-yaml v1.11.3
-	github.com/jackc/pgx/v5 v5.5.5
-	github.com/rivo/tview v0.0.0-20240519200218-0ac5f73025a8
+	github.com/google/uuid v1.6.0
+	github.com/jackc/pgx/v5 v5.6.0
+	github.com/rivo/tview v0.0.0-20240524063012-037df494fb76
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.0
 	github.com/tliron/commonlog v0.2.17
@@ -32,7 +31,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.113.0 // indirect
+	cloud.google.com/go v0.114.0 // indirect
 	cloud.google.com/go/auth v0.4.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
@@ -96,7 +95,6 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect

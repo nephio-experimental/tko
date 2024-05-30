@@ -15,7 +15,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func NewSiteStore(backend backend.Backend, log commonlog.Logger) *Store {
@@ -186,7 +185,7 @@ func SiteInfoToKRM(siteInfo *backendpkg.SiteInfo) (*krm.Site, error) {
 	krmSite.APIVersion = APIVersion
 	krmSite.Kind = "Site"
 	krmSite.Name = name
-	krmSite.UID = types.UID("tko|site|" + siteInfo.SiteID)
+	krmSite.UID = ToUID("site", siteInfo.SiteID)
 	krmSite.ResourceVersion = ToResourceVersion(siteInfo.Updated)
 	krmSite.Labels, _ = tkoutil.ToKubernetesNames(siteInfo.Metadata)
 
