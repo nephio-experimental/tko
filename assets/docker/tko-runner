@@ -12,5 +12,5 @@ adduser --disabled-password tko && \
 USER tko
 COPY --chown=tko:tko sdk/python/tko /home/tko/sdk/python/tko/
 RUN /opt/install-python-env
-CMD exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+CMD [ "/bin/bash", "-c", "exec /bin/bash -c 'trap : TERM INT; sleep infinity & wait'" ]
 # https://stackoverflow.com/a/35770783
