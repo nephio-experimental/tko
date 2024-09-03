@@ -10,11 +10,18 @@ nodes:
   - containerPath: /mnt/docker
     hostPath: /tmp/tko-docker # will be created by root user
   extraPortMappings:
+  # See: workloads/tko-api.yaml
+  # tko-api gRPC
   - containerPort: 30050
     hostPort: 30050
+  # tko-api HTTP
   - containerPort: 30051
     hostPort: 30051
+  # tko-api Kubernetes,
   - containerPort: 30052
     hostPort: 30052
+  # See: workloads/awx.yaml
+  - containerPort: 30053
+    hostPort: 30053
 networking:
   ipFamily: dual

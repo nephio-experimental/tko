@@ -70,6 +70,7 @@ spec:
     app.kubernetes.io/name: tko-api
     app.kubernetes.io/part-of: tko
   ports:
+  # See: kind/tko.yaml
   - name: grpc
     port: 50050
     nodePort: 30050
@@ -78,6 +79,7 @@ spec:
     port: 50051
     nodePort: 30051
     targetPort: http
+  # See: admin/api.yaml
   - name: kubernetes
     port: 50052
     nodePort: 30052

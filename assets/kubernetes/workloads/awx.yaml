@@ -1,0 +1,53 @@
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+
+metadata:
+  name: awx
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: awx
+    app.kubernetes.io/part-of: tko
+
+spec:
+  service_type: NodePort
+  nodeport_port: 30053
+  admin_password_secret: awx-admin
+  postgres_configuration_secret: awx-postgres
+
+---
+
+# See: https://ansible.readthedocs.io/projects/awx-operator/en/latest/user-guide/admin-user-account-configuration.html
+
+apiVersion: v1
+kind: Secret
+
+metadata:
+  name: awx-admin
+  namespace: tko
+
+stringData:
+  password: tko
+
+---
+
+# See: https://ansible.readthedocs.io/projects/awx-operator/en/latest/user-guide/database-configuration.html#external-postgresql-service
+
+apiVersion: v1
+kind: Secret
+
+metadata:
+  name: awx-postgres
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: awx
+    app.kubernetes.io/part-of: tko
+
+stringData:
+  host: postgresql
+  port: "5432"
+  database: tko
+  username: tko
+  password: tko
+  sslmode: prefer
+  target_session_attrs: read-write
+  type: unmanaged

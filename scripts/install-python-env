@@ -11,4 +11,4 @@ python3 -m venv "$PYTHON_ENV"
 
 . "$PYTHON_ENV/bin/activate"
 pip install --upgrade pip
-pip install ruamel.yaml grpcio-tools
+pip install ruamel.yaml grpcio-tools awxkit

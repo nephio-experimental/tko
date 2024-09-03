@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+not_root
+
+"$PYTHON_ENV/bin/awx" --conf.host http://localhost:30053 --conf.username admin --conf.password tko "$@"
