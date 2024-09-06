@@ -36,4 +36,4 @@ images:
 # See: https://hub.docker.com/_/docker
 - name: docker-dind
   newName: docker.io/docker
-  newTag: 27.1.2-dind
+  newTag: 27.2.0-dind

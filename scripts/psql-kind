@@ -6,4 +6,4 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-"$HERE/kubectl-kind" exec deployment/postgresql --stdin --tty --namespace=tko -- psql =h localhost -d tko -U tko "$@"
+"$HERE/kubectl-kind" exec deployment/postgresql --stdin --tty --namespace=tko -- psql --host=localhost --dbname=tko --username=tko "$@"

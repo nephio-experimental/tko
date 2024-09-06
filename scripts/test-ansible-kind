@@ -1,0 +1,77 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+. "$HERE/_trap"
+
+not_root
+
+function template () {
+	local NAME=$1
+	"$HERE/awx-kind" job_templates list --name="$NAME" | jq .results[0].id
+}
+
+function create_template () {
+	local NAME=$1
+	local PLAYBOOK=$2
+
+	m "creating template: $NAME..."
+	"$HERE/awx-kind" job_templates create \
+		--name="$NAME" \
+		--job_type=run \
+		--inventory="$INVENTORY" \
+		--project="$PROJECT" \
+		--playbook="$PLAYBOOK" \
+		--conf.format=human || true
+}
+
+function delete_template () {
+	local NAME=$1
+	local TEMPLATE=$(template "$NAME")
+	if [ "$TEMPLATE" != 'null' ]; then
+		m "deleting template: $TEMPLATE..."
+		"$HERE/awx-kind" job_templates delete "$TEMPLATE"
+	fi
+}
+
+function launch () {
+	local NAME=$1
+	m "launching job: $NAME..."
+	"$HERE/awx-kind" job_templates launch --job_type=run $(template "$NAME") --conf.format=human	
+}
+
+if [ "$1" == -c ]; then
+	delete_template 'Deploy free5gc-upf'
+
+	PROJECT=$("$HERE/awx-kind" projects list --name=TKO | jq .results[0].id)
+	if [ "$PROJECT" != 'null' ]; then
+		m "deleting TKO project: $PROJECT..."
+		"$HERE/awx-kind" projects delete "$PROJECT"
+	fi
+fi
+
+m 'deploying playbooks...'
+
+"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="$ROOT/examples/ansible/tko/collections"
+
+POD=$("$HERE/kubectl-kind" get pods --selector=app.kubernetes.io/name=awx --field-selector=status.phase=Running --namespace=tko --output=jsonpath={.items[0].metadata.name})
+
+"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- rm --recursive --force /var/lib/awx/projects/tko
+"$HERE/kubectl-kind" cp "$ROOT/examples/ansible/tko" "tko/$POD:/var/lib/awx/projects/" --container=awx-task --namespace=tko
+
+m 'creating TKO project...'
+
+# The --local_path is relative to /var/lib/awx/projects/
+"$HERE/awx-kind" projects create \
+	--name=TKO \
+	--organization=Default \
+	--local_path=tko \
+	--conf.format=human || true
+
+INVENTORY=$("$HERE/awx-kind" inventory list --name='Demo Inventory' | jq .results[0].id)
+PROJECT=$("$HERE/awx-kind" projects list --name=TKO | jq .results[0].id)
+
+create_template 'Deploy free5gc-upf' deploy.yaml
+
+launch 'Deploy free5gc-upf'

@@ -45,7 +45,7 @@ metadata:
 stringData:
   host: postgresql
   port: "5432"
-  database: tko
+  database: awx
   username: tko
   password: tko
   sslmode: prefer

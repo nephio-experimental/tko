@@ -6,4 +6,4 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-PGPASSWORD=tko psql -h localhost -d tko -U tko "$@"
+PGPASSWORD=tko psql --host=localhost --dbname=tko --username=tko "$@"

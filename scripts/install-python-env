@@ -6,9 +6,16 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-rm --force --recursive "$PYTHON_ENV"
+if [ "$1" == -c ]; then
+	rm --force --recursive "$PYTHON_ENV"
+fi
+
 python3 -m venv "$PYTHON_ENV"
 
 . "$PYTHON_ENV/bin/activate"
 pip install --upgrade pip
-pip install ruamel.yaml grpcio-tools awxkit
+pip install ruamel.yaml grpcio-tools awxkit ansible
+
+# "grpcio-tools" is just for building
+# "awxkit" is for the awx CLI tools
+# "ansible" is so that we can use ansible-galaxy to install collections

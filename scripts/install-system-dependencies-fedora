@@ -13,7 +13,7 @@ if [ "$1" == -y ]; then
 fi
 
 dnf install \
-bash-completion kitty-terminfo zip \
+bash-completion kitty-terminfo zip jq \
 golang protobuf-compiler \
 python3-virtualenv \
 postgresql-server postgresql-contrib $DNF_ARGS

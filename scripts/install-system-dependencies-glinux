@@ -8,6 +8,7 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 only_root
 
 apt install \
+bash-completion zip jq \
 protobuf-compiler \
 python3-venv python3-pip \
 postgresql
