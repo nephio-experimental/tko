@@ -1,0 +1,131 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+. "$HERE/_trap"
+
+not_root
+
+function template () {
+	local NAME=$1
+	"$HERE/awx-kind" job_templates list --name="$NAME" | jq .results[0].id
+}
+
+function create_template () {
+	local NAME=$1
+	local PLAYBOOK=$2
+	local EE=$("$HERE/awx-kind" execution_environments list --name=TKO | jq .results[0].id)
+
+	m "creating AWX template: $NAME..."
+	"$HERE/awx-kind" job_templates create \
+		--name="$NAME" \
+		--job_type=run \
+		--execution_environment="$EE" \
+		--inventory="$INVENTORY" \
+		--project="$PROJECT" \
+		--playbook="$PLAYBOOK" \
+		--verbosity=3 || true
+}
+
+function delete_template () {
+	local NAME=$1
+	local TEMPLATE=$(template "$NAME")
+	if [ "$TEMPLATE" != 'null' ]; then
+		m "deleting AWX template: $NAME ($TEMPLATE)..."
+		"$HERE/awx-kind" job_templates delete "$TEMPLATE"
+	fi
+}
+
+function launch () {
+	local NAME=$1
+	m "launching AWX job: $NAME..."
+	"$HERE/awx-kind" job_templates launch $(template "$NAME")
+}
+
+if [ "$1" == -c ]; then
+	delete_template 'Deploy free5gc-upf'
+
+	PROJECT=$("$HERE/awx-kind" projects list --name=TKO | jq .results[0].id)
+	if [ "$PROJECT" != 'null' ]; then
+		m "deleting AWX project: TKO ($PROJECT)..."
+		"$HERE/awx-kind" projects delete "$PROJECT"
+	fi
+
+	EE=$("$HERE/awx-kind" execution_environments list --name=TKO | jq .results[0].id)
+	if [ "$EE" != 'null' ]; then
+		m "deleting AWX execution environment: TKO ($EE)..."
+		"$HERE/awx-kind" execution_environments delete "$EE"
+	fi
+fi
+
+m 'uploading AWX playbooks...'
+
+# Things that don't work:
+#
+# 1) The "roles/requirements.yml" file is ignored for manual projects in "/var/lib/awx/projects/".
+#    Maybe it only works for SCM projects?
+#
+# 2) We can put libraries in a local "module_utils" directory, which are merged into the system
+#    "ansible.module_utils" package, but then they would have to internally also import from
+#    "ansible.module_utils...", which would require coding them specifically for that.
+#
+# 3) Using "--custom_virtualenv" when creating a project seems to be ignored.
+
+# Execution Environment:
+# https://www.ansible.com/blog/introduction-to-ansible-builder/
+# https://medium.com/@frederic.egmorte/awx-create-a-new-execution-environment-with-ansible-builder-aee127d5bbdd
+# https://github.com/ansible/awx-ee
+
+#"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="$ROOT/examples/ansible/tko/collections"
+
+#cp --recursive "$ROOT/sdk/python/tko" "$ROOT/examples/ansible/tko/module_utils/"
+#cp --recursive "$ROOT/sdk/python/tko" "$ROOT/examples/ansible/tko/library/"
+
+POD=$("$HERE/kubectl-kind" get pods --selector=app.kubernetes.io/name=awx-web --field-selector=status.phase=Running --namespace=tko --output=jsonpath={.items[0].metadata.name})
+
+rm --recursive --force /tmp/tko/awx-projects/*
+cp --recursive "$ROOT/examples/ansible/tko" /tmp/tko/awx-projects/
+# Delete existing project dir
+#"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-web --namespace=tko -- mkdir --parents /var/lib/awx/projects/
+#"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-web --namespace=tko -- rm --recursive --force /var/lib/awx/projects/tko
+# Copy project
+#"$HERE/kubectl-kind" cp "$ROOT/examples/ansible/tko" "tko/$POD:/var/lib/awx/projects/tko" --container=awx-web --namespace=tko
+
+# Make it a git repo
+#"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- bash -c "cd /var/lib/awx/projects/tko && git config --global user.name tko && git config --global user.email '' && git init && git add . && git commit -m Initial"
+
+#"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- python3 -m venv /var/lib/awx/projects/tko/venv
+#"$HERE/kubectl-kind" cp "$ROOT/sdk/python/tko" "tko/$POD:/var/lib/awx/projects/tko/venv/lib/python3.9/site-packages/" --container=awx-task --namespace=tko
+
+#"$HERE/kubectl-kind" cp "$ROOT/sdk/python/tko" "tko/$POD:/var/lib/awx/venv/awx/lib/python3.9/site-packages/" --container=awx-task --namespace=tko
+
+# Hack: playbooks can only access files within the project, so we will copy the service account info into it
+#"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- cp --recursive /var/run/secrets/kubernetes.io/serviceaccount /var/lib/awx/projects/tko/
+
+m 'creating AWX execution environment: TKO...'
+
+"$HERE/awx-kind" execution_environments create \
+	--name=TKO \
+	--image="docker.io/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
+
+m 'creating AWX project: TKO...'
+
+# "$HERE/awx-kind" projects create \
+# 	--name=TKO \
+# 	--organization=Default \
+# 	--scm_type=git \
+# 	--scm_url=file:///var/lib/awx/projects/tko || true
+
+# The --local_path is relative to /var/lib/awx/projects/
+"$HERE/awx-kind" projects create \
+	--name=TKO \
+	--organization=Default \
+	--local_path=tko || true
+
+INVENTORY=$("$HERE/awx-kind" inventory list --name='Demo Inventory' | jq .results[0].id)
+PROJECT=$("$HERE/awx-kind" projects list --name=TKO | jq .results[0].id)
+
+create_template 'Deploy free5gc-upf' deploy.yaml
+
+launch 'Deploy free5gc-upf'

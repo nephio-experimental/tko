@@ -23,7 +23,7 @@ spec:
       serviceAccountName: tko
       containers:
       - name: tko-preparer
-        image: tko-preparer
+        image: tko-preparer # see: kustomization.yaml
         imagePullPolicy: Always
         env:
         - name: TKO_verbose

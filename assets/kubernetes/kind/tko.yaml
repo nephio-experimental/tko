@@ -5,10 +5,13 @@ name: tko
 nodes:
 - role: control-plane
   extraMounts:
+  # hostPaths will be created by root user
   - containerPath: /mnt/postgresql
-    hostPath: /tmp/tko-postgresql # will be created by root user
+    hostPath: /tmp/tko/postgresql
   - containerPath: /mnt/docker
-    hostPath: /tmp/tko-docker # will be created by root user
+    hostPath: /tmp/tko/docker
+  - containerPath: /mnt/awx-projects
+    hostPath: /tmp/tko/awx-projects
   extraPortMappings:
   # See: workloads/tko-api.yaml
   # tko-api gRPC

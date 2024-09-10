@@ -12,14 +12,14 @@ spec:
   serviceAccountName: tko
   containers:
   - name: tko-runner
-    image: tko-runner
+    image: tko-runner # see: kustomization.yaml
     imagePullPolicy: Always
     env:
     # All Docker usage (including by Kind) will actually take place in the "docker" container
     - name: DOCKER_HOST
       value: tcp://127.0.0.1:2375
   - name: docker
-    image: docker-dind # "dind" stands for "Docker-in-Docker"
+    image: docker-dind  # see: kustomization.yaml; "dind" stands for "Docker-in-Docker"
     imagePullPolicy: Always
     resources:
       requests:

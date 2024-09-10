@@ -12,15 +12,16 @@ not_root
 mkdir --parents "$ROOT/work/"
 
 build () {
-	if [ -f "$GOPATH/bin/$1" ]; then
-		cp --force "$GOPATH/bin/$1" "$ROOT/work/"
+	local NAME=$1
+	if [ -f "$GOPATH/bin/$NAME" ]; then
+		cp --force "$GOPATH/bin/$NAME" "$ROOT/work/"
 	fi
-	docker build --tag="$1" --file="assets/docker/$1" --build-arg="ALPINE_VERSION=$ALPINE_VERSION" "$ROOT"
+	docker build --tag="$NAME" --file="assets/docker/$NAME" --build-arg="ALPINE_VERSION=$ALPINE_VERSION" "$ROOT"
 }
 
 build tko-api
 if [ "$1" != -a ]; then
 	build tko-preparer
 	build tko-meta-scheduler
-	build tko-runner
+	build tko-runner # doesn't have an executable
 fi

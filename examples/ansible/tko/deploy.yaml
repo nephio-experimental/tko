@@ -1,15 +1,11 @@
----
-- name: Testing Custom Module
-  hosts: nodes
+- name: Testing TKO
+  hosts: all
   gather_facts: false
-  collections:
-  - ginigangadharan.collection_demo
+  
   tasks:
-    - name: Calling customhello2 module
-      hello_message:
-        message: "Hello"
-        name: "John"
-      register: custom_value
 
-    - debug:
-        msg: "{{ custom_value }}"
+  - name: Test TKO
+    tko_client: 
+    register: result
+
+  - debug: var=result  

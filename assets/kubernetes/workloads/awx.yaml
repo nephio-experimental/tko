@@ -10,9 +10,14 @@ metadata:
 
 spec:
   service_type: NodePort
-  nodeport_port: 30053
-  admin_password_secret: awx-admin
-  postgres_configuration_secret: awx-postgres
+  nodeport_port: 30053 # see: kind/tko.yaml
+
+  admin_password_secret: awx-admin # see below
+  postgres_configuration_secret: awx-postgres # see below
+
+  # See: https://ansible.readthedocs.io/projects/awx-operator/en/latest/user-guide/advanced-configuration/persisting-projects-directory.html
+  projects_persistence: true # makes sure "/var/lib/awx/projects" is shared between awx-web and awx-task pods
+  projects_existing_claim: awx-projects # see below
 
 ---
 
@@ -43,7 +48,7 @@ metadata:
     app.kubernetes.io/part-of: tko
 
 stringData:
-  host: postgresql
+  host: postgresql # see: workloads/postgresql.yaml
   port: "5432"
   database: awx
   username: tko
@@ -51,3 +56,69 @@ stringData:
   sslmode: prefer
   target_session_attrs: read-write
   type: unmanaged
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+
+metadata:
+  name: awx-tko
+  labels:
+    app.kubernetes.io/name: awx
+    app.kubernetes.io/part-of: tko
+
+subjects:
+# Created by the AWX operator
+- kind: ServiceAccount
+  name: awx
+  namespace: tko
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin # should already exist in the cluster
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: awx-projects
+  namespace: tko
+  labels:
+    app.kubernetes.io/name: awx
+    app.kubernetes.io/part-of: tko
+
+spec:
+  storageClassName: manual
+  #storageClassName: standard # this is the rancher.io/local-path provisioner in Kind
+  accessModes:
+  - ReadWriteMany # rancher.io/local-path only supports ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+
+metadata:
+  name: awx-projects
+  labels:
+    app.kubernetes.io/name: awx
+    app.kubernetes.io/part-of: tko
+
+spec:
+  claimRef:
+    name: awx-projects
+    namespace: tko
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: /mnt/awx-projects # see kind/tko.yaml

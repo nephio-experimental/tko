@@ -11,9 +11,10 @@ TIMEOUT=180s
 
 function clean_volumes () {
 	# If we don't clean /tmp/tko-docker, Docker-in-Docker (and thus Kind) will get confused with existing data
+	# See: assets/kubernetes/kind/tko.yaml
 	m 'cleaning volumes (via sudo)...'
-	sudo rm --recursive --force /tmp/tko-postgresql /tmp/tko-docker
-	sudo mkdir --parents /tmp/tko-postgresql /tmp/tko-docker
+	sudo rm --recursive --force /tmp/tko/
+	sudo mkdir --parents /tmp/tko/postgresql /tmp/tko/docker /tmp/tko/awx-projects
 }
 
 if [ "$1" == -c ]; then
@@ -27,6 +28,10 @@ fi
 # 	sudo mkdir --parents /var/local-path-provisioner
 # 	sudo chown "$SUDO_USER" /var/local-path-provisioner
 # fi
+
+cat "$ROOT/assets/kubernetes/_kustomization.yaml" |
+POSTGRESQL_VERSION=$POSTGRESQL_VERSION DIND_VERSION=$DIND_VERSION \
+envsubst > "$ROOT/assets/kubernetes/kustomization.yaml"
 
 if [ "$1" == -d ]; then
 	m 'deleting TKO...'

@@ -23,7 +23,7 @@ spec:
       serviceAccountName: tko
       containers:
       - name: tko-meta-scheduler
-        image: tko-meta-scheduler
+        image: tko-meta-scheduler # see: kustomization.yaml
         imagePullPolicy: Always
         env:
         - name: TKO_verbose

@@ -1,0 +1,32 @@
+# https://ansible.readthedocs.io/projects/builder/en/stable/
+# https://github.com/ansible/awx-ee/blob/devel/execution-environment.yml
+
+version: 3
+
+dependencies:
+  ansible_core:
+    package_pip: ansible-core==2.17.4
+  ansible_runner:
+    package_pip: ansible-runner==2.4.0
+  python:
+  - ruamel.yaml
+  - grpcio-tools
+
+images:
+  base_image:
+    name: docker.io/alpine:3.20.3
+
+additional_build_files:
+- src: ../../sdk/python
+  dest: python # relative to "_build"
+
+additional_build_steps:
+  prepend_base: |
+    RUN apk add --no-cache bash python3 py3-pip gcc musl-dev
+    COPY _build/python/tko /usr/lib/python3.12/tko
+
+options:
+  package_manager_path: apk
+
+build_arg_defaults:
+  PKGMGR_PRESERVE_CACHE: always # "clean" is not supported by apk

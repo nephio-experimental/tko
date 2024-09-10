@@ -31,9 +31,9 @@ images:
 # See: https://hub.docker.com/_/postgres
 - name: postgresql
   newName: docker.io/postgres
-  newTag: 17rc1-alpine
+  newTag: $POSTGRESQL_VERSION
 
 # See: https://hub.docker.com/_/docker
 - name: docker-dind
   newName: docker.io/docker
-  newTag: 27.2.1-dind
+  newTag: $DIND_VERSION
