@@ -2,28 +2,28 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: tko-api
+  name: tko-data
   namespace: tko
   labels:
-    app.kubernetes.io/name: tko-api
+    app.kubernetes.io/name: tko-data
     app.kubernetes.io/part-of: tko
 
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: tko-api
+      app.kubernetes.io/name: tko-data
       app.kubernetes.io/part-of: tko
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: tko-api
+        app.kubernetes.io/name: tko-data
         app.kubernetes.io/part-of: tko
     spec:
       serviceAccountName: tko
       containers:
-      - name: tko-api
-        image: tko-api # see: kustomization.yaml
+      - name: tko-data
+        image: tko-data # see: kustomization.yaml
         imagePullPolicy: Always
         env:
         - name: TKO_verbose
@@ -58,16 +58,16 @@ apiVersion: v1
 kind: Service
 
 metadata:
-  name: tko-api
+  name: tko-data
   namespace: tko
   labels:
-    app.kubernetes.io/name: tko-api
+    app.kubernetes.io/name: tko-data
     app.kubernetes.io/part-of: tko
 
 spec:
   type: NodePort
   selector:
-    app.kubernetes.io/name: tko-api
+    app.kubernetes.io/name: tko-data
     app.kubernetes.io/part-of: tko
   ports:
   # See: kind/tko.yaml

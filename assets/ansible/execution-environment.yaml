@@ -20,6 +20,7 @@ additional_build_files:
 - src: ../../sdk/python
   dest: python # relative to "_build"
 
+# Make sure to update "python3.12" if Python is upgraded in Alpine Linux
 additional_build_steps:
   prepend_base: |
     RUN apk add --no-cache bash python3 py3-pip gcc musl-dev

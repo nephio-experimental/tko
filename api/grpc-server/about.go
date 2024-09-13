@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) About(context contextpkg.Context, _ *emptypb.Empty) (*api.AboutResponse, error) {
 	self.Log.Info("about")
 

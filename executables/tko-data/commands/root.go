@@ -27,7 +27,7 @@ func init() {
 
 var rootCommand = &cobra.Command{
 	Use:   toolName,
-	Short: "TKO API Server",
+	Short: "TKO Data",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		util.InitializeColorization(colorize)
 		if journald {

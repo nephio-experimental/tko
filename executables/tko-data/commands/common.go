@@ -4,6 +4,6 @@ import (
 	"github.com/tliron/commonlog"
 )
 
-const toolName = "tko-api"
+const toolName = "tko-data"
 
 var log = commonlog.GetLogger(toolName)

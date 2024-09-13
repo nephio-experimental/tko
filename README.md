@@ -8,23 +8,23 @@ TKO
 ===
 
 A PoC demonstrating scalability opportunities for Nephio with a focus on decoupling the various
-subsystems, specifically the data backend and API access, as well as integration with external
-site inventories and blueprint catalogs.
+subsystems, specifically the data backend and orchestration logic plugins, as well as integration
+with external site inventories and blueprint catalogs.
 
-This PoC is a complete rewrite of the Nephio core. It comprises three controllers (API server,
-Preparer, and Meta-Scheduler) that can run independently or be embedded into a control plane,
-including first-class support for Kubernetes management clusters.
+This PoC is a complete rewrite of the Nephio core. It comprises three controllers (Data, Preparer,
+and Meta-Scheduler) that can run independently or be embedded into a control plane. Included
+is first-class support for using a Kubernetes management cluster as the control plane.
 
-Included is an RDBMS backend, specifically for the [PostgreSQL](https://www.postgresql.org/)
+For the data backend, the default is RDBMS, optimized for the [PostgreSQL](https://www.postgresql.org/)
 dialect of SQL. RDBMSes provides scalability, reliability, resiliency, and atomic updates via
 transactions. They are widely available as managed cloud services, e.g. Google's planetary-scale
-[Spanner](https://cloud.google.com/spanner) (which speaks the PostgreSQL dialect).
+[Spanner](https://cloud.google.com/spanner) (which also speaks the PostgreSQL dialect).
 
-A git backend is also possible (a.k.a. "GitOps"). Note that such an implementation may be
-suitable for storing templates, but it's probably not a good backend for sites and deployments,
-which are expected to number in the millions in real-world telco environments.
+A git data backend is also possible (a.k.a. "GitOps"), but not currently included. Note that such
+a backend may be suitable for storing templates, but it's probably not a good backend for sites and
+deployments, which are expected to number in the millions in real-world telco environments.
 
-The TKO API is exposed in three flavors:
+The TKO data controller exposes three flavors of API:
 
 1) [gRPC](https://grpc.io/), which is widely supported, including in loadbalancers (see
    [Envoy](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/other_protocols/grpc))
@@ -86,13 +86,13 @@ Architecture Diagram
 ```mermaid
 %%{init: {'themeVariables': { 'edgeLabelBackground': 'transparent'}}}%%
 flowchart TD
-    D[(Data Backends)]
+    DB[(Data Backends)]
 
     C(TKO CLI and TUI)
     W(TKO Web GUI)
     O(Orchestrators)
 
-    A[TKO API Server]
+    D[TKO Data]
     P[TKO Preparer]
     MS[TKO Meta-Scheduler]
 
@@ -100,13 +100,13 @@ flowchart TD
     VP[/validator plugins/]
     SP[/scheduler plugins/]
 
-    C-. gRPC ..-A
-    W-. HTTP ..-A
-    O-. gRPC ..-A
-    A-. gRPC ..- P
-    A-. gRPC ..-MS
+    C-. gRPC ..-D
+    W-. HTTP ..-D
+    O-. gRPC ..-D
+    D-. gRPC ..- P
+    D-. gRPC ..-MS
 
-    D-..-A
+    DB-..-D
 
     PP---P
     VP---P
@@ -142,7 +142,7 @@ flowchart TD
     WT-->UR
     ST-->PS-->WC
 
-    style A fill:blue,color:white
+    style D fill:blue,color:white
     style C fill:blue,color:white
     style W fill:blue,color:white
     style P fill:blue,color:white

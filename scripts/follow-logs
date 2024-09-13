@@ -43,6 +43,6 @@ function follow () {
     esac
 }
 
-follow tko-api
+follow tko-data
 follow tko-preparer
 follow tko-meta-scheduler

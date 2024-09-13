@@ -15,7 +15,7 @@ import (
 //
 
 type Server struct {
-	api.UnimplementedAPIServer
+	api.UnimplementedDataServer
 
 	InstanceName         string
 	InstanceDescription  string
@@ -66,7 +66,7 @@ func (self *Server) start(level2protocol string, address string) error {
 				"addressPort", listener.Addr().String())
 
 			grpcServer := grpc.NewServer()
-			api.RegisterAPIServer(grpcServer, self)
+			api.RegisterDataServer(grpcServer, self)
 			self.grpcServers = append(self.grpcServers, grpcServer)
 			self.clientAddressPorts = append(self.clientAddressPorts, util.IPAddressPortWithoutZone(addressPort))
 

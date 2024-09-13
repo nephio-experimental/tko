@@ -6,6 +6,6 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-"$HERE/start-service" tko-api
+"$HERE/start-service" tko-data
 "$HERE/start-service" tko-preparer
 "$HERE/start-service" tko-meta-scheduler

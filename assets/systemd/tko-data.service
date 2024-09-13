@@ -1,10 +1,10 @@
 [Unit]
-Description=TKO API
+Description=TKO Data
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=%h/go/bin/tko-api start \
+ExecStart=%h/go/bin/tko-data start \
 --journald \
 --backend=$BACKEND \
 --backend-clean=$BACKEND_CLEAN \

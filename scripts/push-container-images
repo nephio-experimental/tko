@@ -15,7 +15,7 @@ function push () {
 	docker push "$TAG/$NAME"
 }
 
-push tko-api
+push tko-data
 if [ "$1" != -a ]; then
 	push tko-preparer
 	push tko-meta-scheduler

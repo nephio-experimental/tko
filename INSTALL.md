@@ -18,7 +18,7 @@ To run the test scenario:
 
     scripts/vagrant scripts/test
 
-The `tko-api`'s web server port is mapped to your host at port 60051, so you can access
+The `tko-data`'s web server port is mapped to your host at port 60051, so you can access
 the web dashboard at [http://localhost:60051/](http://localhost:60051/).
 
 To gain shell access to the dev environment run `vagrant ssh` and then `cd /vagrant`. Or,
@@ -30,19 +30,19 @@ to just run commands in the virtual machine use `scripts/vagrant`. Examples:
     scripts/vagrant scripts/test
 
 If you have `tko` installed on the host, you can also run the client there against the
-virtual machine's `tko-api`'s gRPC port with this script:
+virtual machine's `tko-data`'s gRPC port with this script:
 
     scripts/tko-vagrant dashboard
 
 To follow logs from the host:
 
-    scripts/vagrant scripts/log-service tko-api --follow
+    scripts/vagrant scripts/log-service tko-data --follow
     scripts/vagrant scripts/log-service tko-preparer --follow
     scripts/vagrant scripts/log-service tko-meta-scheduler --follow
 
 Also note that you can install the Kubernetes cluster (option 2 below) inside the Vagrant
 virtual machine by running `scripts/test-kind`, combining both installation options. The
-Kind's `tko-api`'s web server port is mapped to your host at port 60061.
+Kind's `tko-data`'s web server port is mapped to your host at port 60061.
 
 During development, if you want the virtual machine to continuously sync file changes
 from the host (it's one-way, only from the host to the virtual machine at directory
@@ -76,11 +76,11 @@ your host's inotify limits being too low. See
 Also note that you can run `test-kind` inside the Vagrant virtual machine detailed above,
 combining both installation options.
 
-The `tko-api`'s web server port is mapped to your host at port 30051, so you can access
+The `tko-data`'s web server port is mapped to your host at port 30051, so you can access
 the web dashboard at [http://localhost:30051/](http://localhost:30051/).
 
 If you have `tko` installed on the host, you can also run the client there against the
-cluster's `tko-api`'s gRPC port with this script:
+cluster's `tko-data`'s gRPC port with this script:
 
     scripts/tko-kind dashboard
 
@@ -104,7 +104,7 @@ TKO "management" cluster use `scripts/kubectl-kind`.)
 
 To follow logs from the host:
 
-    scripts/log-service-kind tko-api --follow
+    scripts/log-service-kind tko-data --follow
     scripts/log-service-kind tko-preparer --follow
     scripts/log-service-kind tko-meta-scheduler --follow
 
@@ -145,7 +145,7 @@ These are the requirements if you prefer to install them manually:
 * [Go](https://g3doc.corp.google.com/go/g3doc/codelabs/getting-started.md)
   (you should already have it in gLinux, but can still install the latest version manually)
 * [Docker](https://docs.docker.com/get-docker/) ([instructions for Google gLinux](http://go/installdocker))
-* [KIND](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+* [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 * [Helm](https://helm.sh/docs/intro/install/)
 * [kpt CLI](https://kpt.dev/installation/kpt-cli)
@@ -186,7 +186,7 @@ emulators (GNOME Terminal, Kitty, and Tilix):
 
 Or follow individual logs manually:
 
-    scripts/log-service tko-api --follow
+    scripts/log-service tko-data --follow
     scripts/log-service tko-preparer --follow
     scripts/log-service tko-meta-scheduler --follow
 

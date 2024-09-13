@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ServerName       = "tko-apiserver"
+	ServerName       = "tko-data-server"
 	ComponentName    = "tko"
 	ComponentVersion = "0.1"
 	OpenAPITitle     = "TKO"

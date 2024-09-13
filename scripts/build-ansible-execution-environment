@@ -11,7 +11,7 @@ NAME=tko-ansible-execution-environment
 TAG=${TAG:-$DOCKER_REGISTRY}
 
 cat "$ROOT/assets/ansible/_execution-environment.yaml" |
-ALPINE_VERSION=$ALPINE_VERSION ANSIBLE_CORE_VERSION=$ANSIBLE_CORE_VERSION ANSIBLE_BUILDER_VERSION=$ANSIBLE_BUILDER_VERSION \
+ALPINE_VERSION=$ALPINE_VERSION ANSIBLE_CORE_VERSION=$ANSIBLE_CORE_VERSION ANSIBLE_RUNNER_VERSION=$ANSIBLE_RUNNER_VERSION \
 envsubst > "$ROOT/assets/ansible/execution-environment.yaml"
 
 rm --recursive --force "$ROOT/work/ansible-builder/"

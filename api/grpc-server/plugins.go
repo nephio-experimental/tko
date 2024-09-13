@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugin) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerPlugin: %+v", plugin)
 
@@ -30,7 +30,7 @@ func (self *Server) RegisterPlugin(context contextpkg.Context, plugin *api.Plugi
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) DeletePlugin(context contextpkg.Context, pluginId *api.PluginID) (*api.DeleteResponse, error) {
 	self.Log.Infof("deletePlugin: %+v", pluginId)
 
@@ -47,7 +47,7 @@ func (self *Server) DeletePlugin(context contextpkg.Context, pluginId *api.Plugi
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) GetPlugin(context contextpkg.Context, pluginId *api.PluginID) (*api.Plugin, error) {
 	self.Log.Infof("getPlugin: %+v", pluginId)
 
@@ -69,9 +69,17 @@ func (self *Server) GetPlugin(context contextpkg.Context, pluginId *api.PluginID
 	}
 }
 
-// ([api.APIServer] interface)
-func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_ListPluginsServer) error {
+// ([api.DataServer] interface)
+func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.Data_ListPluginsServer) error {
 	self.Log.Infof("listPlugins: %+v", listPlugins)
+
+	if listPlugins.Select == nil {
+		listPlugins.Select = new(api.SelectPlugins)
+	}
+
+	if listPlugins.Window == nil {
+		listPlugins.Window = new(api.Window)
+	}
 
 	if listPlugins.Select.Type != nil {
 		if !plugins.IsValidPluginType(*listPlugins.Select.Type, true) {
@@ -109,7 +117,7 @@ func (self *Server) ListPlugins(listPlugins *api.ListPlugins, server api.API_Lis
 	return nil
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) PurgePlugins(context contextpkg.Context, selectPlugins *api.SelectPlugins) (*api.DeleteResponse, error) {
 	self.Log.Infof("purgePlugins: %+v", selectPlugins)
 

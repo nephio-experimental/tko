@@ -7,7 +7,7 @@ package tko;
 
 option go_package = "github.com/nephio-experimental/tko/api/grpc";
 
-service API {
+service Data {
     rpc about(google.protobuf.Empty) returns (AboutResponse);
 
     rpc registerTemplate(Template) returns (RegisterResponse);

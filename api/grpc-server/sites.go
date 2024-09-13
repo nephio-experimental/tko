@@ -11,9 +11,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ api.APIServer = new(Server)
+var _ api.DataServer = new(Server)
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerSite: %+v", site)
 
@@ -33,7 +33,7 @@ func (self *Server) RegisterSite(context contextpkg.Context, site *api.Site) (*a
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) DeleteSite(context contextpkg.Context, siteId *api.SiteID) (*api.DeleteResponse, error) {
 	self.Log.Infof("deleteSite: %+v", siteId)
 
@@ -46,7 +46,7 @@ func (self *Server) DeleteSite(context contextpkg.Context, siteId *api.SiteID) (
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*api.Site, error) {
 	self.Log.Infof("getSite: %+v", getSite)
 
@@ -73,9 +73,17 @@ func (self *Server) GetSite(context contextpkg.Context, getSite *api.GetSite) (*
 	}
 }
 
-// ([api.APIServer] interface)
-func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSitesServer) error {
+// ([api.DataServer] interface)
+func (self *Server) ListSites(listSites *api.ListSites, server api.Data_ListSitesServer) error {
 	self.Log.Infof("listSites: %+v", listSites)
+
+	if listSites.Select == nil {
+		listSites.Select = new(api.SelectSites)
+	}
+
+	if listSites.Window == nil {
+		listSites.Window = new(api.Window)
+	}
 
 	if siteInfoResults, err := self.Backend.ListSites(server.Context(), backend.SelectSites{
 		SiteIDPatterns:     listSites.Select.SiteIdPatterns,
@@ -103,7 +111,7 @@ func (self *Server) ListSites(listSites *api.ListSites, server api.API_ListSites
 	return nil
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) PurgeSites(context contextpkg.Context, selectSites *api.SelectSites) (*api.DeleteResponse, error) {
 	self.Log.Infof("purgeSites: %+v", selectSites)
 

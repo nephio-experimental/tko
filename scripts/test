@@ -26,13 +26,14 @@ m 'starting controllers...'
 
 set +e
 while true; do
-	m 'waiting for tko-api...'
+	waiting 'waiting for tko-data...'
 	if tko about --quiet; then
 		break
 	fi
-	sleep 1
+	sleep 0.5
 done
 set -e
+end_waiting 'tko-data is up'
 
 "$HERE/test-scenario" local
 

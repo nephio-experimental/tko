@@ -41,7 +41,7 @@ After a few seconds you should see `smf` pods appear on both "edge1" and "edger2
 ### Accessing the CLI
 
 The `tko` command is a straightforward client entry point into TKO. It provides CLI access to
-all the backend APIs over gRPC. Let's start by making sure you can use `tko` to access the API
+data backend over gRPC. Let's start by making sure you can use `tko` to access the data
 server.
 
 If you've installed natively then this should just work:
@@ -59,14 +59,14 @@ machine):
 
     scripts/build
 
-And then you can access the API server inside the virtual machine via an exposed port. The
-script for it:
+And then you can access the data controller via `tko` to an an exposed port in the virtual
+machine. Included is a shortcut script:
 
     scripts/tko-vagrant about
 
 Finally, if you've installed on a local Kubernetes Kind cluster then make sure you have
-`tko` built on the host (via `scripts/build`) and then you can access the API server's
-exposed port:
+`tko` built on the host (via `scripts/build`) and then you can access the data
+controller's exposed port:
 
     scripts/tko-kind about
 

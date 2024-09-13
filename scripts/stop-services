@@ -8,4 +8,4 @@ not_root
 
 "$HERE/stop-service" tko-meta-scheduler
 "$HERE/stop-service" tko-preparer
-"$HERE/stop-service" tko-api
+"$HERE/stop-service" tko-data

@@ -96,7 +96,7 @@ func init() {
 
 var startCommand = &cobra.Command{
 	Use:   "start",
-	Short: "Start the TKO API Server",
+	Short: "Start TKO Data",
 	Run: func(cmd *cobra.Command, args []string) {
 		grpcIpStack = util.IPStack(grpcIpStackString)
 		util.FailOnError(grpcIpStack.Validate("grpc-ip-stack"))

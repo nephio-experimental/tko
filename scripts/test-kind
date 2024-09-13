@@ -55,7 +55,7 @@ m 'deploying TKO...'
 m 'waiting for TKO...'
 
 "$HERE/kubectl-kind" wait deployment/postgresql --timeout="$TIMEOUT" --for=condition=available --namespace=tko
-"$HERE/kubectl-kind" wait deployment/tko-api --timeout="$TIMEOUT" --for=condition=available --namespace=tko
+"$HERE/kubectl-kind" wait deployment/tko-data --timeout="$TIMEOUT" --for=condition=available --namespace=tko
 "$HERE/kubectl-kind" wait deployment/tko-preparer --timeout="$TIMEOUT" --for=condition=available --namespace=tko
 "$HERE/kubectl-kind" wait deployment/tko-meta-scheduler --timeout="$TIMEOUT" --for=condition=available --namespace=tko
 "$HERE/kubectl-kind" wait pod/tko-runner --timeout="$TIMEOUT" --for=condition=ready --namespace=tko

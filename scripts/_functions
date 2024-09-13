@@ -4,6 +4,10 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 RESET='\033[0m'
+CLEAR_LINE='\033[2K\r'
+
+SPIN_CHARACTERS="/-\|"
+SPIN_INDEX=0
 
 # Colored messages (blue is the default)
 # Examples:
@@ -12,6 +16,20 @@ RESET='\033[0m'
 function m () {
 	local COLOR=${2:-$BLUE}
 	echo -e "$COLOR$1$RESET"
+}
+
+function waiting () {
+	# https://stackoverflow.com/a/3330834
+	local COLOR=${2:-$BLUE}
+	printf "$CLEAR_LINE$COLOR[${SPIN_CHARACTERS:SPIN_INDEX++:1}] %s$RESET" "$1"
+	if [ "$SPIN_INDEX" == "${#SPIN_CHARACTERS}" ]; then
+		SPIN_INDEX=0
+	fi
+}
+
+function end_waiting () {
+	local COLOR=${2:-$BLUE}
+	printf "$CLEAR_LINE$COLOR%s$RESET\n" "$1"
 }
 
 function copy_function () {

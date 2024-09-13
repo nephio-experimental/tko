@@ -19,7 +19,7 @@ build () {
 	docker build --tag="$NAME" --file="assets/docker/$NAME" --build-arg="ALPINE_VERSION=$ALPINE_VERSION" "$ROOT"
 }
 
-build tko-api
+build tko-data
 if [ "$1" != -a ]; then
 	build tko-preparer
 	build tko-meta-scheduler

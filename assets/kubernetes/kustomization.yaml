@@ -7,7 +7,7 @@ resources:
 - admin/namespace.yaml
 - admin/rbac.yaml
 - admin/api.yaml
-- workloads/tko-api.yaml
+- workloads/tko-data.yaml
 - workloads/tko-preparer.yaml
 - workloads/tko-meta-scheduler.yaml
 - workloads/tko-runner.yaml
@@ -15,8 +15,8 @@ resources:
 
 images:
 # See: https://hub.docker.com/u/tliron
-- name: tko-api
-  newName: docker.io/tliron/tko-api
+- name: tko-data
+  newName: docker.io/tliron/tko-data
   newTag: latest
 - name: tko-preparer
   newName: docker.io/tliron/tko-preparer

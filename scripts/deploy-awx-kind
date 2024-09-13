@@ -40,13 +40,14 @@ m 'waiting for AWX...'
 
 set +e
 while true; do
-	m 'waiting for awx-web (>5 minutes)...'
+	waiting 'waiting for awx-web (>5 minutes)...'
 	if "$HERE/awx-kind" ping > /dev/null 2>&1; then
 		break
 	fi
-	sleep 3
+	sleep 0.5
 done
 set -e
+end_waiting 'awx-web is up, access at: http://localhost:30053'
 
 # Debugging:
 # kubectl logs deployment/awx-operator-controller-manager --namespace=tko --follow

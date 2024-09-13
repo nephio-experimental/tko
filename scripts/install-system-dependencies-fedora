@@ -14,7 +14,7 @@ fi
 
 dnf install \
 bash-completion kitty-terminfo zip jq \
-golang protobuf-compiler \
+golang protobuf-compiler protobuf-devel \
 python3-virtualenv \
 postgresql-server postgresql-contrib $DNF_ARGS
 
@@ -46,3 +46,5 @@ systemctl enable --now docker
 # gpasswd will add the group to the current session, unlike usermod
 # (unfortunately this does not affect the user's systemd daemon)
 gpasswd --add "$SUDO_USER" docker
+
+m 'You *must* reboot to be able to access docker (logging out is not enough)' "$GREEN"

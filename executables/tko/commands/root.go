@@ -35,9 +35,9 @@ func init() {
 	rootCommand.PersistentFlags().BoolVarP(&strict, "strict", "y", false, "strict output (for \"yaml\" format only)")
 	rootCommand.PersistentFlags().BoolVarP(&pretty, "pretty", "p", true, "prettify output")
 
-	rootCommand.PersistentFlags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO API Server (\"dual\", \"ipv6\", or \"ipv4\")")
-	rootCommand.PersistentFlags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO API Server")
-	rootCommand.PersistentFlags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO API Server")
+	rootCommand.PersistentFlags().StringVar(&grpcIpStackString, "grpc-ip-stack", "dual", "IP stack for TKO Data Server (\"dual\", \"ipv6\", or \"ipv4\")")
+	rootCommand.PersistentFlags().StringVar(&grpcAddress, "grpc-address", "", "address for TKO Data Server")
+	rootCommand.PersistentFlags().UintVar(&grpcPort, "grpc-port", 50050, "HTTP/2 port for TKO Data Server")
 	rootCommand.PersistentFlags().StringVar(&grpcFormat, "grpc-format", "cbor", "preferred format for encoding KRM over gRPC (\"yaml\" or \"cbor\")")
 	rootCommand.PersistentFlags().Float64Var(&grpcTimeout, "grpc-timeout", 10.0, "gRPC timeout in seconds")
 

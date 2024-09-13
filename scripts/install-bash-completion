@@ -26,7 +26,7 @@ function c () {
 mkdir --parents "$USER_DIR/completions"
 
 c tko
-c tko-api
+c tko-data
 c tko-preparer
 c tko-meta-scheduler
 

@@ -29,7 +29,7 @@ spec:
         - name: TKO_verbose
           value: "1"
         - name: TKO_grpc-address
-          value: tko-api
+          value: tko-data
         ports:
         - name: log
           containerPort: 50055

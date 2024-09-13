@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.Template) (*api.RegisterResponse, error) {
 	self.Log.Infof("registerTemplate: %+v", template)
 
@@ -31,7 +31,7 @@ func (self *Server) RegisterTemplate(context contextpkg.Context, template *api.T
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) DeleteTemplate(context contextpkg.Context, templateId *api.TemplateID) (*api.DeleteResponse, error) {
 	self.Log.Infof("deleteTemplate: %+v", templateId)
 
@@ -44,7 +44,7 @@ func (self *Server) DeleteTemplate(context contextpkg.Context, templateId *api.T
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.GetTemplate) (*api.Template, error) {
 	self.Log.Infof("getTemplate: %+v", getTemplate)
 
@@ -70,9 +70,17 @@ func (self *Server) GetTemplate(context contextpkg.Context, getTemplate *api.Get
 	}
 }
 
-// ([api.APIServer] interface)
-func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.API_ListTemplatesServer) error {
+// ([api.DataServer] interface)
+func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.Data_ListTemplatesServer) error {
 	self.Log.Infof("listTemplates: %+v", listTemplates)
+
+	if listTemplates.Select == nil {
+		listTemplates.Select = new(api.SelectTemplates)
+	}
+
+	if listTemplates.Window == nil {
+		listTemplates.Window = new(api.Window)
+	}
 
 	if templateInfoResults, err := self.Backend.ListTemplates(server.Context(), backend.SelectTemplates{
 		TemplateIDPatterns: listTemplates.Select.TemplateIdPatterns,
@@ -98,7 +106,7 @@ func (self *Server) ListTemplates(listTemplates *api.ListTemplates, server api.A
 	return nil
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) PurgeTemplates(context contextpkg.Context, selectTemplates *api.SelectTemplates) (*api.DeleteResponse, error) {
 	self.Log.Infof("purgeTemplates: %+v", selectTemplates)
 

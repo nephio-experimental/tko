@@ -21,6 +21,6 @@ function build () {
 }
 
 build tko
-build tko-api
+build tko-data
 build tko-preparer
 build tko-meta-scheduler

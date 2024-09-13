@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) CreateDeployment(context contextpkg.Context, createDeployment *api.CreateDeployment) (*api.CreateDeploymentResponse, error) {
 	self.Log.Infof("createDeployment: %+v", createDeployment)
 
@@ -30,7 +30,7 @@ func (self *Server) CreateDeployment(context contextpkg.Context, createDeploymen
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) DeleteDeployment(context contextpkg.Context, deploymentId *api.DeploymentID) (*api.DeleteResponse, error) {
 	self.Log.Infof("deleteDeployment: %+v", deploymentId)
 
@@ -43,7 +43,7 @@ func (self *Server) DeleteDeployment(context contextpkg.Context, deploymentId *a
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api.GetDeployment) (*api.Deployment, error) {
 	self.Log.Infof("getDeployment: %+v", getDeployment)
 
@@ -73,9 +73,17 @@ func (self *Server) GetDeployment(context contextpkg.Context, getDeployment *api
 	}
 }
 
-// ([api.APIServer] interface)
-func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.API_ListDeploymentsServer) error {
+// ([api.DataServer] interface)
+func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server api.Data_ListDeploymentsServer) error {
 	self.Log.Infof("listDeployments: %+v", listDeployments)
+
+	if listDeployments.Select == nil {
+		listDeployments.Select = new(api.SelectDeployments)
+	}
+
+	if listDeployments.Window == nil {
+		listDeployments.Window = new(api.Window)
+	}
 
 	if deploymentInfoResults, err := self.Backend.ListDeployments(server.Context(), backend.SelectDeployments{
 		ParentDeploymentID:       listDeployments.Select.ParentDeploymentId,
@@ -112,7 +120,7 @@ func (self *Server) ListDeployments(listDeployments *api.ListDeployments, server
 	return nil
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) PurgeDeployments(context contextpkg.Context, selectDeployments *api.SelectDeployments) (*api.DeleteResponse, error) {
 	self.Log.Infof("purgeDeployments: %+v", selectDeployments)
 
@@ -134,7 +142,7 @@ func (self *Server) PurgeDeployments(context contextpkg.Context, selectDeploymen
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) StartDeploymentModification(context contextpkg.Context, startDeploymentModification *api.StartDeploymentModification) (*api.StartDeploymentModificationResponse, error) {
 	self.Log.Infof("startDeploymentModification: %+v", startDeploymentModification)
 
@@ -160,7 +168,7 @@ func (self *Server) StartDeploymentModification(context contextpkg.Context, star
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) EndDeploymentModification(context contextpkg.Context, endDeploymentModification *api.EndDeploymentModification) (*api.EndDeploymentModificationResponse, error) {
 	self.Log.Infof("endDeploymentModification: %+v", endDeploymentModification)
 
@@ -178,7 +186,7 @@ func (self *Server) EndDeploymentModification(context contextpkg.Context, endDep
 	}
 }
 
-// ([api.APIServer] interface)
+// ([api.DataServer] interface)
 func (self *Server) CancelDeploymentModification(context contextpkg.Context, cancelDeploymentModification *api.CancelDeploymentModification) (*api.CancelDeploymentModificationResponse, error) {
 	self.Log.Infof("cancelDeploymentModification: %+v", cancelDeploymentModification)
 

@@ -35,7 +35,7 @@ cd "$ROOT/sdk/python"
 
 cp "$ROOT/assets/grpc/tko.proto" tko/
 
-"$PYTHON_ENV/bin/python3" -m grpc_tools.protoc \
+"$PYTHON_ENV/bin/python" -m grpc_tools.protoc \
 	tko/tko.proto \
 	--proto_path=. \
 	--python_out=. \

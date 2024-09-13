@@ -15,10 +15,12 @@ mkdir --parents ~/.config/systemd/user/
 
 function install_service () {
     local SERVICE=$1
-    cat "$ROOT/assets/systemd/$SERVICE.service" | NAME=$NAME BACKEND=$BACKEND BACKEND_CLEAN=$BACKEND_CLEAN GRPC_IP_STACK=$GRPC_IP_STACK envsubst > ~/".config/systemd/user/$SERVICE.service"
+    cat "$ROOT/assets/systemd/$SERVICE.service" |
+	NAME=$NAME BACKEND=$BACKEND BACKEND_CLEAN=$BACKEND_CLEAN GRPC_IP_STACK=$GRPC_IP_STACK \
+	envsubst > ~/".config/systemd/user/$SERVICE.service"
 }
 
-install_service tko-api
+install_service tko-data
 install_service tko-meta-scheduler
 install_service tko-preparer
 

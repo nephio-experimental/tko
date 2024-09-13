@@ -5,7 +5,7 @@ metadata:
   name: tko
   namespace: tko
   labels:
-    app.kubernetes.io/name: tko-api
+    app.kubernetes.io/name: tko-data
     app.kubernetes.io/part-of: tko
 
 ---
@@ -16,7 +16,7 @@ kind: ClusterRoleBinding
 metadata:
   name: tko
   labels:
-    app.kubernetes.io/name: tko-api
+    app.kubernetes.io/name: tko-data
     app.kubernetes.io/part-of: tko
 
 subjects:

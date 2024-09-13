@@ -13,14 +13,14 @@ nodes:
   - containerPath: /mnt/awx-projects
     hostPath: /tmp/tko/awx-projects
   extraPortMappings:
-  # See: workloads/tko-api.yaml
-  # tko-api gRPC
+  # See: workloads/tko-data.yaml
+  # tko-data gRPC
   - containerPort: 30050
     hostPort: 30050
-  # tko-api HTTP
+  # tko-data HTTP
   - containerPort: 30051
     hostPort: 30051
-  # tko-api Kubernetes,
+  # tko-data Kubernetes
   - containerPort: 30052
     hostPort: 30052
   # See: workloads/awx.yaml

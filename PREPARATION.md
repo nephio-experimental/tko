@@ -42,7 +42,7 @@ Importantly, a preparation plugin works on the *entire* package, even though it 
 triggered by a single resource. This means that the plugin can reference and even
 update or delete other resources, as well as add new resources.
 
-Not only that, but plugins get a TKO API client. This means that they can generate
+Not only that, but plugins get a TKO Data client. This means that they can generate
 new (child) deployments, templates, really anything that TKO can do. For example,
 topology preparation generates child deployments based on templates and sites. Those
 in turn can have additional topologies, which will be prepared in the next iteration,
@@ -78,7 +78,7 @@ This scheme is powerful. It means that a topology package can include everything
 needs to create its child deployments. Not only that, when deploying a topology you
 can further merge resources into it, so the topology itself can have "inputs".
 
-Indeed, you can merge resources when creating a deployment via the API. This
+Indeed, you can merge resources when creating a deployment via the data API. This
 includes the `--merge` flag for the `tko deployment create` CLI command.
 
 This feature does introduce a small challenge. If you are including preparable
