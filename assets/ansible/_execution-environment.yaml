@@ -9,8 +9,9 @@ dependencies:
   ansible_runner:
     package_pip: ansible-runner==$ANSIBLE_RUNNER_VERSION
   python:
-  - ruamel.yaml
   - grpcio-tools
+  - ruamel.yaml
+  - cbor2
 
 images:
   base_image:

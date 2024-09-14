@@ -2,14 +2,29 @@ package util
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
+	"reflect"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/tliron/go-ard"
 	"github.com/tliron/go-transcribe"
 )
+
+var cbor_decode cbor.DecMode
+
+func init() {
+	// TODO: unsuccessful attempts to unmarhsal from Python SDK's client
+	options := cbor.DecOptions{
+		DefaultMapType: reflect.TypeFor[ard.Map](),
+	}
+
+	var err error
+	cbor_decode, err = options.DecMode()
+	if err != nil {
+		panic(err)
+	}
+}
 
 func EncodePackage(format string, package_ Package) ([]byte, error) {
 	if package_ == nil {
@@ -45,7 +60,7 @@ func DecodePackage(format string, content []byte) (Package, error) {
 
 	case "cbor":
 		var package_ Package
-		if err := cbor.Unmarshal(content, &package_); err == nil {
+		if err := cbor_decode.Unmarshal(content, &package_); err == nil {
 			return package_, nil
 		} else {
 			return nil, err
@@ -64,7 +79,7 @@ func ReadPackage(format string, reader io.Reader) (Package, error) {
 			var ok bool
 			for index, resource := range package_ {
 				if package__[index], ok = resource.(Resource); !ok {
-					return nil, errors.New("a resource is not a map")
+					return nil, fmt.Errorf("YAML resource is not a map: %+v", resource)
 				}
 				/*if _, ok := GetResourceIdentifier(resources_[index]); !ok {
 					return nil, fmt.Errorf("a resource is malformed: %s", resources_[index])

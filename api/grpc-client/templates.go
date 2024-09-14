@@ -31,7 +31,7 @@ func (self *Client) RegisterTemplate(templateId string, metadata map[string]stri
 }
 
 func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]string, packageFormat string, package_ []byte) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -55,7 +55,7 @@ func (self *Client) RegisterTemplateRaw(templateId string, metadata map[string]s
 }
 
 func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -86,7 +86,7 @@ func (self *Client) GetTemplate(templateId string) (Template, bool, error) {
 }
 
 func (self *Client) DeleteTemplate(templateId string) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -132,7 +132,7 @@ func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, 
 		return nil, err
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listTemplates",
@@ -173,7 +173,7 @@ func (self *Client) ListTemplates(selectTemplates SelectTemplates, offset uint, 
 }
 
 func (self *Client) PurgeTemplates(selectTemplates SelectTemplates) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 

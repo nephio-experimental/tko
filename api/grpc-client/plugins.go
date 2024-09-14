@@ -41,7 +41,7 @@ func (self *Client) RegisterPlugin(pluginId PluginID, executor string, arguments
 		return false, "", fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -73,7 +73,7 @@ func (self *Client) GetPlugin(pluginId PluginID) (Plugin, bool, error) {
 		return Plugin{}, false, fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -105,7 +105,7 @@ func (self *Client) DeletePlugin(pluginId PluginID) (bool, string, error) {
 		return false, "", fmt.Errorf("plugin type must be %s: %s", plugins.PluginTypesDescription, pluginId.Type)
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -168,7 +168,7 @@ func (self *Client) ListPlugins(selectPlugins SelectPlugins, offset uint, maxCou
 		}
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listPlugins",
@@ -218,7 +218,7 @@ func (self *Client) PurgePlugins(selectPlugins SelectPlugins) (bool, string, err
 		}
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 

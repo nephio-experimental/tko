@@ -17,10 +17,10 @@ class Package:
     f = io.StringIO()
     first = True
     for resource in self:
-      if not first:
-        f.write('---\n')
       if first:
         first = False
+      else:
+        f.write('---\n')
       tko.encoding.yaml.dump(resource, f)
     return f.getvalue()
 

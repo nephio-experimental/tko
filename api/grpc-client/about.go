@@ -20,7 +20,7 @@ type AboutGRPC struct {
 }
 
 func (self *Client) About() (About, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 

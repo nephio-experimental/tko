@@ -46,7 +46,7 @@ func NewClient(grpcIpStack util.IPStack, grpcAddress string, grpcPort int, packa
 	}
 }
 
-func (self *Client) APIClient() (api.DataClient, error) {
+func (self *Client) DataClient() (api.DataClient, error) {
 	self.dataClientLock.Lock()
 	defer self.dataClientLock.Unlock()
 

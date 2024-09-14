@@ -39,7 +39,7 @@ func (self *Client) CreateDeployment(parentDeploymentId string, templateId strin
 }
 
 func (self *Client) CreateDeploymentRaw(parentDeploymentId string, templateId string, siteId string, mergeMetadata map[string]string, prepared bool, approved bool, mergePackageFormat string, mergePackage []byte) (bool, string, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -71,7 +71,7 @@ func (self *Client) CreateDeploymentRaw(parentDeploymentId string, templateId st
 }
 
 func (self *Client) GetDeployment(deploymentId string) (Deployment, bool, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -106,7 +106,7 @@ func (self *Client) GetDeployment(deploymentId string) (Deployment, bool, error)
 }
 
 func (self *Client) DeleteDeployment(deploymentId string) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -176,7 +176,7 @@ func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset 
 		return nil, err
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listDeployments",
@@ -228,7 +228,7 @@ func (self *Client) ListDeployments(selectDeployments SelectDeployments, offset 
 }
 
 func (self *Client) PurgeDeployments(selectDeployments SelectDeployments) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -254,7 +254,7 @@ func (self *Client) PurgeDeployments(selectDeployments SelectDeployments) (bool,
 }
 
 func (self *Client) StartDeploymentModification(deploymentId string) (bool, string, string, tkoutil.Package, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -283,7 +283,7 @@ func (self *Client) EndDeploymentModification(modificationToken string, package_
 }
 
 func (self *Client) EndDeploymentModificationRaw(modificationToken string, packageFormat string, package_ []byte) (bool, string, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -305,7 +305,7 @@ func (self *Client) EndDeploymentModificationRaw(modificationToken string, packa
 }
 
 func (self *Client) CancelDeploymentModification(modificationToken string) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 

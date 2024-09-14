@@ -32,7 +32,7 @@ func (self *Client) RegisterSite(siteId string, templateId string, metadata map[
 }
 
 func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata map[string]string, packageFormat string, package_ []byte) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -58,7 +58,7 @@ func (self *Client) RegisterSiteRaw(siteId string, templateId string, metadata m
 }
 
 func (self *Client) GetSite(siteId string) (Site, bool, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -90,7 +90,7 @@ func (self *Client) GetSite(siteId string) (Site, bool, error) {
 }
 
 func (self *Client) DeleteSite(siteId string) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 
@@ -140,7 +140,7 @@ func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount int
 		return nil, err
 	}
 
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 
 		self.log.Info("listSites",
@@ -183,7 +183,7 @@ func (self *Client) ListSites(selectSites SelectSites, offset uint, maxCount int
 }
 
 func (self *Client) PurgeSites(selectSites SelectSites) (bool, string, error) {
-	if apiClient, err := self.APIClient(); err == nil {
+	if apiClient, err := self.DataClient(); err == nil {
 		context, cancel := contextpkg.WithTimeout(contextpkg.Background(), self.Timeout)
 		defer cancel()
 

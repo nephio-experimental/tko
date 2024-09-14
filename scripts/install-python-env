@@ -14,7 +14,7 @@ python3 -m venv "$PYTHON_ENV"
 
 . "$PYTHON_ENV/bin/activate"
 pip install --upgrade pip
-pip install ruamel.yaml grpcio-tools awxkit ansible-builder
+pip install ruamel.yaml cbor2 grpcio-tools awxkit ansible-builder
 
 # "grpcio-tools" is just for building
 # "awxkit" is for the awx CLI tools
