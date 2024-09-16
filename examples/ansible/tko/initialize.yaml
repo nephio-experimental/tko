@@ -1,0 +1,33 @@
+- name: Initialize AWX
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+  - name: Create "Deploy site" workflow
+    register: result
+    awx.awx.workflow_job_template:
+      controller_host: http://localhost:30053 # see: assets/kubernetes/kind/tko.yaml
+      controller_username: admin
+      controller_password: tko  # see: assets/kubernetes/workloads/awx.yaml (awx-admin secret)
+
+      name: Deploy site
+      organization: Default
+      inventory: Demo Inventory
+
+      workflow_nodes:
+
+      - identifier: Infra
+        unified_job_template:
+          type: job_template
+          name: Deploy free5GC UPF
+        related:
+          success_nodes:
+          - identifier: workload
+
+      - identifier: Workload
+        unified_job_template:
+          type: job_template
+          name: Deploy free5GC UPF
+
+  - debug: var=result

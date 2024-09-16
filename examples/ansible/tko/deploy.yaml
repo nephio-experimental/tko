@@ -8,4 +8,4 @@
     tko: 
     register: result
 
-  - debug: var=result  
+  - debug: var=result
