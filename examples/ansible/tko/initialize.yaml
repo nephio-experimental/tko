@@ -1,4 +1,4 @@
-- name: Initialize AWX
+- name: Initialize AWX for TKO
   hosts: localhost
   gather_facts: false
 
@@ -13,7 +13,7 @@
 
       name: Deploy site
       organization: Default
-      inventory: Demo Inventory
+      inventory: TKO
 
       workflow_nodes:
 
@@ -23,9 +23,15 @@
           name: Deploy free5GC UPF
         related:
           success_nodes:
-          - identifier: workload
+          - identifier: Workload1
+          - identifier: Workload2
 
-      - identifier: Workload
+      - identifier: Workload1
+        unified_job_template:
+          type: job_template
+          name: Deploy free5GC UPF
+
+      - identifier: Workload2
         unified_job_template:
           type: job_template
           name: Deploy free5GC UPF

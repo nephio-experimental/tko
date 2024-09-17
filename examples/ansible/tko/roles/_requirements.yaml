@@ -1,4 +1,4 @@
 # https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-multiple-roles-from-a-file
 
-collections:
-- src: git+file:///var/lib/awx/projects/tko/install
+#collections:
+#- src: git+file:///var/lib/awx/projects/tko/install

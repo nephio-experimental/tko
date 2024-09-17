@@ -1,0 +1,235 @@
+
+function gitify () {
+	local DIR=$1
+	pushd "$DIR" > /dev/null
+	git init
+	git config user.name tko
+	git config user.email ""
+	git add .
+	git commit --message=Initial
+	popd > /dev/null
+}
+
+# Execution Environments
+
+function execution_environment () {
+	local NAME=$1
+
+	"$HERE/awx-kind" execution_environments list --name="$NAME" | jq .results[0].id
+}
+
+function create_execution_environment () {
+	local NAME=$1
+	local IMAGE=$2
+
+	m "creating AWX execution environment: $NAME..."
+	"$HERE/awx-kind" execution_environments create \
+		--name="$NAME" \
+		--image="$IMAGE"
+}
+
+function delete_execution_environment () {
+	local NAME=$1
+
+	local EE=$(execution_environment "$NAME")
+	if [ "$EE" != 'null' ]; then
+		m "deleting AWX execution environment: $NAME ($EE)..."
+		"$HERE/awx-kind" execution_environments delete "$EE"
+	fi
+}
+
+# Inventories
+
+function inventory () {
+	local NAME=$1
+
+	"$HERE/awx-kind" inventory list --name="$NAME" | jq .results[0].id
+}
+
+function create_inventory () {
+	local NAME=$1
+
+	m "creating AWX inventory: $NAME..."
+	"$HERE/awx-kind" inventory create \
+		--name="$NAME" \
+		--organization=Default
+}
+
+function create_inventory_source () {
+	local INVENTORY_NAME=$1
+	local SOURCE_NAME=$2
+	local EE_NAME=$3
+	local PROJECT_NAME=$4
+	local SOURCE_PATH=$5
+
+	# See: https://ansible.readthedocs.io/projects/awx/en/latest/userguide/inventories.html#inventory-plugins
+
+	local INVENTORY=$(inventory "$INVENTORY_NAME")
+	local PROJECT=$(project "$PROJECT_NAME")
+	local EE=$(execution_environment "$EE_NAME")
+	m "creating AWX inventory source: $SOURCE_NAME..."
+	"$HERE/awx-kind" inventory_sources create \
+		--name="$SOURCE_NAME" \
+		--inventory="$INVENTORY" \
+		--source=scm \
+		--source_project="$PROJECT" \
+		--source_path="$SOURCE_PATH" \
+		--execution_environment="$EE" \
+		--update_on_launch=true
+
+		#--source_vars='---\nplugin: tko.awx.inventory'
+}
+
+function delete_inventory () {
+	local NAME=$1
+
+	local INVENTORY=$(inventory "$NAME")
+	if [ "$INVENTORY" != 'null' ]; then
+		m "deleting AWX inventory: $NAME ($INVENTORY)..."
+		"$HERE/awx-kind" inventory delete "$INVENTORY"
+	fi
+}
+
+# Projects
+
+function project () {
+	local NAME=$1
+
+	"$HERE/awx-kind" projects list --name="$NAME" | jq .results[0].id
+}
+
+function create_project () {
+	local NAME=$1
+	local LOCAL_PATH=$2
+
+	# There's a little trickery here.
+	#
+	# We could potentially just use "--local-path" to refer directly to our
+	# project files (it's relative to /var/lib/awx/projects/).
+	#
+	# Unfortunately, many AWX project features only work with SCM projects,
+	# notably installing Galaxy roles via "roles/requirements.yaml" and as
+	# a project for inventory sources.
+	#
+	# Our trick, then, is to turn the local project directory into a git
+	# repository (single commit) and refer to it here via a "file:" URL. Same
+	# location, different access mechanism.
+	
+	m "creating AWX project: $NAME..."
+	"$HERE/awx-kind" projects create \
+		--name="$NAME" \
+		--organization=Default \
+		--scm_type=git \
+		--scm_url="file:///var/lib/awx/projects/$LOCAL_PATH"
+
+		#--local_path="$LOCAL_PATH"
+}
+
+function delete_project () {
+	local NAME=$1
+
+	local PROJECT=$(project "$NAME")
+	if [ "$PROJECT" != 'null' ]; then
+		m "deleting AWX project: $NAME ($PROJECT)..."
+		"$HERE/awx-kind" projects delete "$PROJECT"
+	fi
+}
+
+# Job Templates
+
+function job_template () {
+	local NAME=$1
+
+	"$HERE/awx-kind" job_templates list --name="$NAME" | jq .results[0].id
+}
+
+function create_job_template () {
+	local NAME=$1
+	local PROJECT_NAME=$2
+	local PLAYBOOK=$3
+	local EE_NAME=$4
+	local INVENTORY_NAME=$5
+
+	local PROJECT=$(project "$PROJECT_NAME")
+	local EE=$(execution_environment "$EE_NAME")
+	local INVENTORY=$(inventory "$INVENTORY_NAME")
+	m "creating AWX job template: $NAME..."
+	"$HERE/awx-kind" job_templates create \
+		--name="$NAME" \
+		--job_type=run \
+		--execution_environment="$EE" \
+		--inventory="$INVENTORY" \
+		--project="$PROJECT" \
+		--playbook="$PLAYBOOK" \
+		--verbosity=3
+}
+
+function delete_job_template () {
+	local NAME=$1
+
+	local TEMPLATE=$(job_template "$NAME")
+	if [ "$TEMPLATE" != 'null' ]; then
+		m "deleting AWX job template: $NAME ($TEMPLATE)..."
+		"$HERE/awx-kind" job_templates delete "$TEMPLATE"
+	fi
+}
+
+function launch_job () {
+	local NAME=$1
+
+	m "launching AWX job: $NAME..."
+	"$HERE/awx-kind" job_templates launch $(job_template "$NAME")
+}
+
+# Workflow Templates
+
+function workflow_template () {
+	local NAME=$1
+
+	"$HERE/awx-kind" workflow_job_templates list --name="$NAME" | jq .results[0].id
+}
+
+function create_workflow_template () {
+	local NAME=$1
+	local INVENTORY_NAME=$2
+
+	local INVENTORY=$(inventory "$INVENTORY_NAME")
+	m "creating AWX workflow template: $NAME..."
+	"$HERE/awx-kind" workflow_job_templates create \
+		--name="$NAME" \
+		--organization=Default \
+		--inventory="$INVENTORY" \
+		--allow_simultaneous=true \
+		--verbosity=3
+}
+
+function create_workflow_template_node () {
+	local WORKFLOW_NAME=$1
+	local JOB_NAME=$2
+
+	# Unfortunately, there is currently no way to link nodes together using the CLI
+	# See: https://github.com/ansible/awx/issues/7414
+
+	local WORKFLOW_TEMPLATE=$(workflow_template "$WORKFLOW_NAME")
+	local JOB_TEMPLATE=$(job_template "$JOB_NAME")
+	"$HERE/awx-kind" workflow_job_template_nodes create \
+		--workflow_job_template="$WORKFLOW_TEMPLATE" \
+		--unified_job_template="$JOB_TEMPLATE"
+}
+
+function delete_workflow_template () {
+	local NAME=$1
+
+	local TEMPLATE=$(workflow_template "$NAME")
+	if [ "$TEMPLATE" != 'null' ]; then
+		m "deleting AWX workflow template: $NAME ($TEMPLATE)..."
+		"$HERE/awx-kind" workflow_job_templates delete "$TEMPLATE"
+	fi
+}
+
+function launch_workflow () {
+	local NAME=$1
+
+	m "launching AWX workflow: $NAME..."
+	"$HERE/awx-kind" workflow_job_templates launch $(workflow_template "$NAME")
+}

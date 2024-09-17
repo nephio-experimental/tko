@@ -3,163 +3,43 @@ set -e
 
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
+. "$HERE/_awx"
 . "$HERE/_trap"
 
 not_root
 
-# Want to install a Python library to use in your playbook?
-#
-# Things that don't work:
-#
-# 1) The "roles/requirements.yaml" file is ignored for manual projects in "/var/lib/awx/projects/".
-#    Maybe it only works for SCM projects? Anyway, it can be used to install Galaxy roles, but not
-#    individual packages.
-#
-# 2) We can put libraries in a project's local "module_utils" directory, which are then merged into
-#    the system "ansible.module_utils" package. But then they would have to internally also import
-#    from "ansible.module_utils...", which would require coding them specifically for that. So we
-#    can't just put arbitrary source code here.
-#
-# 3) Using "--custom_virtualenv" when creating a project seems to be ignored.
-#
-# The only solution that works is the right one: creating a proper Ansible execution environment.
-# See the "build-ansible-execution-environment" script.
-
-function job_template () {
-	local NAME=$1
-	"$HERE/awx-kind" job_templates list --name="$NAME" | jq .results[0].id
-}
-
-function create_job_template () {
-	local NAME=$1
-	local PLAYBOOK=$2
-	local EE=$("$HERE/awx-kind" execution_environments list --name=TKO | jq .results[0].id)
-
-	m "creating AWX job template: $NAME..."
-	"$HERE/awx-kind" job_templates create \
-		--name="$NAME" \
-		--job_type=run \
-		--execution_environment="$EE" \
-		--inventory="$INVENTORY" \
-		--project="$PROJECT" \
-		--playbook="$PLAYBOOK" \
-		--verbosity=3 || true
-}
-
-function delete_job_template () {
-	local NAME=$1
-	local TEMPLATE=$(job_template "$NAME")
-	if [ "$TEMPLATE" != 'null' ]; then
-		m "deleting AWX job template: $NAME ($TEMPLATE)..."
-		"$HERE/awx-kind" job_templates delete "$TEMPLATE"
-	fi
-}
-
-function launch_job () {
-	local NAME=$1
-	m "launching AWX job: $NAME..."
-	"$HERE/awx-kind" job_templates launch $(job_template "$NAME")
-}
-
-function workflow_template () {
-	local NAME=$1
-	"$HERE/awx-kind" workflow_job_templates list --name="$NAME" | jq .results[0].id
-}
-
-function create_workflow_template () {
-	local NAME=$1
-
-	m "creating AWX workflow template: $NAME..."
-	"$HERE/awx-kind" workflow_job_templates create \
-		--name="$NAME" \
-		--organization=Default \
-		--inventory="$INVENTORY" \
-		--allow_simultaneous=true \
-		--verbosity=3 || true
-}
-
-function create_workflow_template_node () {
-	local WORKFLOW_NAME=$1
-	local JOB_NAME=$2
-
-	local WORKFLOW_TEMPLATE=$(workflow_template "$WORKFLOW_NAME")
-	local JOB_TEMPLATE=$(job_template "$JOB_NAME")
-	"$HERE/awx-kind" workflow_job_template_nodes create \
-		--workflow_job_template="$WORKFLOW_TEMPLATE" \
-		--unified_job_template="$JOB_TEMPLATE"
-}
-
-function delete_workflow_template () {
-	local NAME=$1
-	local TEMPLATE=$(workflow_template "$NAME")
-	if [ "$TEMPLATE" != 'null' ]; then
-		m "deleting AWX workflow template: $NAME ($TEMPLATE)..."
-		"$HERE/awx-kind" workflow_job_templates delete "$TEMPLATE"
-	fi
-}
-
-function launch_workflow () {
-	local NAME=$1
-	m "launching AWX workflow: $NAME..."
-	"$HERE/awx-kind" workflow_job_templates launch $(workflow_template "$NAME")
-}
-
 if [ "$1" == -c ]; then
 	delete_workflow_template 'Deploy site'
 	delete_job_template 'Deploy free5GC UPF'
-
-	PROJECT=$("$HERE/awx-kind" projects list --name=TKO | jq .results[0].id)
-	if [ "$PROJECT" != 'null' ]; then
-		m "deleting AWX project: TKO ($PROJECT)..."
-		"$HERE/awx-kind" projects delete "$PROJECT"
-	fi
-
-	EE=$("$HERE/awx-kind" execution_environments list --name=TKO | jq .results[0].id)
-	if [ "$EE" != 'null' ]; then
-		m "deleting AWX execution environment: TKO ($EE)..."
-		"$HERE/awx-kind" execution_environments delete "$EE"
-	fi
+	delete_project TKO
+	delete_inventory TKO
+	delete_execution_environment TKO
 fi
 
 m 'uploading AWX playbooks...'
 
-# To install Galaxy collections into our project:
-#"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="$ROOT/examples/ansible/tko/collections"
-
-POD=$("$HERE/kubectl-kind" get pods --selector=app.kubernetes.io/name=awx-web --field-selector=status.phase=Running --namespace=tko --output=jsonpath={.items[0].metadata.name})
-
 rm --recursive --force /tmp/tko/awx-projects/*
-cp --recursive "$ROOT/examples/ansible/tko" /tmp/tko/awx-projects/
+cp --recursive "$ROOT/examples/ansible/tko" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
+gitify /tmp/tko/awx-projects/tko/
+
+# To install Galaxy collections into our project:
+#"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="/tmp/tko/awx-projects/tko/collections"
 
 # Hack: playbooks can only access files within the project, so we will copy the service account info into it
+#POD=$("$HERE/kubectl-kind" get pods --selector=app.kubernetes.io/name=awx-web --field-selector=status.phase=Running --namespace=tko --output=jsonpath={.items[0].metadata.name})
 #"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- cp --recursive /var/run/secrets/kubernetes.io/serviceaccount /var/lib/awx/projects/tko/
 
-m 'creating AWX execution environment: TKO...'
+create_execution_environment TKO "docker.io/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
 
-"$HERE/awx-kind" execution_environments create \
-	--name=TKO \
-	--image="docker.io/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
+create_project TKO tko || true
 
-INVENTORY=$("$HERE/awx-kind" inventory list --name='Demo Inventory' | jq .results[0].id)
+create_inventory TKO || true
+create_inventory_source TKO TKO TKO TKO inventory.py || true
 
-m 'creating AWX project: TKO...'
-
-# The --local_path is relative to /var/lib/awx/projects/
-"$HERE/awx-kind" projects create \
-	--name=TKO \
-	--organization=Default \
-	--local_path=tko || true
-
-PROJECT=$("$HERE/awx-kind" projects list --name=TKO | jq .results[0].id)
-
-# Jobs
-
-create_job_template 'Deploy free5GC UPF' deploy.yaml
-
-# Workflows
+create_job_template 'Deploy free5GC UPF' TKO deploy.yaml TKO TKO || true
 
 # Currently we cannot create a full workflow from the CLI, so we will use a playbook instead.
-# See: https://github.com/ansible/awx/issues/7414
+ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
 "$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/tko/initialize.yaml"
 
 launch_workflow 'Deploy site'

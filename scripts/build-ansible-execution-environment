@@ -7,6 +7,23 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
+# Want to install a Python library to use in your playbook?
+#
+# Things that don't work:
+#
+# 1) The "roles/requirements.yaml" file is ignored for manual projects in "/var/lib/awx/projects/".
+#    Maybe it only works for SCM projects? Anyway, it can be used to install Galaxy roles, but not
+#    individual packages.
+#
+# 2) We can put libraries in a project's local "module_utils" directory, which are then merged into
+#    the system "ansible.module_utils" package. But then they would have to internally also import
+#    from "ansible.module_utils...", which would require coding them specifically for that. So we
+#    can't just put arbitrary source code here.
+#
+# 3) Using "--custom_virtualenv" when creating a project seems to be ignored.
+#
+# The only solution that works is the right one: creating a proper Ansible execution environment.
+
 NAME=tko-ansible-execution-environment
 TAG=${TAG:-$DOCKER_REGISTRY}
 

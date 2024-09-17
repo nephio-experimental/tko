@@ -1,5 +1,5 @@
 - name: Testing TKO
-  hosts: all
+  hosts: localhost
   gather_facts: false
   
   tasks:
@@ -9,3 +9,13 @@
     register: result
 
   - debug: var=result
+
+- name: All hosts
+  hosts: all
+  gather_facts: false
+
+  tasks:
+
+  - name: Print
+    debug: var=testvar
+    
