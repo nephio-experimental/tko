@@ -36,7 +36,7 @@ can approve them like so (more information about using the CLI below):
 
     tko deployment approve
 
-After a few seconds you should see `smf` pods appear on both "edge1" and "edger2" clusters.
+After a few seconds you should see `smf` pods appear on both "edge1" and "edge2" clusters.
 
 ### Accessing the CLI
 
@@ -157,15 +157,15 @@ an archive (tarball or zip), an HTTP URL, a git URL, and combinations.
 
 Local directory example:
 
-    tko template register demo/hello-world:v1.0.1 --url=examples/hello-world/
+    tko template register demo/hello-world:v1.0.1 --url=examples/workloads/hello-world/
 
 HTTP example:
 
-    tko template register demo/hello-world:v1.0.1 --url=https://raw.githubusercontent.com/nephio-experimental/tko/main/examples/hello-world/workload.yaml
+    tko template register demo/hello-world:v1.0.1 --url=https://raw.githubusercontent.com/nephio-experimental/tko/main/examples/workloads/hello-world/workload.yaml
 
 You can also provide the KRM package via stdin:
 
-    cat examples/hello-world/workload.yaml | tko template register demo/hello-world:v1.0.1 --stdin
+    cat examples/workloads/hello-world/workload.yaml | tko template register demo/hello-world:v1.0.1 --stdin
 
 If a previous entity with the ID already exists then it will be rewritten, though note that
 existing relationships (template to deployments, deployments to site, etc.) will be maintained.
@@ -175,7 +175,7 @@ by appending version information to the ID as we did in our examples.
 The package may already contain metadata via KRM (see [packages reference](PACKAGES.md#metadatanephioorg)).
 However, during registration it is possible to add additional metadata or override package metadata:
 
-    tko template register demo/hello-world:v1.0.1 --metadata=hello=world --url=examples/hello-world/
+    tko template register demo/hello-world:v1.0.1 --metadata=hello=world --url=examples/workloads/hello-world/
 
 Registering a site is similar except that you can optionally base it on a template, in which case
 any additional package you provide will be merged into the template. It is also possible to register
@@ -188,7 +188,7 @@ a site with no package data. A few examples:
     tko site register india/bangalore/south-102 site/gdce:v1.0.0
 
     # Based on package
-    tko site register lab/3 --url=examples/lab-site/
+    tko site register lab/3 --url=examples/sites/lab-site/
 
 Registering plugins doesn't involve a package, but instead relies on arguments and properties
 depending on the executor (the default executor is `command`). Triggers are provided as
@@ -228,7 +228,7 @@ It will return the generated ID, which you can capture into a shell variable:
 
 You can provide a KRM package via a URL to merge into the template:
 
-    tko deployment create demo/hello-world:v1.0.0 --url=examples/hello-world/
+    tko deployment create demo/hello-world:v1.0.0 --url=examples/workloads/hello-world/
 
 You can also assign a site ID and/or a parent deployment ID:
 
