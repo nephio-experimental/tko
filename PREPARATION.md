@@ -14,7 +14,7 @@ The preparation status per resource is set via the `nephio.org/prepared` annotat
 
 Once all preparable resources have been prepared, the Preparer marks the whole package as
 prepared by setting that annotation on a single resource of GVK
-`deployment.nephio.org/v1alpha1`, `Deployment`. The Prepaper will automatically add
+`deployment.nephio.org/v1alpha1`, `Deployment`. The Preparer will automatically add
 this resource to a deployment package if it doesn't already exist. This annotation
 bubbles up to the deployment entity on the backend, for example as a column in a SQL
 table, making it trivial to query deployments by preparation state.
