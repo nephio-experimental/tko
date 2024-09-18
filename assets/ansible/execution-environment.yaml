@@ -14,7 +14,6 @@ dependencies:
   - cbor2
   galaxy: |
     collections:
-    - name: awx.awx
     - name: kubernetes.core
 
 images:

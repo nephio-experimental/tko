@@ -74,6 +74,7 @@ function create_inventory_source () {
 		--source=scm \
 		--source_project="$PROJECT" \
 		--source_path="$SOURCE_PATH" \
+		--source_vars='TKO_HOST: tko-data:50050' \
 		--execution_environment="$EE" \
 		--update_on_launch=true
 

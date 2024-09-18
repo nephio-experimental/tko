@@ -5,7 +5,8 @@
   tasks:
 
   - name: Test TKO
-    tko: 
+    tko:
+      host: tko-data:50050
     register: result
 
   - debug: var=result
@@ -17,5 +18,4 @@
   tasks:
 
   - name: Print
-    debug: var=testvar
-    
+    debug: var=metadata

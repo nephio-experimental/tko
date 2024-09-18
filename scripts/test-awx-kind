@@ -12,7 +12,8 @@ if [ "$1" == -c ]; then
 	delete_workflow_template 'Deploy site'
 	delete_job_template 'Deploy free5GC UPF'
 	delete_project TKO
-	delete_inventory TKO
+	delete_inventory 'TKO Sites'
+	delete_inventory 'TKO Deployments'
 	delete_execution_environment TKO
 fi
 
@@ -33,13 +34,16 @@ create_execution_environment TKO "docker.io/$DOCKER_REGISTRY/tko-ansible-executi
 
 create_project TKO tko || true
 
-create_inventory TKO || true
-create_inventory_source TKO TKO TKO TKO inventory.py || true
+create_inventory 'TKO Sites' || true
+create_inventory_source 'TKO Sites' Sites TKO TKO inventory-sites.py || true
 
-create_job_template 'Deploy free5GC UPF' TKO deploy.yaml TKO TKO || true
+#create_inventory 'TKO Deployments' || true
+#create_inventory_source 'TKO Deployments' Deployments TKO TKO inventory-deployments.py || true
+
+create_job_template 'Deploy free5GC UPF' TKO deploy.yaml TKO 'TKO Sites' || true
 
 # Currently we cannot create a full workflow from the CLI, so we will use a playbook instead.
 ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
-"$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/tko/initialize.yaml"
+"$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/create_workflows.yaml"
 
 launch_workflow 'Deploy site'

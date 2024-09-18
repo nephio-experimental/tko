@@ -13,7 +13,7 @@
 
       name: Deploy site
       organization: Default
-      inventory: TKO
+      inventory: TKO Sites
 
       workflow_nodes:
 
