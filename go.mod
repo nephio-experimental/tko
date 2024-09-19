@@ -12,7 +12,7 @@ require (
 	github.com/rivo/tview v0.0.0-20240818110301-fd649dbf1223
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.8.1
-	github.com/tliron/commonlog v0.2.18
+	github.com/tliron/commonlog v0.2.19
 	github.com/tliron/exturl v0.4.4
 	github.com/tliron/go-ard v0.2.17
 	github.com/tliron/go-transcribe v0.3.5
