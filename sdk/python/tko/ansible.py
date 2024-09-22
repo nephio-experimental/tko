@@ -1,6 +1,10 @@
 import json, sys, os
 
 
+tko_host = os.getenv('TKO_HOST', 'tko-data:50050')
+max_count = int(os.getenv('MAX_COUNT', 1000))
+
+
 class Inventory:
   def __init__(self):
     self.hosts = {}

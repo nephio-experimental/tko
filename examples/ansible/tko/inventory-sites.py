@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 
-import tko, tko.ansible, os
+import tko, tko.ansible
 
-
-tko_host = os.getenv('TKO_HOST', 'tko-data:50050')
-max_count = int(os.getenv('MAX_COUNT', 1000))
 
 inventory = tko.ansible.Inventory()
 
-with tko.Client(host=tko_host) as client:
-  for site in client.list_sites(offset=0, max_count=max_count):
-    inventory.add(site.siteId, {
-      'template_id': site.templateId,
-      'metadata': dict(site.metadata),
-      'updated': site.updated.ToJsonString(),
-      'deployment_ids': list(site.deploymentIds)
+with tko.Client(host=tko.ansible.tko_host) as client:
+  for listed_site in client.list_sites(offset=0, max_count=tko.ansible.max_count):
+    inventory.add(listed_site.siteId, {
+      'template_id': listed_site.templateId,
+      'metadata': dict(listed_site.metadata),
+      'updated': listed_site.updated.ToJsonString(),
+      'deployment_ids': list(listed_site.deploymentIds)
     })
 
 inventory.dump()

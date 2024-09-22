@@ -25,7 +25,8 @@ function create_execution_environment () {
 	m "creating AWX execution environment: $NAME..."
 	"$HERE/awx-kind" execution_environments create \
 		--name="$NAME" \
-		--image="$IMAGE"
+		--image="$IMAGE" \
+		--wait
 }
 
 function delete_execution_environment () {
@@ -34,7 +35,7 @@ function delete_execution_environment () {
 	local EE=$(execution_environment "$NAME")
 	if [ "$EE" != 'null' ]; then
 		m "deleting AWX execution environment: $NAME ($EE)..."
-		"$HERE/awx-kind" execution_environments delete "$EE"
+		"$HERE/awx-kind" execution_environments delete "$EE" --wait
 	fi
 }
 
@@ -52,7 +53,8 @@ function create_inventory () {
 	m "creating AWX inventory: $NAME..."
 	"$HERE/awx-kind" inventory create \
 		--name="$NAME" \
-		--organization=Default
+		--organization=Default \
+		--wait
 }
 
 function create_inventory_source () {
@@ -76,7 +78,8 @@ function create_inventory_source () {
 		--source_path="$SOURCE_PATH" \
 		--source_vars='TKO_HOST: tko-data:50050' \
 		--execution_environment="$EE" \
-		--update_on_launch=true
+		--update_on_launch=true \
+		--wait
 
 		#--source_vars='---\nplugin: tko.awx.inventory'
 }
@@ -87,7 +90,7 @@ function delete_inventory () {
 	local INVENTORY=$(inventory "$NAME")
 	if [ "$INVENTORY" != 'null' ]; then
 		m "deleting AWX inventory: $NAME ($INVENTORY)..."
-		"$HERE/awx-kind" inventory delete "$INVENTORY"
+		"$HERE/awx-kind" inventory delete "$INVENTORY" --wait
 	fi
 }
 
@@ -121,7 +124,8 @@ function create_project () {
 		--name="$NAME" \
 		--organization=Default \
 		--scm_type=git \
-		--scm_url="file:///var/lib/awx/projects/$LOCAL_PATH"
+		--scm_url="file:///var/lib/awx/projects/$LOCAL_PATH" \
+		--wait
 
 		#--local_path="$LOCAL_PATH"
 }
@@ -132,7 +136,7 @@ function delete_project () {
 	local PROJECT=$(project "$NAME")
 	if [ "$PROJECT" != 'null' ]; then
 		m "deleting AWX project: $NAME ($PROJECT)..."
-		"$HERE/awx-kind" projects delete "$PROJECT"
+		"$HERE/awx-kind" projects delete "$PROJECT" --wait
 	fi
 }
 
@@ -162,7 +166,8 @@ function create_job_template () {
 		--inventory="$INVENTORY" \
 		--project="$PROJECT" \
 		--playbook="$PLAYBOOK" \
-		--verbosity=3
+		--verbosity=3 \
+		--wait
 }
 
 function delete_job_template () {
@@ -171,7 +176,7 @@ function delete_job_template () {
 	local TEMPLATE=$(job_template "$NAME")
 	if [ "$TEMPLATE" != 'null' ]; then
 		m "deleting AWX job template: $NAME ($TEMPLATE)..."
-		"$HERE/awx-kind" job_templates delete "$TEMPLATE"
+		"$HERE/awx-kind" job_templates delete "$TEMPLATE" --wait
 	fi
 }
 
@@ -201,7 +206,8 @@ function create_workflow_template () {
 		--organization=Default \
 		--inventory="$INVENTORY" \
 		--allow_simultaneous=true \
-		--verbosity=3
+		--verbosity=3 \
+		--wait
 }
 
 function create_workflow_template_node () {
@@ -215,7 +221,8 @@ function create_workflow_template_node () {
 	local JOB_TEMPLATE=$(job_template "$JOB_NAME")
 	"$HERE/awx-kind" workflow_job_template_nodes create \
 		--workflow_job_template="$WORKFLOW_TEMPLATE" \
-		--unified_job_template="$JOB_TEMPLATE"
+		--unified_job_template="$JOB_TEMPLATE" \
+		--wait
 }
 
 function delete_workflow_template () {
@@ -224,7 +231,7 @@ function delete_workflow_template () {
 	local TEMPLATE=$(workflow_template "$NAME")
 	if [ "$TEMPLATE" != 'null' ]; then
 		m "deleting AWX workflow template: $NAME ($TEMPLATE)..."
-		"$HERE/awx-kind" workflow_job_templates delete "$TEMPLATE"
+		"$HERE/awx-kind" workflow_job_templates delete "$TEMPLATE" --wait
 	fi
 }
 

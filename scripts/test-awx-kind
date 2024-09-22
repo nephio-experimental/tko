@@ -19,6 +19,7 @@ fi
 
 m 'uploading AWX playbooks...'
 
+#sudo chmod a+w --recursive /tmp/tko/awx-projects/
 rm --recursive --force /tmp/tko/awx-projects/*
 cp --recursive "$ROOT/examples/ansible/tko" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
 gitify /tmp/tko/awx-projects/tko/
