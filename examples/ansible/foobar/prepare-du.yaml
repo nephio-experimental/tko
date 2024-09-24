@@ -1,7 +1,7 @@
-- name: Testing TKO
+- name: Prepare DU
   hosts: localhost
   gather_facts: false
-  
+
   tasks:
 
   - name: Test TKO
@@ -10,12 +10,3 @@
     register: result
 
   - debug: var=result
-
-- name: All hosts
-  hosts: all
-  gather_facts: false
-
-  tasks:
-
-  - name: Print
-    debug: var=metadata

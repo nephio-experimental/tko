@@ -9,20 +9,25 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 not_root
 
 if [ "$1" == -c ]; then
-	delete_workflow_template 'Deploy site'
-	delete_job_template 'Deploy free5GC UPF'
-	delete_project TKO
-	delete_inventory 'TKO Sites'
-	delete_inventory 'TKO Deployments'
+	delete_workflow_template 'Deploy CU'
+	delete_job_template 'Provision Cluster'
+	delete_job_template 'Schedule DU'
+	delete_job_template 'Prepare DU'
+	delete_project Foobar
+	delete_inventory 'Chicago Sites'
 	delete_execution_environment TKO
 fi
+
+delete_job_template 'Demo Job Template'
+delete_project 'Demo Project'
+delete_inventory 'Demo Inventory'
 
 m 'uploading AWX playbooks...'
 
 #sudo chmod a+w --recursive /tmp/tko/awx-projects/
 rm --recursive --force /tmp/tko/awx-projects/*
-cp --recursive "$ROOT/examples/ansible/tko" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
-gitify /tmp/tko/awx-projects/tko/
+cp --recursive "$ROOT/examples/ansible/foobar" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
+gitify /tmp/tko/awx-projects/foobar/
 
 # To install Galaxy collections into our project:
 #"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="/tmp/tko/awx-projects/tko/collections"
@@ -33,18 +38,17 @@ gitify /tmp/tko/awx-projects/tko/
 
 create_execution_environment TKO "docker.io/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
 
-create_project TKO tko || true
+create_project Foobar foobar || true
 
-create_inventory 'TKO Sites' || true
-create_inventory_source 'TKO Sites' Sites TKO TKO inventory-sites.py || true
+create_inventory 'Chicago Sites' || true
+create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites-chicago.py || true
 
-#create_inventory 'TKO Deployments' || true
-#create_inventory_source 'TKO Deployments' Deployments TKO TKO inventory-deployments.py || true
+create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO || true
+create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO || true
+create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO || true
 
-create_job_template 'Deploy free5GC UPF' TKO deploy.yaml TKO 'TKO Sites' || true
-
-# Currently we cannot create a full workflow from the CLI, so we will use a playbook instead.
+# Due to missing feature in awx CLI, we cannot create a full workflow, so we will use a playbook instead
 ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
-"$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/create_workflows.yaml"
+"$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/initialize-foobar.yaml"
 
-launch_workflow 'Deploy site'
+launch_workflow 'Deploy DU' 'Chicago Sites'

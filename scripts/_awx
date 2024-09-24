@@ -76,7 +76,7 @@ function create_inventory_source () {
 		--source=scm \
 		--source_project="$PROJECT" \
 		--source_path="$SOURCE_PATH" \
-		--source_vars='TKO_HOST: tko-data:50050' \
+		--source_vars='TKO_DATA_HOST: tko-data:50050' \
 		--execution_environment="$EE" \
 		--update_on_launch=true \
 		--wait
@@ -153,19 +153,17 @@ function create_job_template () {
 	local PROJECT_NAME=$2
 	local PLAYBOOK=$3
 	local EE_NAME=$4
-	local INVENTORY_NAME=$5
 
 	local PROJECT=$(project "$PROJECT_NAME")
 	local EE=$(execution_environment "$EE_NAME")
-	local INVENTORY=$(inventory "$INVENTORY_NAME")
 	m "creating AWX job template: $NAME..."
 	"$HERE/awx-kind" job_templates create \
 		--name="$NAME" \
 		--job_type=run \
 		--execution_environment="$EE" \
-		--inventory="$INVENTORY" \
 		--project="$PROJECT" \
 		--playbook="$PLAYBOOK" \
+		--ask_inventory_on_launch=true \
 		--verbosity=3 \
 		--wait
 }
@@ -236,8 +234,11 @@ function delete_workflow_template () {
 }
 
 function launch_workflow () {
-	local NAME=$1
+	local WORKFLOW_NAME=$1
+	local INVENTORY_NAME=$2
 
-	m "launching AWX workflow: $NAME..."
-	"$HERE/awx-kind" workflow_job_templates launch $(workflow_template "$NAME")
+	local WORKFLOW_TEMPLATE=$(workflow_template "$WORKFLOW_NAME")
+	local INVENTORY=$(inventory "$INVENTORY_NAME")
+	m "launching AWX workflow: $WORKFLOW_NAME..."
+	"$HERE/awx-kind" workflow_job_templates launch "$WORKFLOW_TEMPLATE" --inventory="$INVENTORY"
 }

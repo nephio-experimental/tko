@@ -1,8 +1,8 @@
 import json, sys, os
 
 
-tko_host = os.getenv('TKO_HOST', 'tko-data:50050')
-max_count = int(os.getenv('MAX_COUNT', 1000))
+DATA_HOST = os.getenv('TKO_DATA_HOST', 'tko-data:50050')
+MAX_COUNT = int(os.getenv('TKO_MAX_COUNT', 100))
 
 
 class Inventory:

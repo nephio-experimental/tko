@@ -1,0 +1,47 @@
+- name: Initialize Foobar
+  hosts: localhost
+  gather_facts: false
+
+  collections:
+  - awx.awx
+
+  tasks:
+
+  - name: Create "Deploy DU" workflow
+    register: result
+    workflow_job_template:
+      controller_host: http://localhost:30053 # see: assets/kubernetes/kind/tko.yaml
+      controller_username: admin
+      controller_password: tko # see: assets/kubernetes/workloads/awx.yaml (awx-admin secret)
+
+      name: Deploy DU
+      organization: Default
+      ask_inventory_on_launch: true
+
+      workflow_nodes:
+
+      - identifier: Provision
+        unified_job_template:
+          type: job_template
+          name: Provision Cluster
+        inventory: Chicago Sites # we need a default inventory
+        related:
+          success_nodes:
+          - identifier: Prepare
+
+      - identifier: Prepare
+        unified_job_template:
+          type: job_template
+          name: Prepare DU
+        inventory: Chicago Sites # we need a default inventory
+        related:
+          success_nodes:
+          - identifier: Schedule
+
+      - identifier: Schedule
+        unified_job_template:
+          type: job_template
+          name: Schedule DU
+        inventory: Chicago Sites # we need a default inventory
+
+  - debug: var=result

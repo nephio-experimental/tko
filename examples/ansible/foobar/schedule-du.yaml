@@ -1,0 +1,8 @@
+- name: Schedule DU
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+
+  - name: Dump sites
+    debug: var=metadata
