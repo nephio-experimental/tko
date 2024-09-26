@@ -30,7 +30,7 @@ fi
 # fi
 
 cat "$ROOT/assets/kubernetes/_kustomization.yaml" |
-POSTGRESQL_VERSION=$POSTGRESQL_VERSION DIND_VERSION=$DIND_VERSION \
+DOCKER_REPOSITORY=$DOCKER_REPOSITORY DOCKER_REGISTRY=$DOCKER_REGISTRY POSTGRESQL_VERSION=$POSTGRESQL_VERSION DIND_VERSION=$DIND_VERSION \
 envsubst > "$ROOT/assets/kubernetes/kustomization.yaml"
 
 if [ "$1" == -d ]; then

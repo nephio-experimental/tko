@@ -7,12 +7,10 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 not_root
 
-TAG=${TAG:-$DOCKER_REGISTRY}
-
 function push () {
 	local NAME=$1
-	docker image tag "$NAME" "$TAG/$NAME"
-	docker push "$TAG/$NAME"
+	docker image tag "$NAME" "$DOCKER_REPOSITORY/$DOCKER_REGISTRY/$NAME"
+	docker push "$DOCKER_REPOSITORY/$DOCKER_REGISTRY/$NAME"
 }
 
 push tko-data

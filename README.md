@@ -11,6 +11,9 @@ A PoC demonstrating scalability opportunities for Nephio with a focus on decoupl
 subsystems, specifically the data backend and orchestration logic plugins, as well as integration
 with external site inventories and blueprint catalogs.
 
+TKO can also be automated using [Ansible](https://www.ansible.com/) playbooks. Included is a demo
+based on [Ansible AWX](https://www.ansible.com/awx/) (a.k.a. Ansible Tower).
+
 This PoC is a complete rewrite of the Nephio core. It comprises three controllers (Data, Preparer,
 and Meta-Scheduler) that can run independently or be embedded into a control plane. Included
 is first-class support for using a Kubernetes management cluster as the control plane.
@@ -75,6 +78,7 @@ Documentation
 
 * [Installation guide](INSTALL.md)
 * [User guide](USAGE.md)
+* [Ansible AWX guide](AWX.md)
 * [Package reference](PACKAGES.md)
 * [KRM API](KRM.md)
 * [How preparation works](PREPARATION.md)

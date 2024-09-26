@@ -1,10 +1,11 @@
-Ansible for TKO
-===============
+AWX for TKO
+===========
 
 A PoC of using [Ansible](https://www.ansible.com/) playbooks to prepare and instantiate
 deployments.
 
-We rely on [Ansible AWX](https://www.ansible.com/awx/) to manage and run the playbooks.
+We rely on [Ansible AWX](https://www.ansible.com/awx/) (a.k.a. Ansible Tower) to manage
+and run the playbooks.
 
 Install
 -------
@@ -29,3 +30,13 @@ The `awx-kind` script can be used to access the
 e.g.:
 
     scripts/awx-kind projects list --conf.format=hum
+
+Test Scenario
+-------------
+
+To set up the test scenario run:
+
+    scripts/test-awx-kind
+
+Note that if you get an error deleting the built in demo resources, just re-run the
+script. It will eventually work.
