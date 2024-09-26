@@ -22,32 +22,32 @@ delete_job_template 'Demo Job Template'
 delete_project 'Demo Project'
 delete_inventory 'Demo Inventory'
 
-m 'uploading AWX playbooks...'
+create_execution_environment TKO "docker.io/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
+
+m 'uploading AWX project...'
 
 #sudo chmod a+w --recursive /tmp/tko/awx-projects/
 rm --recursive --force /tmp/tko/awx-projects/*
 cp --recursive "$ROOT/examples/ansible/foobar" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
 gitify /tmp/tko/awx-projects/foobar/
 
-# To install Galaxy collections into our project:
+# To install Galaxy collections into our project, example:
 #"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="/tmp/tko/awx-projects/tko/collections"
 
 # Hack: playbooks can only access files within the project, so we will copy the service account info into it
 #POD=$("$HERE/kubectl-kind" get pods --selector=app.kubernetes.io/name=awx-web --field-selector=status.phase=Running --namespace=tko --output=jsonpath={.items[0].metadata.name})
 #"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- cp --recursive /var/run/secrets/kubernetes.io/serviceaccount /var/lib/awx/projects/tko/
 
-create_execution_environment TKO "docker.io/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
-
 create_project Foobar foobar || true
 
 create_inventory 'Chicago Sites' || true
-create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites-chicago.py || true
+create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites.py --arg TKO_METADATA 'Site.region: chicago' || true
 
 create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO || true
 create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO || true
 create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO || true
 
-# Due to missing feature in awx CLI, we cannot create a full workflow, so we will use a playbook instead
+# Due to a missing feature in awx CLI, we cannot create a full workflow, so we will use a playbook instead
 ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
 "$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/initialize-foobar.yaml"
 

@@ -64,7 +64,8 @@ function create_inventory_source () {
 	local PROJECT_NAME=$4
 	local SOURCE_PATH=$5
 
-	# See: https://ansible.readthedocs.io/projects/awx/en/latest/userguide/inventories.html#inventory-plugins
+	# See: https://stackoverflow.com/a/68591585
+	local VARS=$(jq '$ARGS.named' --null-input --compact-output --arg TKO_DATA_HOST tko-data:50050 "${@:6}")
 
 	local INVENTORY=$(inventory "$INVENTORY_NAME")
 	local PROJECT=$(project "$PROJECT_NAME")
@@ -76,7 +77,7 @@ function create_inventory_source () {
 		--source=scm \
 		--source_project="$PROJECT" \
 		--source_path="$SOURCE_PATH" \
-		--source_vars='TKO_DATA_HOST: tko-data:50050' \
+		--source_vars="$VARS" \
 		--execution_environment="$EE" \
 		--update_on_launch=true \
 		--wait
