@@ -7,15 +7,6 @@ MAX_MAX_COUNT = MAX_INT32
 DEFAULT_PACKAGE_FORMAT = 'yaml'
 
 
-def decode_package(self):
-  return tko.encoding.decode_package(self.package, self.packageFormat)
-
-tko.tko_pb2.Template.get_package = decode_package
-tko.tko_pb2.Site.get_package = decode_package
-tko.tko_pb2.Deployment.get_package = decode_package
-tko.tko_pb2.StartDeploymentModificationResponse.get_package = decode_package
-
-
 class Client:
   def __init__(self, host=None):
     self.host = host if host is not None else tko.plugin.get_grpc_host()
@@ -161,3 +152,28 @@ class Client:
     r = self.stub.purgePlugins(tko.tko_pb2.SelectPlugins(type=type, namePatterns=name_patterns, executor=executor, trigger=trigger))
     if not r.deleted:
       raise Exception(r.notDeletedReason)
+
+
+def decode_package(self):
+  return tko.encoding.decode_package(self.package, self.packageFormat)
+
+def listed_site_to_ard(self):
+  return {
+      'site_id': self.siteId,
+      'template_id': self.templateId,
+      'metadata': dict(self.metadata),
+      'updated': self.updated.ToJsonString(),
+      'deployment_ids': list(self.deploymentIds),
+    }
+
+def site_to_ard(self):
+  r = listed_site_to_ard(self)
+  r['package'] = self.get_package()
+  return r
+
+tko.tko_pb2.Template.get_package = decode_package
+tko.tko_pb2.ListedSite.to_ard = listed_site_to_ard
+tko.tko_pb2.Site.get_package = decode_package
+tko.tko_pb2.Site.to_ard = site_to_ard
+tko.tko_pb2.Deployment.get_package = decode_package
+tko.tko_pb2.StartDeploymentModificationResponse.get_package = decode_package

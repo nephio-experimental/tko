@@ -41,7 +41,7 @@ gitify /tmp/tko/awx-projects/foobar/
 create_project Foobar foobar || true
 
 create_inventory 'Chicago Sites' || true
-create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites.py --arg TKO_METADATA 'Site.region: chicago' || true
+create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites.py --arg TKO_METADATA_PATTERNS 'Site.region: chicago' || true
 
 create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO || true
 create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO || true
