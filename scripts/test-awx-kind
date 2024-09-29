@@ -9,7 +9,7 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 not_root
 
 if [ "$1" == -c ]; then
-	delete_workflow_template 'Deploy CU'
+	delete_workflow_template 'Deploy DU'
 	delete_job_template 'Provision Cluster'
 	delete_job_template 'Schedule DU'
 	delete_job_template 'Prepare DU'
@@ -27,27 +27,33 @@ create_execution_environment TKO "$DOCKER_REPOSITORY/$DOCKER_REGISTRY/tko-ansibl
 
 m 'uploading AWX project...'
 
-#sudo chmod a+w --recursive /tmp/tko/awx-projects/
 rm --recursive --force /tmp/tko/awx-projects/*
 cp --recursive "$ROOT/examples/ansible/foobar" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
 gitify /tmp/tko/awx-projects/foobar/
 
-# To install Galaxy collections into our project, example:
-#"$PYTHON_ENV/bin/ansible-galaxy" collection install ginigangadharan.collection_demo --force --collections-path="/tmp/tko/awx-projects/tko/collections"
+TKO_DATA_HOST=tko-data:50050
 
-# Hack: playbooks can only access files within the project, so we will copy the service account info into it
-#POD=$("$HERE/kubectl-kind" get pods --selector=app.kubernetes.io/name=awx-web --field-selector=status.phase=Running --namespace=tko --output=jsonpath={.items[0].metadata.name})
-#"$HERE/kubectl-kind" exec "pod/$POD" --container=awx-task --namespace=tko -- cp --recursive /var/run/secrets/kubernetes.io/serviceaccount /var/lib/awx/projects/tko/
+# See: assets/workloads/awx.yaml
+K8S_AUTH_HOST=https://kubernetes.default.svc
+K8S_AUTH_API_KEY=$(kubectl get secret awx-tko --namespace=tko --output=jsonpath='{.data.token}' | base64 --decode)
+K8S_AUTH_SSL_CA_CERT_CONTENT=$(kubectl get secret awx-tko --namespace=tko --output=jsonpath='{.data.ca\.crt}' | base64 --decode)
 
 create_project Foobar foobar || true
 
 create_inventory 'Chicago Sites' || true
-create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites.py --arg TKO_METADATA_PATTERNS 'Site.region: chicago' || true
+create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites.py \
+	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
+	--arg TKO_METADATA_PATTERNS 'Site.region: chicago' || true
 
 create_inventory 'Bangalore Sites' || true
-create_inventory_source 'Bangalore Sites' TKO TKO Foobar inventory-sites.py --arg TKO_METADATA_PATTERNS 'Site.region: bangalore' || true
+create_inventory_source 'Bangalore Sites' TKO TKO Foobar inventory-sites.py \
+	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
+	--arg TKO_METADATA_PATTERNS 'Site.region: bangalore' || true
 
-create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO || true
+create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO \
+	--arg K8S_AUTH_HOST "$K8S_AUTH_HOST" \
+	--arg K8S_AUTH_API_KEY "$K8S_AUTH_API_KEY" \
+	--arg K8S_AUTH_SSL_CA_CERT_CONTENT "$K8S_AUTH_SSL_CA_CERT_CONTENT" || true
 create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO || true
 create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO || true
 

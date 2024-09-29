@@ -64,8 +64,7 @@ function create_inventory_source () {
 	local PROJECT_NAME=$4
 	local SOURCE_PATH=$5
 
-	# See: https://stackoverflow.com/a/68591585
-	local VARS=$(jq '$ARGS.named' --null-input --compact-output --arg TKO_DATA_HOST tko-data:50050 "${@:6}")
+	local VARS=$(jq '$ARGS.named' --null-input --compact-output "${@:6}")
 
 	local INVENTORY=$(inventory "$INVENTORY_NAME")
 	local PROJECT=$(project "$PROJECT_NAME")
@@ -81,8 +80,6 @@ function create_inventory_source () {
 		--execution_environment="$EE" \
 		--update_on_launch=true \
 		--wait
-
-		#--source_vars='---\nplugin: tko.awx.inventory'
 }
 
 function delete_inventory () {
@@ -155,6 +152,8 @@ function create_job_template () {
 	local PLAYBOOK=$3
 	local EE_NAME=$4
 
+	local VARS=$(jq '$ARGS.named' --null-input --compact-output "${@:5}")
+
 	local PROJECT=$(project "$PROJECT_NAME")
 	local EE=$(execution_environment "$EE_NAME")
 	m "creating AWX job template: $NAME..."
@@ -165,6 +164,7 @@ function create_job_template () {
 		--project="$PROJECT" \
 		--playbook="$PLAYBOOK" \
 		--ask_inventory_on_launch=true \
+		--extra_vars="$VARS" \
 		--verbosity=3 \
 		--wait
 }

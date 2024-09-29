@@ -1,3 +1,31 @@
 - name: Provision Cluster
-  hosts: all
+  hosts: localhost
   gather_facts: false
+
+  collections:
+  - kubernetes.core
+
+  module_defaults:
+    group/k8s:
+      host: "{{ K8S_AUTH_HOST }}"
+      api_key: "{{ K8S_AUTH_API_KEY }}"
+      ca_cert: /tmp/ca.crt # must be a file
+
+  tasks:
+
+  - name: Set ca_cert
+    copy:
+      content: "{{ K8S_AUTH_SSL_CA_CERT_CONTENT }}"
+      dest: /tmp/ca.crt
+      force: true
+
+  - name: Get clusters
+    k8s_exec:
+      namespace: tko
+      pod: tko-runner
+      container: tko-runner
+      command: kind get clusters
+    register: clusters
+
+  - name: Dump clusters
+    debug: var=clusters.stdout_lines
