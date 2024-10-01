@@ -12,7 +12,7 @@ m 'registering plugins...'
 
 if [ "$WHERE" == local ]; then
 	"$TKO" plugin register validate free5gc/smf "$ROOT/examples/plugins/validate_free5gc_smf.py" --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
-	"$TKO" plugin register prepare namespace gcr.io/kpt-fn/set-namespace:v0.4.1 --executor=kpt --property=namespace=spec.namespace --trigger=workload.plugin.nephio.org,v1alpha1,Namespace -v
+	"$TKO" plugin register prepare namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=namespace=spec.namespace --trigger=workload.plugin.nephio.org,v1alpha1,Namespace -v
 	"$TKO" plugin register prepare free5gc/smf "$ROOT/examples/plugins/prepare_free5gc_smf.py" --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
 	"$TKO" plugin register schedule kind "$ROOT/examples/plugins/schedule_kind.py" --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
 	"$TKO" plugin register schedule gdce "$ROOT/examples/plugins/schedule_gdce.py" --trigger=gdce.google.com,v1alpha1,EdgeCluster -v
@@ -22,7 +22,7 @@ else
 	"$HERE/kubectl-kind" cp --container=tko-runner "$ROOT/examples/plugins" tko/tko-runner:/home/tko/examples/
 
 	"$TKO" plugin register validate free5gc/smf /home/tko/examples/plugins/validate_free5gc_smf.py --property=_kubernetes.pod=tko-runner --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
-	"$TKO" plugin register prepare namespace gcr.io/kpt-fn/set-namespace:v0.4.1 --executor=kpt --property=_kubernetes.pod=tko-runner --property=namespace=spec.namespace --trigger=workload.plugin.nephio.org,v1alpha1,Namespace -v
+	"$TKO" plugin register prepare namespace --executor=kpt gcr.io/kpt-fn/set-namespace:v0.4.1 --property=_kubernetes.pod=tko-runner --property=namespace=spec.namespace --trigger=workload.plugin.nephio.org,v1alpha1,Namespace -v
 	"$TKO" plugin register prepare free5gc/smf /home/tko/examples/plugins/prepare_free5gc_smf.py --property=_kubernetes.pod=tko-runner --trigger=free5gc.plugin.nephio.org,v1alpha1,SMF -v
 	"$TKO" plugin register schedule kind /home/tko/examples/plugins/schedule_kind.py --property=_kubernetes.pod=tko-runner --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
 	"$TKO" plugin register schedule gdce /home/tko/examples/plugins/schedule_gdce.py --property=_kubernetes.pod=tko-runner --trigger=gdce.google.com,v1alpha1,EdgeCluster -v

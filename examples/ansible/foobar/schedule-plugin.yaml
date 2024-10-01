@@ -1,0 +1,8 @@
+- name: Schedule Plugin
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+
+  - name: Dump deployments
+    debug: var=deployments

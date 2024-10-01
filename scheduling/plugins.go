@@ -54,6 +54,8 @@ func NewPluginScheduler(plugin client.Plugin, logIpStack util.IPStack, logAddres
 	switch plugin.Executor {
 	case pluginspkg.Command:
 		return NewCommandPluginScheduler(plugin, logIpStack, logAddress, logPort)
+	case pluginspkg.Ansible:
+		return NewAnsiblePluginScheduler(plugin)
 	default:
 		return nil, fmt.Errorf("unsupported plugin executor: %s", plugin.Executor)
 	}
@@ -78,6 +80,32 @@ func NewCommandPluginScheduler(plugin client.Plugin, logIpStack util.IPStack, lo
 		} else {
 			return err
 		}
+
+		if err := executor.Execute(context, input, &output); err == nil {
+			if output.Error == "" {
+				return nil
+			} else {
+				return errors.New(output.Error)
+			}
+		} else {
+			return err
+		}
+	}, nil
+}
+
+func NewAnsiblePluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
+	executor, err := pluginspkg.NewAnsibleExecutor(plugin.Arguments, plugin.Properties)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(context contextpkg.Context, schedulingContext *Context) error {
+		schedulingContext.Log.Info("schedule via Ansible plugin",
+			"resource", schedulingContext.TargetResourceIdentifer,
+			"arguments", strings.Join(plugin.Arguments, " "))
+
+		input := schedulingContext.ToPluginInput("", "")
+		var output PluginOutput
 
 		if err := executor.Execute(context, input, &output); err == nil {
 			if output.Error == "" {

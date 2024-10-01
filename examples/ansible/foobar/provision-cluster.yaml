@@ -20,12 +20,12 @@
       force: true
 
   - name: Get clusters
+    register: clusters
     k8s_exec:
       namespace: tko
       pod: tko-runner
       container: tko-runner
       command: kind get clusters
-    register: clusters
 
   - name: Dump clusters
     debug: var=clusters.stdout_lines

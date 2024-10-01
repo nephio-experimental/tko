@@ -28,7 +28,7 @@ func (self *ValidatingBackend) SetPlugin(context contextpkg.Context, plugin *bac
 	for _, trigger := range plugin.Triggers {
 		// Note: plugin.Group can be empty (for default group)
 		if trigger.Version == "" {
-			return backend.NewBadArgumentError("trigger ersion is empty")
+			return backend.NewBadArgumentError("trigger version is empty")
 		}
 		if trigger.Kind == "" {
 			return backend.NewBadArgumentError("trigger kind is empty")

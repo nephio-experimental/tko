@@ -151,8 +151,9 @@ function create_job_template () {
 	local PROJECT_NAME=$2
 	local PLAYBOOK=$3
 	local EE_NAME=$4
+	local ASK_VARIABLES=$5
 
-	local VARS=$(jq '$ARGS.named' --null-input --compact-output "${@:5}")
+	local VARS=$(jq '$ARGS.named' --null-input --compact-output "${@:6}")
 
 	local PROJECT=$(project "$PROJECT_NAME")
 	local EE=$(execution_environment "$EE_NAME")
@@ -164,6 +165,7 @@ function create_job_template () {
 		--project="$PROJECT" \
 		--playbook="$PLAYBOOK" \
 		--ask_inventory_on_launch=true \
+		--ask_variables_on_launch="$ASK_VARIABLES" \
 		--extra_vars="$VARS" \
 		--verbosity=3 \
 		--wait

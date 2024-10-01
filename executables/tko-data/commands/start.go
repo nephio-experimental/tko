@@ -139,6 +139,7 @@ func Serve() {
 	validation, err := validationpkg.NewValidation(client, tkoutil.SecondsToDuration(validatorTimeout), commonlog.GetLogger("validation"), logIpStack, logAddress, int(logPort))
 	util.FailOnError(err)
 	validationTicker := tkoutil.NewTicker(ResetValidationPluginCacheFrequency, validation.ResetPluginCache)
+	validationTicker.Start()
 	util.OnExit(validationTicker.Stop)
 	backend = validating.NewValidatingBackend(backend, validation)
 

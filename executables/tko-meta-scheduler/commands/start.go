@@ -70,6 +70,7 @@ func Start() {
 	// Scheduling
 	scheduling := schedulingpkg.NewScheduling(client, tkoutil.SecondsToDuration(schedulerTimeout), commonlog.GetLogger("scheduling"), logIpStack, logAddress, int(logPort))
 	schedulingTicker := tkoutil.NewTicker(ResetSchedulingPluginCacheFrequency, scheduling.ResetPluginCache)
+	schedulingTicker.Start()
 	util.OnExit(schedulingTicker.Stop)
 
 	// Controller

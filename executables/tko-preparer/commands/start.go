@@ -70,6 +70,7 @@ func Start() {
 	// Preparation
 	preparation := preparationpkg.NewPreparation(client, tkoutil.SecondsToDuration(preparerTimeout), autoApprove, commonlog.GetLogger("preparation"), logIpStack, logAddress, int(logPort))
 	preparationTicker := tkoutil.NewTicker(ResetPreparationPluginCacheFrequency, preparation.ResetPluginCache)
+	preparationTicker.Start()
 	util.OnExit(preparationTicker.Stop)
 
 	// Controller

@@ -5,8 +5,8 @@
   tasks:
 
   - name: Test TKO
+    register: result
     tko:
       host: tko-data:50050
-    register: result
 
   - debug: var=result

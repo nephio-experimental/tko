@@ -13,6 +13,7 @@ if [ "$1" == -c ]; then
 	delete_job_template 'Provision Cluster'
 	delete_job_template 'Schedule DU'
 	delete_job_template 'Prepare DU'
+	delete_job_template 'Schedule Plugin'
 	delete_inventory 'Chicago Sites'
 	delete_inventory 'Bangalore Sites'
 	delete_project Foobar
@@ -50,15 +51,18 @@ create_inventory_source 'Bangalore Sites' TKO TKO Foobar inventory-sites.py \
 	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
 	--arg TKO_METADATA_PATTERNS 'Site.region: bangalore' || true
 
-create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO \
+create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO false \
 	--arg K8S_AUTH_HOST "$K8S_AUTH_HOST" \
 	--arg K8S_AUTH_API_KEY "$K8S_AUTH_API_KEY" \
 	--arg K8S_AUTH_SSL_CA_CERT_CONTENT "$K8S_AUTH_SSL_CA_CERT_CONTENT" || true
-create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO || true
-create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO || true
+create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO false || true
+create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO false || true
+create_job_template 'Schedule Plugin' Foobar schedule-plugin.yaml TKO true || true
 
 # Due to a missing feature in awx CLI, we cannot create a full workflow, so we will use a playbook instead
 ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
 "$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/initialize-foobar.yaml"
 
 launch_workflow 'Deploy DU' 'Chicago Sites'
+
+"$HERE/tko-kind" plugin register schedule kind --executor=ansible 'Schedule Plugin' --property=_awx.inventory='Chicago Sites' --property=_awx.host=http://awx-service:80 --property=_awx.username=admin --property=_awx.password=tko --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
