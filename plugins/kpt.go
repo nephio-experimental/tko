@@ -18,7 +18,7 @@ const Kpt = "kpt"
 //
 
 type KptExecutor struct {
-	*Executor
+	*Runner
 }
 
 func NewKptExecutor(arguments []string, properties map[string]string) (*KptExecutor, error) {
@@ -27,7 +27,7 @@ func NewKptExecutor(arguments []string, properties map[string]string) (*KptExecu
 	}
 
 	return &KptExecutor{
-		Executor: NewExecutor(arguments, properties),
+		Runner: NewRunner(arguments, properties),
 	}, nil
 }
 
@@ -56,7 +56,7 @@ func (self *KptExecutor) Execute(context contextpkg.Context, targetResourceIdent
 	}
 
 	if stdin, err := util.EncodePackage("yaml", package_); err == nil {
-		if stdout, err := self.Executor.Execute(context, bytes.NewReader(stdin), command...); err == nil {
+		if stdout, err := self.Runner.Run(context, bytes.NewReader(stdin), command...); err == nil {
 			if resourceList, err := util.DecodePackage("yaml", stdout); err == nil {
 				if len(resourceList) == 1 {
 					if items, ok := ard.With(resourceList[0]).Get("items").ConvertSimilar().List(); ok {

@@ -56,7 +56,7 @@ func GetKubernetesREST() (*KubernetesREST, error) {
 	return kubernetesRest, nil
 }
 
-func (self *KubernetesREST) Execute(context contextpkg.Context, namespace string, podName string, containerName string, stdin io.Reader, command ...string) ([]byte, error) {
+func (self *KubernetesREST) Run(context contextpkg.Context, namespace string, podName string, containerName string, stdin io.Reader, command ...string) ([]byte, error) {
 	if len(command) == 0 {
 		return nil, errors.New("command must have at least one argument")
 	}

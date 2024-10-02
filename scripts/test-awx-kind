@@ -65,4 +65,9 @@ ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
 
 launch_workflow 'Deploy DU' 'Chicago Sites'
 
+m 'override "schedule kind" plugin...'
+
 "$HERE/tko-kind" plugin register schedule kind --executor=ansible 'Schedule Plugin' --property=_awx.inventory='Chicago Sites' --property=_awx.host=http://awx-service:80 --property=_awx.username=admin --property=_awx.password=tko --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
+
+# To stop it
+# scripts/tko-kind plugin delete schedule kind

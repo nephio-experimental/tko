@@ -105,16 +105,7 @@ func NewAnsiblePluginScheduler(plugin client.Plugin) (ScheduleFunc, error) {
 			"arguments", strings.Join(plugin.Arguments, " "))
 
 		input := schedulingContext.ToPluginInput("", "")
-		var output PluginOutput
 
-		if err := executor.Execute(context, input, &output); err == nil {
-			if output.Error == "" {
-				return nil
-			} else {
-				return errors.New(output.Error)
-			}
-		} else {
-			return err
-		}
+		return executor.Execute(context, input)
 	}, nil
 }

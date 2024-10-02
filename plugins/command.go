@@ -18,7 +18,7 @@ const Command = "command"
 //
 
 type CommandExecutor struct {
-	*Executor
+	*Runner
 }
 
 func NewCommandExecutor(arguments []string, properties map[string]string) (*CommandExecutor, error) {
@@ -27,7 +27,7 @@ func NewCommandExecutor(arguments []string, properties map[string]string) (*Comm
 	}
 
 	return &CommandExecutor{
-		Executor: NewExecutor(arguments, properties),
+		Runner: NewRunner(arguments, properties),
 	}, nil
 }
 
@@ -70,7 +70,7 @@ func (self *CommandExecutor) GetLog(fifoPrefix string, ipStack util.IPStack, add
 
 func (self *CommandExecutor) Execute(context contextpkg.Context, input any, output any) error {
 	if inputBytes, err := yaml.Marshal(input); err == nil {
-		if stdout, err := self.Executor.Execute(context, bytes.NewReader(inputBytes), self.Arguments...); err == nil {
+		if stdout, err := self.Runner.Run(context, bytes.NewReader(inputBytes), self.Arguments...); err == nil {
 			return yaml.Unmarshal(stdout, output)
 		} else {
 			return err

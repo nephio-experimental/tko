@@ -5,4 +5,4 @@
   tasks:
 
   - name: Dump deployments
-    debug: var=deployments
+    debug: var=plugin.deployments

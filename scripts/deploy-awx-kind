@@ -13,10 +13,14 @@ TIMEOUT=180s
 
 if [ "$1" == -c ]; then
 	m 'deleting AWX...'
-	kubectl delete --filename="$ROOT/assets/kubernetes/workloads/awx.yaml" || true
+	"$HERE/kubectl-kind" delete --filename="$ROOT/assets/kubernetes/workloads/awx.yaml" --wait || true
+	"$HERE/kubectl-kind" delete --filename="$ROOT/assets/kubernetes/workloads/awx-secret.yaml" --wait || true
 
 	m 'deleting AWX operator...'
-	helm uninstall awx-operator --kube-context=kind-tko --namespace=tko || true
+	helm uninstall awx-operator --kube-context=kind-tko --namespace=tko --wait || true
+
+	m 'deleting AWX database...'
+	"$HERE/psql-kind" --command='DROP DATABASE IF EXISTS awx;' || true
 fi
 
 m 'deploying AWX operator...'
@@ -40,14 +44,29 @@ m 'waiting for AWX...'
 
 set +e
 while true; do
-	waiting 'waiting for awx-web (>5 minutes)...'
+	waiting 'waiting for AWX service account...'
+	if "$HERE/kubectl-kind" get serviceaccount/awx --namespace=tko > /dev/null 2>&1; then
+		break
+	fi
+	sleep 0.5
+done
+set -e
+end_waiting 'AWX service account created'
+
+m 'creating AWX secret...'
+# The secret will be immediately deleted if the service account doesn't exist
+kubectl apply --filename="$ROOT/assets/kubernetes/workloads/awx-secret.yaml"
+
+set +e
+while true; do
+	waiting 'waiting for AWX setup (>5 minutes)...'
 	if "$HERE/awx-kind" ping > /dev/null 2>&1; then
 		break
 	fi
 	sleep 0.5
 done
 set -e
-end_waiting 'awx-web is up, access at: http://localhost:30053'
+end_waiting 'AWX is up, access at: http://localhost:30053'
 
 # Debugging:
 # kubectl logs deployment/awx-operator-controller-manager --namespace=tko --follow

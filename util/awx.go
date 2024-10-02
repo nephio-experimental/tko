@@ -54,8 +54,8 @@ func (self *AwxClient) ListInventories(query string) (ard.Value, error) {
 
 func (self *AwxClient) InventoryIdFromName(name string) (int64, bool, error) {
 	if results, err := self.ListInventories("name=" + name); err == nil {
-		id, ok := getResultsId(results)
-		return id, ok, nil
+		inventoryId, ok := getResultsId(results)
+		return inventoryId, ok, nil
 	} else {
 		return 0, false, err
 	}
@@ -70,15 +70,15 @@ func (self *AwxClient) ListJobTemplates(query string) (ard.Value, error) {
 
 func (self *AwxClient) JobTemplateIdFromName(name string) (int64, bool, error) {
 	if results, err := self.ListJobTemplates("name=" + name); err == nil {
-		id, ok := getResultsId(results)
-		return id, ok, nil
+		jobTemplateId, ok := getResultsId(results)
+		return jobTemplateId, ok, nil
 	} else {
 		return 0, false, err
 	}
 }
 
-func (self *AwxClient) LaunchJobTemplate(id int64, inventoryId int64, extraVars map[string]any) (ard.Value, error) {
-	path := fmt.Sprintf("job_templates/%d/launch/", id)
+func (self *AwxClient) LaunchJob(jobTemplateId int64, inventoryId int64, extraVars map[string]any) (ard.Value, error) {
+	path := fmt.Sprintf("job_templates/%d/launch/", jobTemplateId)
 	body := make(ard.StringMap)
 	if inventoryId >= 0 {
 		body["inventory"] = inventoryId
@@ -89,11 +89,21 @@ func (self *AwxClient) LaunchJobTemplate(id int64, inventoryId int64, extraVars 
 	return self.Post(path, body)
 }
 
+// Jobs
+
+func (self *AwxClient) ListJobs(query string) (ard.Value, error) {
+	path := "jobs/?" + query
+	return self.Get(path)
+}
+
 // Raw Requests
 
 func (self *AwxClient) Get(path string) (ard.Value, error) {
 	if request, err := self.newRequest("GET", path, nil); err == nil {
 		if response, err := self.client.Do(request); err == nil {
+			if response.StatusCode != 200 {
+				return nil, NewAwxError(response)
+			}
 			return ard.ReadJSON(response.Body, true)
 		} else {
 			return nil, err
@@ -161,6 +171,7 @@ func NewAwxError(response *http.Response) *AwxError {
 	return &self
 }
 
+// ([error] interface)
 func (self *AwxError) Error() string {
 	if self.Body != nil {
 		if body, err := transcribe.NewTranscriber().Stringify(self.Body); err == nil {
@@ -179,8 +190,12 @@ func toJsonReader(content any) (io.Reader, error) {
 		return nil, nil
 	}
 
-	if content, err := json.Marshal(content); err == nil {
-		return bytes.NewReader(content), nil
+	if content, err := ard.ValidCopyMapsToStringMaps(content, nil); err == nil { // json.Marshal doesn't support map[any]any
+		if content, err := json.Marshal(content); err == nil {
+			return bytes.NewReader(content), nil
+		} else {
+			return nil, err
+		}
 	} else {
 		return nil, err
 	}

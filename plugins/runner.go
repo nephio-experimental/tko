@@ -14,17 +14,17 @@ const (
 )
 
 //
-// Executor
+// Runner
 //
 
-type Executor struct {
+type Runner struct {
 	Arguments  []string
 	Properties map[string]string
 	Remote     *Remote
 }
 
-func NewExecutor(arguments []string, properties map[string]string) *Executor {
-	self := Executor{
+func NewRunner(arguments []string, properties map[string]string) *Runner {
+	self := Runner{
 		Arguments:  arguments,
 		Properties: properties,
 	}
@@ -34,12 +34,12 @@ func NewExecutor(arguments []string, properties map[string]string) *Executor {
 	return &self
 }
 
-func (self *Executor) Execute(context contextpkg.Context, stdin io.Reader, command ...string) ([]byte, error) {
+func (self *Runner) Run(context contextpkg.Context, stdin io.Reader, command ...string) ([]byte, error) {
 	if self.Remote == nil {
-		return ExecuteLocal(context, stdin, command...)
+		return RunLocal(context, stdin, command...)
 	} else {
 		if kubernetesRest, err := GetKubernetesREST(); err == nil {
-			return kubernetesRest.Execute(context, self.Remote.KubernetesNamespace, self.Remote.KubernetesPod, self.Remote.KubernetesContainer, stdin, command...)
+			return kubernetesRest.Run(context, self.Remote.KubernetesNamespace, self.Remote.KubernetesPod, self.Remote.KubernetesContainer, stdin, command...)
 		} else {
 			return nil, err
 		}
@@ -56,7 +56,7 @@ type Remote struct {
 	KubernetesContainer string
 }
 
-func (self *Executor) NewRemote() *Remote {
+func (self *Runner) NewRemote() *Remote {
 	if self.Properties != nil {
 		var remote Remote
 		var ok bool

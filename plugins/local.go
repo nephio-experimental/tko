@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func ExecuteLocal(context contextpkg.Context, stdin io.Reader, command ...string) ([]byte, error) {
+func RunLocal(context contextpkg.Context, stdin io.Reader, command ...string) ([]byte, error) {
 	if len(command) == 0 {
 		return nil, errors.New("command must have at least one argument")
 	}
