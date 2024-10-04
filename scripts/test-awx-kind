@@ -28,11 +28,19 @@ create_execution_environment TKO "$DOCKER_REPOSITORY/$DOCKER_REGISTRY/tko-ansibl
 
 m 'uploading AWX project...'
 
-rm --recursive --force /tmp/tko/awx-projects/*
-cp --recursive "$ROOT/examples/ansible/foobar" /tmp/tko/awx-projects/ # see: assets/kubernetes/kind/tko/yaml
-gitify /tmp/tko/awx-projects/foobar/
+AWX_PROJECTS=/tmp/tko/awx-projects # see: assets/kubernetes/kind/tko/yaml
+
+rm --recursive --force "$AWX_PROJECTS/"*
+cp --recursive "$ROOT/examples/ansible/foobar" "$AWX_PROJECTS/"
+mkdir --parents "$AWX_PROJECTS/foobar/collections/ansible_collections/"
+cp --recursive "$ROOT/assets/ansible/collections/tko" "$AWX_PROJECTS/foobar/collections/ansible_collections/"
+gitify "$AWX_PROJECTS"/foobar/
 
 TKO_DATA_HOST=tko-data:50050
+AWX_HOST=http://localhost:30053 # see: assets/kubernetes/kind/tko.yaml
+# See: assets/kubernetes/workloads/awx.yaml (awx-admin secret)
+AWX_USERNAME=admin
+AWX_PASSWORD=tko
 
 # See: assets/workloads/awx.yaml
 K8S_AUTH_HOST=https://kubernetes.default.svc
@@ -42,12 +50,12 @@ K8S_AUTH_SSL_CA_CERT_CONTENT=$(kubectl get secret awx-tko --namespace=tko --outp
 create_project Foobar foobar || true
 
 create_inventory 'Chicago Sites' || true
-create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sites.py \
+create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sources/sites.py \
 	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
 	--arg TKO_METADATA_PATTERNS 'Site.region: chicago' || true
 
 create_inventory 'Bangalore Sites' || true
-create_inventory_source 'Bangalore Sites' TKO TKO Foobar inventory-sites.py \
+create_inventory_source 'Bangalore Sites' TKO TKO Foobar inventory-sources/sites.py \
 	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
 	--arg TKO_METADATA_PATTERNS 'Site.region: bangalore' || true
 
@@ -55,13 +63,15 @@ create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO false 
 	--arg K8S_AUTH_HOST "$K8S_AUTH_HOST" \
 	--arg K8S_AUTH_API_KEY "$K8S_AUTH_API_KEY" \
 	--arg K8S_AUTH_SSL_CA_CERT_CONTENT "$K8S_AUTH_SSL_CA_CERT_CONTENT" || true
-create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO false || true
+create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO false \
+	--arg TKO_DATA_HOST "$TKO_DATA_HOST" || true
 create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO false || true
 create_job_template 'Schedule Plugin' Foobar schedule-plugin.yaml TKO true || true
 
 # Due to a missing feature in awx CLI, we cannot create a full workflow, so we will use a playbook instead
 ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
-"$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/initialize-foobar.yaml"
+"$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/initialize-foobar.yaml" \
+	--extra-vars="AWX_HOST=$AWX_HOST AWX_USERNAME=$AWX_USERNAME AWX_PASSWORD=$AWX_PASSWORD"
 
 launch_workflow 'Deploy DU' 'Chicago Sites'
 

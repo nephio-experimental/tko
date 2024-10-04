@@ -2,11 +2,18 @@
   hosts: localhost
   gather_facts: false
 
+  collections:
+  - tko.tko
+
+  module_defaults:
+    group/tko.tko.tko:
+      host: "{{ TKO_DATA_HOST }}"
+
   tasks:
 
   - name: Test TKO
     register: result
-    tko:
-      host: tko-data:50050
+    tko_deployments: {}
 
-  - debug: var=result
+  - name: Dump deployments
+    debug: var=result.deployments

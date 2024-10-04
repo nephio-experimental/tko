@@ -83,18 +83,16 @@ func (self *AnsibleExecutor) Execute(context contextpkg.Context, input any) erro
 	if jobTemplateId, ok, err := client.JobTemplateIdFromName(self.JobTemplate); err == nil {
 		if ok {
 			// Did we already launch it?
-
-			// TODO: this is *not* correct behavior, we are just trying to avoid running the
-			// job again and again and again...
-
 			if results, err := client.ListJobs(fmt.Sprintf("unified_job_template=%d", jobTemplateId)); err == nil {
 				if count, ok := ard.With(results).Get("count").ConvertSimilar().Integer(); ok {
 					if count > 0 {
+						// TODO: this is *not* correct behavior, we are just trying to avoid running the
+						// job again and again and again...
 						log.Infof("Ansible job already launched: %q on %q", self.JobTemplate, self.Inventory)
 						return nil
 					}
 				} else {
-					return fmt.Errorf("bad results from AWX: %v", results)
+					return fmt.Errorf("malformed results: %v", results)
 				}
 			} else {
 				return err

@@ -21,7 +21,7 @@ images:
     name: docker.io/alpine:$ALPINE_VERSION
 
 additional_build_files:
-- src: ../../sdk/python
+- src: ../../../sdk/python
   dest: python # relative to "_build"
 
 additional_build_steps:

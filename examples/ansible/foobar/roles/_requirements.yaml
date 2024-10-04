@@ -1,3 +1,5 @@
+# Rename this file to "requirements.yaml" for AWX to process it.
+
 # https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-multiple-roles-from-a-file
 
 - src: https://github.com/thedatabaseme/ansible-kind

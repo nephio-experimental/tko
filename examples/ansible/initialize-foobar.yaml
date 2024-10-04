@@ -5,15 +5,17 @@
   collections:
   - awx.awx
 
+  module_defaults:
+    group/awx.awx.controller:
+      controller_host: "{{ AWX_HOST }}"
+      controller_username: "{{ AWX_USERNAME }}"
+      controller_password: "{{ AWX_PASSWORD }}"
+
   tasks:
 
   - name: Create "Deploy DU" workflow
     register: result
     workflow_job_template:
-      controller_host: http://localhost:30053 # see: assets/kubernetes/kind/tko.yaml
-      controller_username: admin
-      controller_password: tko # see: assets/kubernetes/workloads/awx.yaml (awx-admin secret)
-
       name: Deploy DU
       organization: Default
       ask_inventory_on_launch: true

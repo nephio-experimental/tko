@@ -15,10 +15,10 @@ def run_module():
   ))
 
   with tko.Client(host=module.params['host']) as client:
-    sites = client.list_sites(offset=module.params['offset'], max_count=module.params['max_count'])
-    sites = [MessageToString(v) for v in sites]
+    deployments = client.list_deployments(offset=module.params['offset'], max_count=module.params['max_count'])
+    deployments = [MessageToString(v) for v in deployments]
 
-  module.exit_json(changed=False, sites=sites)
+  module.exit_json(changed=False, deployments=deployments)
 
 
 if __name__ == '__main__':

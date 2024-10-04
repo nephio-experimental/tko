@@ -27,14 +27,15 @@ not_root
 NAME=tko-ansible-execution-environment
 TAG=${TAG:-$DOCKER_REGISTRY}
 
-cat "$ROOT/assets/ansible/_execution-environment.yaml" |
+cat "$ROOT/assets/ansible/builder/_execution-environment.yaml" |
 ALPINE_VERSION=$ALPINE_VERSION ANSIBLE_CORE_VERSION=$ANSIBLE_CORE_VERSION ANSIBLE_RUNNER_VERSION=$ANSIBLE_RUNNER_VERSION \
-envsubst > "$ROOT/assets/ansible/execution-environment.yaml"
+envsubst > "$ROOT/assets/ansible/builder/execution-environment.yaml"
 
+mkdir --parents "$ROOT/work/"
 rm --recursive --force "$ROOT/work/ansible-builder/"
 
 "$PYTHON_ENV/bin/ansible-builder" build \
-	--file="$ROOT/assets/ansible/execution-environment.yaml" \
+	--file="$ROOT/assets/ansible/builder/execution-environment.yaml" \
 	--context="$ROOT/work/ansible-builder" \
 	--container-runtime=docker \
 	--tag="$NAME"
