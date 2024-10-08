@@ -13,18 +13,30 @@ if [ "$1" == -c ]; then
 	delete_job_template 'Provision Cluster'
 	delete_job_template 'Schedule DU'
 	delete_job_template 'Prepare DU'
-	delete_job_template 'Schedule Plugin'
+	delete_job_template 'TKO Plugin: Schedule Kind'
+	delete_inventory 'Local'
+	delete_inventory 'Dublin Sites'
 	delete_inventory 'Chicago Sites'
-	delete_inventory 'Bangalore Sites'
 	delete_project Foobar
 	delete_execution_environment TKO
 fi
 
+m 'registering TKO test entities...'
+
+"$HERE/tko-kind" site delete ireland/dublin/north || true
+"$HERE/tko-kind" site delete ireland/dublin/south || true
+
+"$HERE/tko-kind" site register ireland/dublin/north --metadata=type=site --metadata=Site.region=dublin --url="$ROOT/examples/sites/dublin-north/" -v
+"$HERE/tko-kind" site register ireland/dublin/south --metadata=type=site --metadata=Site.region=dublin --url="$ROOT/examples/sites/dublin-south/" -v
+
+"$HERE/tko-kind" deployment create nf/free5gc/upf:v1.0.0 --site=ireland/dublin/north -v
+"$HERE/tko-kind" deployment create nf/free5gc/upf:v1.0.0 --site=ireland/dublin/south -v
+
+m 'deleting AWX demos...'
+
 delete_job_template 'Demo Job Template'
 delete_inventory 'Demo Inventory'
 delete_project 'Demo Project'
-
-create_execution_environment TKO "$DOCKER_REPOSITORY/$DOCKER_REGISTRY/tko-ansible-execution-environment" || true
 
 m 'uploading AWX project...'
 
@@ -47,17 +59,21 @@ K8S_AUTH_HOST=https://kubernetes.default.svc
 K8S_AUTH_API_KEY=$(kubectl get secret awx-tko --namespace=tko --output=jsonpath='{.data.token}' | base64 --decode)
 K8S_AUTH_SSL_CA_CERT_CONTENT=$(kubectl get secret awx-tko --namespace=tko --output=jsonpath='{.data.ca\.crt}' | base64 --decode)
 
+create_execution_environment TKO "$DOCKER_REPOSITORY/$DOCKER_REGISTRY/tko-ansible-execution-environment:latest" || true
+
 create_project Foobar foobar || true
 
+create_inventory 'Local' || true
+
+create_inventory 'Dublin Sites' || true
+create_inventory_source 'Dublin Sites' TKO TKO Foobar inventory-sources/tko_sites.py \
+	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
+	--arg TKO_METADATA_PATTERNS 'Site.region: dublin' || true
+
 create_inventory 'Chicago Sites' || true
-create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sources/sites.py \
+create_inventory_source 'Chicago Sites' TKO TKO Foobar inventory-sources/tko_sites.py \
 	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
 	--arg TKO_METADATA_PATTERNS 'Site.region: chicago' || true
-
-create_inventory 'Bangalore Sites' || true
-create_inventory_source 'Bangalore Sites' TKO TKO Foobar inventory-sources/sites.py \
-	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
-	--arg TKO_METADATA_PATTERNS 'Site.region: bangalore' || true
 
 create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO false \
 	--arg K8S_AUTH_HOST "$K8S_AUTH_HOST" \
@@ -66,18 +82,20 @@ create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO false 
 create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO false \
 	--arg TKO_DATA_HOST "$TKO_DATA_HOST" || true
 create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO false || true
-create_job_template 'Schedule Plugin' Foobar schedule-plugin.yaml TKO true || true
+create_job_template 'TKO Plugin: Schedule Kind' Foobar tko-plugin-schedule-kind.yaml TKO true || true
+
+m 'register TKO schedule plugin...'
+
+"$HERE/tko-kind" plugin register schedule ansible --executor=ansible 'TKO Plugin: Schedule Kind' \
+	--property=_awx.inventory='Local' \
+	--property=_awx.host=http://awx-service:80 \
+	--property=_awx.username=admin \
+	--property=_awx.password=tko \
+	--trigger=ansible.plugin.nephio.org,v1alpha1,Cluster -v
 
 # Due to a missing feature in awx CLI, we cannot create a full workflow, so we will use a playbook instead
 ANSIBLE_LOCALHOST_WARNING=false ANSIBLE_INVENTORY_UNPARSED_WARNING=false \
 "$PYTHON_ENV/bin/ansible-playbook" "$ROOT/examples/ansible/initialize-foobar.yaml" \
 	--extra-vars="AWX_HOST=$AWX_HOST AWX_USERNAME=$AWX_USERNAME AWX_PASSWORD=$AWX_PASSWORD"
 
-launch_workflow 'Deploy DU' 'Chicago Sites'
-
-m 'override "schedule kind" plugin...'
-
-"$HERE/tko-kind" plugin register schedule kind --executor=ansible 'Schedule Plugin' --property=_awx.inventory='Chicago Sites' --property=_awx.host=http://awx-service:80 --property=_awx.username=admin --property=_awx.password=tko --trigger=kind.x-k8s.io,v1alpha4,Cluster -v
-
-# To stop it
-# scripts/tko-kind plugin delete schedule kind
+launch_workflow 'Deploy DU' 'Dublin Sites'

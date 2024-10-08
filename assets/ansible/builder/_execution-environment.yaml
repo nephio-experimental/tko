@@ -8,26 +8,33 @@ dependencies:
     package_pip: ansible-core==$ANSIBLE_CORE_VERSION
   ansible_runner:
     package_pip: ansible-runner==$ANSIBLE_RUNNER_VERSION
+  galaxy: |
+    collections:
+    - name: kubernetes.core
+  python_interpreter:
+    python_path: /usr/bin/python3.12 # TODO: seems to be ignored
   python:
   - grpcio-tools
   - ruamel.yaml
   - cbor2
-  galaxy: |
-    collections:
-    - name: kubernetes.core
 
 images:
   base_image:
     name: docker.io/alpine:$ALPINE_VERSION
 
 additional_build_files:
+# "dest" is relative to "work/ansible-builder/_build/"
 - src: ../../../sdk/python
-  dest: python # relative to "_build"
+  dest: python-libraries/
+- src: ansible.cfg
+  dest: configuration/
 
 additional_build_steps:
+  # working dir is "work/ansible-builder/"
   prepend_base: |
     RUN apk add --no-cache bash python3 py3-pip gcc musl-dev
-    COPY _build/python/tko /usr/lib/python3.12/tko
+    COPY _build/python-libraries/tko /usr/lib/python3.12/tko
+    COPY _build/configuration/ansible.cfg /etc/ansible/ansible.cfg
 
 options:
   package_manager_path: apk

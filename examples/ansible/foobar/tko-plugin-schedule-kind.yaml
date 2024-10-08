@@ -1,0 +1,12 @@
+- name: "TKO Plugin: Schedule Kind"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+
+  - name: Log site ID
+    debug: var=plugin.siteId
+
+  - name: Log deployments for site
+    debug: var=plugin.deployments

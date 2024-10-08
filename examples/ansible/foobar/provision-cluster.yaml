@@ -1,31 +1,32 @@
 - name: Provision Cluster
-  hosts: localhost
+  hosts: all
+  connection: local
   gather_facts: false
 
   collections:
   - kubernetes.core
 
+  roles:
+  # Creates /tmp/ca.crt from K8S_AUTH_SSL_CA_CERT_CONTENT
+  - k8s_ca_cert
+
   module_defaults:
     group/k8s:
       host: "{{ K8S_AUTH_HOST }}"
       api_key: "{{ K8S_AUTH_API_KEY }}"
-      ca_cert: /tmp/ca.crt # must be a file
+      ca_cert: /tmp/ca.crt
 
   tasks:
 
-  - name: Set ca_cert
-    copy:
-      content: "{{ K8S_AUTH_SSL_CA_CERT_CONTENT }}"
-      dest: /tmp/ca.crt
-      force: true
+  # TODO: copy resource to file, "kind create cluster"
 
-  - name: Get clusters
-    register: clusters
+  - name: Get existing clusters
+    register: existing_clusters
     k8s_exec:
       namespace: tko
       pod: tko-runner
       container: tko-runner
       command: kind get clusters
 
-  - name: Dump clusters
-    debug: var=clusters.stdout_lines
+  - name: Log existing clusters
+    debug: var=existing_clusters.stdout_lines

@@ -1,0 +1,5 @@
+- name: Initialize /tmp/ca.crt
+  copy:
+    content: "{{ K8S_AUTH_SSL_CA_CERT_CONTENT }}"
+    dest: /tmp/ca.crt
+    force: true

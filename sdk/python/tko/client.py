@@ -157,6 +157,7 @@ class Client:
 def decode_package(self):
   return tko.encoding.decode_package(self.package, self.packageFormat)
 
+
 def listed_site_to_ard(self):
   return {
       'site_id': self.siteId,
@@ -166,10 +167,12 @@ def listed_site_to_ard(self):
       'deployment_ids': list(self.deploymentIds),
     }
 
+
 def site_to_ard(self):
   r = listed_site_to_ard(self)
   r['package'] = self.get_package()
   return r
+
 
 tko.tko_pb2.Template.get_package = decode_package
 tko.tko_pb2.ListedSite.to_ard = listed_site_to_ard

@@ -1,8 +1,9 @@
 - name: Schedule DU
   hosts: all
+  connection: local
   gather_facts: false
   
   tasks:
 
-  - name: Dump sites
+  - name: Log sites
     debug: var=metadata

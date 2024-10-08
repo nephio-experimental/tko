@@ -73,8 +73,8 @@ We also create a workflow template named "Deploy DU". We create it via
 impossible to create a workflow with it.)
 
 Additionally, the project contains the
-[`schedule-plugin.yaml`](examples/ansible/foobar/schedule-plugin.yaml) playbook, which is
-registered as a scheduling plugin for TKO via the "ansible" executor. Note that the
-reconciliation loop would normally keep running the playbook again and again, which is
+[`tko-plugin-schedule-kind.yaml`](examples/ansible/foobar/tko-plugin-schedule-kind.yaml)
+playbook, which is registered as a scheduling plugin for TKO via the "ansible" executor. Note
+that the reconciliation loop would normally keep running the playbook again and again, which is
 undesirable for testing, so we limited it to only run once. To force the playbook to re-run,
-delete its entry from AWX jobs (*not* job templates!).
+delete its entry from AWX "jobs" (*not* "job templates"!).

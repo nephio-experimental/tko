@@ -1,5 +1,6 @@
 - name: Prepare DU
-  hosts: localhost
+  hosts: all
+  connection: local
   gather_facts: false
 
   collections:
@@ -12,8 +13,11 @@
   tasks:
 
   - name: Test TKO
-    register: result
-    tko_deployments: {}
+    register: deployments
+    tko_deployments:
+      site_id: "{{ inventory_hostname }}"
 
-  - name: Dump deployments
-    debug: var=result.deployments
+  # TODO: prepare deployments
+
+  - name: Log deployments
+    debug: var=deployments.deployments
