@@ -12,12 +12,12 @@
 
   tasks:
 
-  - name: Test TKO
+  - name: Get deployments for site
     register: deployments
-    tko_deployments:
+    tko_list_deployments:
       site_id: "{{ inventory_hostname }}"
 
-  # TODO: prepare deployments
-
-  - name: Log deployments
-    debug: var=deployments.deployments
+  - name: Modify deployment
+    loop: "{{ deployments.deployments }}"
+    # To loop over several tasks we must put them in a separate file
+    include_tasks: tasks/modify-deployment.yaml

@@ -109,7 +109,7 @@ class Client:
   def start_deployment_modification(self, deployment_id):
     r = self.stub.startDeploymentModification(tko.tko_pb2.StartDeploymentModification(deploymentId=deployment_id))
     if r.started:
-      return r.modificationToken, r
+      return r.modificationToken, r.get_package()
     else:
       raise Exception(r.notStartedReason)
 
@@ -174,9 +174,31 @@ def site_to_ard(self):
   return r
 
 
+def listed_deployment_to_ard(self):
+  return {
+      'deployment_id': self.deploymentId,
+      'parent_deployment_id': self.parentDeploymentId,
+      'template_id': self.templateId,
+      'site_id': self.siteId,
+      'metadata': dict(self.metadata),
+      'created': self.created.ToJsonString(),
+      'updated': self.updated.ToJsonString(),
+      'prepared': self.prepared,
+      'approved': self.approved,
+  }
+
+
+def deployment_to_ard(self):
+  r = listed_deployment_to_ard(self)
+  r['package'] = self.get_package()
+  return r
+
+
 tko.tko_pb2.Template.get_package = decode_package
 tko.tko_pb2.ListedSite.to_ard = listed_site_to_ard
 tko.tko_pb2.Site.get_package = decode_package
 tko.tko_pb2.Site.to_ard = site_to_ard
+tko.tko_pb2.ListedDeployment.to_ard = listed_deployment_to_ard
 tko.tko_pb2.Deployment.get_package = decode_package
+tko.tko_pb2.Deployment.to_ard = deployment_to_ard
 tko.tko_pb2.StartDeploymentModificationResponse.get_package = decode_package

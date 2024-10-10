@@ -167,7 +167,6 @@ function create_job_template () {
 		--ask_inventory_on_launch=true \
 		--ask_variables_on_launch="$ASK_VARIABLES" \
 		--extra_vars="$VARS" \
-		--verbosity=3 \
 		--wait
 }
 
@@ -207,7 +206,6 @@ function create_workflow_template () {
 		--organization=Default \
 		--inventory="$INVENTORY" \
 		--allow_simultaneous=true \
-		--verbosity=3 \
 		--wait
 }
 
