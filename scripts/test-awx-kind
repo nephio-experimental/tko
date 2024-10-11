@@ -81,7 +81,11 @@ create_job_template 'Provision Cluster' Foobar provision-cluster.yaml TKO false 
 	--arg K8S_AUTH_SSL_CA_CERT_CONTENT "$K8S_AUTH_SSL_CA_CERT_CONTENT" || true
 create_job_template 'Prepare DU' Foobar prepare-du.yaml TKO false \
 	--arg TKO_DATA_HOST "$TKO_DATA_HOST" || true
-create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO false || true
+create_job_template 'Schedule DU' Foobar schedule-du.yaml TKO false \
+	--arg TKO_DATA_HOST "$TKO_DATA_HOST" \
+	--arg K8S_AUTH_HOST "$K8S_AUTH_HOST" \
+	--arg K8S_AUTH_API_KEY "$K8S_AUTH_API_KEY" \
+	--arg K8S_AUTH_SSL_CA_CERT_CONTENT "$K8S_AUTH_SSL_CA_CERT_CONTENT" || true
 create_job_template 'TKO Plugin: Schedule Kind' Foobar tko-plugin-schedule-kind.yaml TKO true || true
 
 m 'register TKO schedule plugin...'

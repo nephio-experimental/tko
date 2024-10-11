@@ -3,7 +3,46 @@
   connection: local
   gather_facts: false
   
+  collections:
+  - tko.tko
+  - kubernetes.core
+
+  roles:
+  # Creates /tmp/ca.crt from K8S_AUTH_SSL_CA_CERT_CONTENT
+  - k8s_ca_cert
+
+  module_defaults:
+    group/tko.tko.tko:
+      host: "{{ TKO_DATA_HOST }}"
+
+    group/k8s:
+      host: "{{ K8S_AUTH_HOST }}"
+      api_key: "{{ K8S_AUTH_API_KEY }}"
+      ca_cert: /tmp/ca.crt
+
   tasks:
 
-  - name: Log sites
-    debug: var=metadata
+  - name: Get deployments
+    loop: "{{ deployment_ids }}"
+    tko_get_deployment:
+      deployment_id: "{{ item }}"
+    register: deployments
+
+  - name: Apply deployment packages
+    loop: "{{ deployments.results }}"
+    # TODO: we'll want to write the package to a file at tko-runner and k8s_exec "kubectl apply --filename="
+    debug:
+      msg: "kubectl apply {{ item.deployment.package }}"
+
+  # TODO: this is just a demo to test k8s_exec access to the clusters
+  - name: Get existing namespaces
+    k8s_exec:
+      namespace: tko
+      pod: tko-runner
+      container: tko-runner
+      command: kubectl get namespaces --output=json #--context=kind-[name]
+    register: namespaces
+
+  - name: Log existing namespaces
+    debug:
+      msg: "{{ (namespaces.stdout | from_json)['items'] }}"

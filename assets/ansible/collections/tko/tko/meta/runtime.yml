@@ -2,6 +2,7 @@
 action_groups:
   # Allows setting "module_defaults" for "group/tko.tko.tko"
   tko:
+  - tko_get_deployment
   - tko_list_deployments
   - tko_start_deployment_modification
   - tko_end_deployment_modification

@@ -1,14 +1,14 @@
 - name: Start deployment modification
-  register: modification
   tko_start_deployment_modification:
     deployment_id: "{{ item.deployment_id }}"
+  register: modification
 
 - name: Set deployment package label
-  register: modified
   set_label:
     package: "{{ modification.package }}"
     label: network_service
     value: du
+  register: modified
 
 - name: Log modified deployment package
   debug:

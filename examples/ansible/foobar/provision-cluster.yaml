@@ -18,15 +18,30 @@
 
   tasks:
 
-  # TODO: copy resource to file, "kind create cluster"
+  - name: Find cluster resource
+    loop: "{{ package }}"
+    when: (item.apiVersion == "ansible.plugin.nephio.org/v1alpha1") and (item.kind == "Cluster")
+    debug: var=item
+    register: cluster_resource
+
+  - name: Log cluster name
+    debug: var=cluster_resource.results[0].item.metadata.name
 
   - name: Get existing clusters
-    register: existing_clusters
     k8s_exec:
       namespace: tko
       pod: tko-runner
       container: tko-runner
       command: kind get clusters
+    register: existing_clusters
 
   - name: Log existing clusters
     debug: var=existing_clusters.stdout_lines
+
+  # TODO: copy cluster_resource.results[0].item to file at tko-runner
+
+  - name: Create cluster
+    when: existing_clusters.stdout_lines is not contains(cluster_resource.results[0].item.metadata.name)
+    # TODO: we'll want to k8s_exec "kind create"
+    debug:
+      msg: "kind create {{ cluster_resource.results[0].item.metadata.name }}"

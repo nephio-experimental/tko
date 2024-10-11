@@ -54,7 +54,7 @@ The test scenario source is:
 
 The Foobar project contains:
 
-* [`inventory-sites.py`](examples/ansible/foobar/inventory-sources/sites.py): Inventory source for
+* [`inventory-sites.py`](examples/ansible/foobar/inventory-sources/tko_sites.py): Inventory source for
   TKO sites. Sites can be selected using `TKO_METADATA_PATTERNS`. Using this source, two
   inventories are set up: "Chicago Sites" and "Bangalore Sites".
 * [`provision-du.yaml`](examples/ansible/foobar/provision-cluster.yaml): Playbook that creates

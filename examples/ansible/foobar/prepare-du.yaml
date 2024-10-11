@@ -13,9 +13,9 @@
   tasks:
 
   - name: Get deployments for site
-    register: deployments
     tko_list_deployments:
       site_id: "{{ inventory_hostname }}"
+    register: deployments
 
   - name: Modify deployment
     loop: "{{ deployments.deployments }}"
